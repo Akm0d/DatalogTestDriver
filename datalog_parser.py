@@ -1,5 +1,13 @@
 #!/usr/bin/env python3
+from argparse import ArgumentParser
+from lexical_analyzer import scan
+from tokens import *
 
+
+class DatalogParser:
+    def __init__(self):
+        pass
+    pass
 
 if __name__ == "__main__":
     """
@@ -13,7 +21,13 @@ if __name__ == "__main__":
     debug = arg.debug
     d_file = arg.file
 
-    if debug:print("Parsing '%s'" % d_file)
+    if debug: print("Parsing '%s'" % d_file)
 
+    tokens = list()
+    lex = scan(d_file)
+    for token in lex:
+        item = tuple(eval(token))
+
+    print(tokens)
 
     pass

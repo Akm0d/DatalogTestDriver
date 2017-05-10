@@ -27,7 +27,7 @@ for test in test_files:
     if lab == 1:
         lex = lexical_analyzer.scan(test)
         for line in lex:
-            expected = expected + line + "\n"
+            expected = expected + '(%s,"%s",%s)' % line + "\n"
         expected = expected + ("Total Tokens = %s\n" % len(lex))
     elif lab == 2:
         print("Lab %s has not yet been implemented" % str(lab))
@@ -39,7 +39,6 @@ for test in test_files:
         print("Lab %s has not yet been implemented" % str(lab))
     elif lab == 6:
         print("Lab %s has not yet been implemented" % str(lab))
-
 
     with open("temp_file_1.tmp", 'w') as temp:
         temp.write(actual)
@@ -55,4 +54,3 @@ for test in test_files:
         print(actual)
         print(expected)
         pass
-

@@ -1,30 +1,52 @@
 #!/usr/bin/env python3
-from re import compile, MULTILINE
+import re
 
+COMMA       = 'COMMA'
+PERIOD      = 'PERIOD'
+Q_MARK      = 'Q_MARK'
+LEFT_PAREN  = 'LEFT_PAREN'
+RIGHT_PAREN = 'RIGHT_PAREN'
+COLON       = 'COLON'
+COLON_DASH  = 'COLON_DASH'
+MULTIPLY    = 'MULTIPLY'
+ADD         = 'ADD'
+SCHEMES     = 'SCHEMES'
+FACTS       = 'FACTS'
+RULES       = 'RULES'
+QUERIES     = 'QUERIES'
+ID          = 'ID'
+STRING      = 'STRING'
+COMMENT     = 'COMMENT'
+WHITESPACE  = 'WHITESPACE'
+MULTILINE   = 'MULTILINE'
+INVALID     = 'INVLAID'
+UNDEFINED   = 'UNDEFINED'
+EOF         = 'EOF'
 
 class Token:
+
     # Associate each token with a regular expression
     TYPE = {
-        'COMMA': compile('^(,)'),
-        'PERIOD': compile('^(\.)'),
-        'Q_MARK': compile('^(\?)'),
-        'LEFT_PAREN': compile('^(\()'),
-        'RIGHT_PAREN': compile('^(\))'),
-        'COLON': compile('^(:)[^-]?'),
-        'COLON_DASH': compile('^(:-)'),
-        'MULTIPLY': compile('^(\*)'),
-        'ADD': compile('^(\+)'),
-        'SCHEMES': compile('^(Schemes)(?:[^a-zA-z\d]|$)'),
-        'FACTS': compile('^(Facts)(?:[^a-zA-z\d]|$)'),
-        'RULES': compile('^(Rules)(?:[^a-zA-z\d]|$)'),
-        'QUERIES': compile('^(Queries)(?:[^a-zA-z\d]|$)'),
-        'ID': compile('^([a-zA-Z][a-zA-Z0-9]*)'),
-        'STRING': compile("^(\'(?:(?:[^\']|\'\')*[^\'])?\')(?:[^\']|$)", MULTILINE),
-        'COMMENT': compile('((?:^#$)|(?:^#[^|].*)|(?:^#\|(?:.|\n)*\|#))', MULTILINE),
-        'WHITESPACE': compile('^(\s+)', MULTILINE),
+        COMMA: re.compile('^(,)'),
+        PERIOD: re.compile('^(\.)'),
+        Q_MARK: re.compile('^(\?)'),
+        LEFT_PAREN: re.compile('^(\()'),
+        RIGHT_PAREN: re.compile('^(\))'),
+        COLON: re.compile('^(:)[^-]?'),
+        COLON_DASH: re.compile('^(:-)'),
+        MULTIPLY: re.compile('^(\*)'),
+        ADD: re.compile('^(\+)'),
+        SCHEMES: re.compile('^(Schemes)(?:[^a-zA-z\d]|$)'),
+        FACTS: re.compile('^(Facts)(?:[^a-zA-z\d]|$)'),
+        RULES: re.compile('^(Rules)(?:[^a-zA-z\d]|$)'),
+        QUERIES: re.compile('^(Queries)(?:[^a-zA-z\d]|$)'),
+        ID: re.compile('^([a-zA-Z][a-zA-Z0-9]*)'),
+        STRING: re.compile("^(\'(?:(?:[^\']|\'\')*[^\'])?\')(?:[^\']|$)", re.MULTILINE),
+        COMMENT: re.compile('((?:^#$)|(?:^#[^|].*)|(?:^#\|(?:.|\n)*\|#))', re.MULTILINE),
+        WHITESPACE: re.compile('^(\s+)', re.MULTILINE),
         # This is a temporary token to make parsing easier
-        'MULTILINE': compile('((?:^\'(?:[^\']|\'\')*$)|(?:^#\|[^|#]*$))', MULTILINE),
-        'EOF': compile('\Z')
+        MULTILINE: re.compile('((?:^\'(?:[^\']|\'\')*$)|(?:^#\|[^|#]*$))', re.MULTILINE),
+        EOF: re.compile('\Z')
     }
     type = 'UNDEFINED'
     value = None
@@ -38,57 +60,57 @@ class Token:
         """
         self.value = s_input
         self.line_number = line_number
-        if self.TYPE['EOF'].match(s_input):
-            self.type = 'EOF'
-        elif self.TYPE['STRING'].match(s_input):
-            self.type = 'STRING'
-            self.value = self.TYPE['STRING'].match(s_input).group(1)
-        elif self.TYPE['COMMENT'].match(s_input):
-            self.type = 'COMMENT'
-            self.value = self.TYPE['COMMENT'].match(s_input).group(1)
-        elif self.TYPE['MULTILINE'].match(s_input):
-            self.type = 'MULTILINE'
-        elif self.TYPE['WHITESPACE'].match(s_input):
-            self.type = 'WHITESPACE'
-            self.value = self.TYPE['WHITESPACE'].match(s_input).group(1)
-        elif self.TYPE['SCHEMES'].match(s_input):
-            self.type = 'SCHEMES'
+        if self.TYPE[EOF].match(s_input):
+            self.type = EOF
+        elif self.TYPE[STRING].match(s_input):
+            self.type = STRING
+            self.value = self.TYPE[STRING].match(s_input).group(1)
+        elif self.TYPE[COMMENT].match(s_input):
+            self.type = COMMENT
+            self.value = self.TYPE[COMMENT].match(s_input).group(1)
+        elif self.TYPE[MULTILINE].match(s_input):
+            self.type = MULTILINE
+        elif self.TYPE[WHITESPACE].match(s_input):
+            self.type = WHITESPACE
+            self.value = self.TYPE[WHITESPACE].match(s_input).group(1)
+        elif self.TYPE[SCHEMES].match(s_input):
+            self.type = SCHEMES
             self.value = 'Schemes'
-        elif self.TYPE['FACTS'].match(s_input):
-            self.type = 'FACTS'
+        elif self.TYPE[FACTS].match(s_input):
+            self.type = FACTS
             self.value = 'Facts'
-        elif self.TYPE['QUERIES'].match(s_input):
-            self.type = 'QUERIES'
+        elif self.TYPE[QUERIES].match(s_input):
+            self.type = QUERIES
             self.value = 'Queries'
-        elif self.TYPE['RULES'].match(s_input):
-            self.type = 'RULES'
+        elif self.TYPE[RULES].match(s_input):
+            self.type = RULES
             self.value = 'Rules'
-        elif self.TYPE['ID'].match(s_input):
-            self.type = 'ID'
-            self.value = self.TYPE['ID'].match(s_input).group(1)
-        elif self.TYPE['COLON_DASH'].match(s_input):
-            self.type = 'COLON_DASH'
+        elif self.TYPE[ID].match(s_input):
+            self.type = ID
+            self.value = self.TYPE[ID].match(s_input).group(1)
+        elif self.TYPE[COLON_DASH].match(s_input):
+            self.type = COLON_DASH
             self.value = ':-'
-        elif self.TYPE['COLON'].match(s_input):
-            self.type = 'COLON'
+        elif self.TYPE[COLON].match(s_input):
+            self.type = COLON
             self.value = ':'
-        elif self.TYPE['COMMA'].match(s_input):
-            self.type = 'COMMA'
+        elif self.TYPE[COMMA].match(s_input):
+            self.type = COMMA
             self.value = ','
-        elif self.TYPE['PERIOD'].match(s_input):
-            self.type = 'PERIOD'
+        elif self.TYPE[PERIOD].match(s_input):
+            self.type = PERIOD
             self.value = '.'
-        elif self.TYPE['Q_MARK'].match(s_input):
-            self.type = 'Q_MARK'
+        elif self.TYPE[Q_MARK].match(s_input):
+            self.type = Q_MARK
             self.value = '?'
-        elif self.TYPE['LEFT_PAREN'].match(s_input):
-            self.type = 'LEFT_PAREN'
+        elif self.TYPE[LEFT_PAREN].match(s_input):
+            self.type = LEFT_PAREN
             self.value = '('
-        elif self.TYPE['RIGHT_PAREN'].match(s_input):
-            self.type = 'RIGHT_PAREN'
+        elif self.TYPE[RIGHT_PAREN].match(s_input):
+            self.type = RIGHT_PAREN
             self.value = ')'
-        elif self.TYPE['ADD'].match(s_input):
-            self.type = 'ADD'
+        elif self.TYPE[ADD].match(s_input):
+            self.type = ADD
             self.value = '+'
         elif self.TYPE['MULTIPLY'].match(s_input):
             self.type = 'MULTIPLY'

@@ -25,23 +25,23 @@ def scan(datalog_file):
                     multiline = token.value + '\n'
                     line = ''
                 if token.type == 'INVALID':
-                    tokens.append('(%s,"%s",%s)' % ('UNDEFINED', token.value[0], token.line_number))
+                    tokens.append(('UNDEFINED', token.value[0], token.line_number))
                     line = token.value[1:]
                 # If this is a regular, single-line token then add it to the list
                 elif not multiline:
                     # Ignore whitespace
                     if not token.type == 'WHITESPACE':
-                        tokens.append('(%s,"%s",%s)' % (token.type, token.value, token.line_number))
+                        tokens.append((token.type, token.value, token.line_number))
                 # if we are currently building a multiline token, and it was identified as something new, then add it
                 elif not token.type == 'MULTILINE':
-                    tokens.append('(%s,"%s",%s)' % (token.type, token.value, token.line_number))
+                    tokens.append((token.type, token.value, token.line_number))
                     multiline = ''
             line_number += 1
         if multiline:
             token = Token(multiline[:-1], multiline_start)
-            tokens.append('(%s,"%s",%s)' % ('UNDEFINED', token.value, token.line_number))
+            tokens.append(('UNDEFINED', token.value, token.line_number))
 
-        tokens.append('(EOF,"",%s)' % str(line_number - 1))
+        tokens.append(('EOF', "", str(line_number - 1)))
     return tokens
 
 
@@ -56,11 +56,11 @@ if __name__ == "__main__":
 
     debug = arg.debug
     d_file = arg.file
-    if debug:print("Analyzing '%s'" % d_file)
+    if debug: print("Analyzing '%s'" % d_file)
 
     all_tokens = scan(d_file)
     for single_token in all_tokens:
-        print(single_token)
+        print('(%s,"%s",%s)' % single_token)
 
     print("Total Tokens = %s" % len(all_tokens))
 
