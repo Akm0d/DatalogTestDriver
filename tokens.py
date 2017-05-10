@@ -1,6 +1,12 @@
 #!/usr/bin/env python3
 import re
 
+# For accessing a token tuple
+TYPE        = 0
+VALUE       = 1
+LINE        = 2
+
+# Token strings
 COMMA       = 'COMMA'
 PERIOD      = 'PERIOD'
 Q_MARK      = 'Q_MARK'
@@ -22,6 +28,14 @@ MULTILINE   = 'MULTILINE'
 INVALID     = 'INVLAID'
 UNDEFINED   = 'UNDEFINED'
 EOF         = 'EOF'
+
+
+class TokenError(Exception):
+    def __init__(self, token):
+        assert isinstance(token, tuple)
+        print("Failure!")
+        print('  (%s,"%s",%s)' % token)
+
 
 class Token:
 
