@@ -129,6 +129,9 @@ class DatalogProgram:
             elif t[0] == FACTS and iteration == SCHEMES:
                 # Everything from the beginning of file to FACTS belongs to schemes
                 self.schemes = Schemes(t_tokens)
+                # There must be at least one scheme
+                if not self.schemes.schemes:
+                    raise TokenError(t)
                 t_tokens.clear()
                 iteration = FACTS
             elif t[0] == RULES and iteration == FACTS:
