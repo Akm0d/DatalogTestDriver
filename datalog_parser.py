@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
-from argparse import ArgumentParser
-import lexical_analyzer
 from tokens import *
+import lexical_analyzer
 
 
 class Scheme:
@@ -76,7 +75,35 @@ class Schemes:
         result = "Schemes(%s):\n" % str(len(self.schemes))
         for scheme in self.schemes:
             result += "  " + str(scheme) + "\n"
+        # Remove trailing new line
+        result = result[:-1]
         return result
+
+
+class Domain:
+    items = set()
+
+    def __init__(self, lex_tokens):
+        self.items = set([i[VALUE] for i in lex_tokens if i[TYPE] == STRING])
+        pass
+
+    def __str__(self):
+        """
+        :return: A string representation of this class
+        """
+        result = "Domain(%s):\n" % str(len(self.items))
+        for fact in sorted(self.items):
+            result += "  " + str(fact) + "\n"
+        # Remove trailing new line
+        result = result[:-1]
+        return result
+
+    def __iter__(self):
+        """
+        When iterating over the domain just give back the ordered set
+        :return: 
+        """
+        return sorted(self.items)
 
 
 class Fact:
@@ -132,6 +159,8 @@ class Facts:
     facts = list()
 
     def __init__(self, lex_tokens):
+        # Generate the domain from these tokens
+        self.domain = Domain(lex_tokens)
         # Validate the syntax of the Scheme
         t = lex_tokens.pop(0)
         if not t[TYPE] == COLON:
@@ -155,29 +184,97 @@ class Facts:
         result = "Facts(%s):\n" % str(len(self.facts))
         for fact in self.facts:
             result += "  " + str(fact) + "\n"
+        # Remove trailing new line
+        result = result[:-1]
         return result
 
 
-class Rules:
+class Rule:
     def __init__(self, lex_tokens):
+        print([i[TYPE] for i in lex_tokens])
         pass
 
     def __str__(self):
         """
         :return: A string representation of this class
         """
-        return "foo"
+        return ""
+
+
+class Rules:
+    rules = list()
+
+    def __init__(self, lex_tokens):
+        # Validate the syntax of the Scheme
+        t = lex_tokens.pop(0)
+        if not t[TYPE] == COLON:
+            raise TokenError(t)
+
+        new_rule = list()
+        while lex_tokens:
+            t = lex_tokens.pop(0)
+            new_rule.append(t)
+            # Once we reach a period it is a new rule
+            if t[TYPE] == PERIOD:
+                self.rules.append(Rule(new_rule))
+                new_rule.clear()
+        if new_rule:
+            raise TokenError(new_rule.pop())
+
+    def __str__(self):
+        """
+        :return: A string representation of this class
+        """
+        result = "Rules(%s):\n" % str(len(self.rules))
+        for rule in self.rules:
+            result += "  " + str(rule) + "\n"
+        # Remove trailing new line
+        result = result[:-1]
+        return result
+
+
+class Query:
+    def __init__(self, lex_tokens):
+        # print([i[TYPE] for i in lex_tokens])
+        pass
+
+    def __str__(self):
+        """
+        :return: A string representation of this class
+        """
+        return ""
 
 
 class Queries:
+    queries = list()
+
     def __init__(self, lex_tokens):
-        pass
+        # Validate the syntax of the Scheme
+        t = lex_tokens.pop(0)
+        if not t[TYPE] == COLON:
+            raise TokenError(t)
+
+        new_query = list()
+        while lex_tokens:
+            t = lex_tokens.pop(0)
+            new_query.append(t)
+            # Once we reach a question mark it is a new query
+            if t[TYPE] == Q_MARK:
+                self.queries.append(Query(new_query))
+                new_query.clear()
+        if new_query:
+            raise TokenError(new_query.pop())
 
     def __str__(self):
         """
         :return: A string representation of this class
         """
-        return "foo"
+        result = "Queries(%s):\n" % str(len(self.queries))
+        for query in self.queries:
+            result += "  " + str(query) + "\n"
+        # Remove trailing new line
+        result = result[:-1]
+        return result
 
 
 class DatalogProgram:
@@ -213,6 +310,9 @@ class DatalogProgram:
                 self.rules = Rules(t_tokens)
                 t_tokens.clear()
                 iteration = QUERIES
+            elif t[0] == EOF and iteration == QUERIES:
+                # Everything else belongs to queries
+                self.queries = Queries(t_tokens)
             elif not iteration:
                 # If Schemes haven't been seen yet
                 raise TokenError(t)
@@ -222,9 +322,6 @@ class DatalogProgram:
         # If every field didn't get populated
         if not iteration == QUERIES:
             raise TokenError(t_tokens.pop())
-
-        # Everything else belongs to queries
-        self.queries = Queries(t_tokens)
 
     def __str__(self):
         """
@@ -243,6 +340,7 @@ if __name__ == "__main__":
     """
     Run the datalog parser by itself and produce the proper output
     """
+    from argparse import ArgumentParser
     args = ArgumentParser(description="Run the datalog parser, this will produce output for lab 2")
     args.add_argument('-d', '--debug', action='store_true', default=False)
     args.add_argument('file', help='datalog file to parse')

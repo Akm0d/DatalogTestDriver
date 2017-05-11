@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-from argparse import ArgumentParser
 from tokens import Token
 
 
@@ -49,6 +48,7 @@ if __name__ == "__main__":
     """
     Run the lexical analyzer by itself and produce the proper output
     """
+    from argparse import ArgumentParser
     args = ArgumentParser(description="Run the lexical analyzer, this will produce output for lab 1")
     args.add_argument('-d', '--debug', action='store_true', default=False)
     args.add_argument('file', help='datalog file to lexically analyze')
