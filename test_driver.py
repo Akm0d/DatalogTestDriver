@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
-
 from argparse import ArgumentParser
+from tokens import TokenError
 import lexical_analyzer
+import datalog_parser
 import subprocess
 
 args = ArgumentParser(description="Test your binary against a python datalog parser")
 
 args.add_argument('-l', '--lab-number', help="The lab number you are testing. Default is 1", default=1)
-args.add_argument('binary', help="Your binary file")
+args.add_argument('-b', '--binary', help="Your binary file", default=None)
 args.add_argument("test_files", nargs="+", help="The files that will be used in this test")
 arg = args.parse_args()
 
@@ -20,7 +21,9 @@ if not (1 <= lab <= 6):
 
 for test in test_files:
     # Grab the user output from their binary
-    actual = str(subprocess.check_output("%s %s" % (binary, test), shell=True), 'utf-8')
+    actual = None
+    if binary:
+        actual = str(subprocess.check_output("%s %s" % (binary, test), shell=True), 'utf-8')
 
     expected = ''
     # Compute the correct output from the python script
@@ -30,7 +33,13 @@ for test in test_files:
             expected = expected + '(%s,"%s",%s)' % line + "\n"
         expected = expected + ("Total Tokens = %s\n" % len(lex))
     elif lab == 2:
-        print("Lab %s has not yet been implemented" % str(lab))
+        lex = lexical_analyzer.scan(test)
+        # Ignore traces on token errors
+        try:
+            datalog = datalog_parser.DatalogProgram(lex)
+            expected = "Success!\n" + str(datalog)
+        except TokenError:
+            pass
     elif lab == 3:
         print("Lab %s has not yet been implemented" % str(lab))
     elif lab == 4:
@@ -40,8 +49,9 @@ for test in test_files:
     elif lab == 6:
         print("Lab %s has not yet been implemented" % str(lab))
 
-    with open("temp_file_1.tmp", 'w') as temp:
-        temp.write(actual)
+    if binary:
+        with open("temp_file_1.tmp", 'w') as temp:
+            temp.write(actual)
 
     with open("temp_file_2.tmp", 'w') as temp:
         temp.write(expected)
@@ -51,6 +61,7 @@ for test in test_files:
     else:
         # Print the diff
         # TODO make this pretty
-        print(actual)
+        if binary:
+            print(actual)
         print(expected)
         pass
