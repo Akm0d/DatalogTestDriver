@@ -109,7 +109,7 @@ class Domain:
 
 class Fact:
     id = None
-    stringList = None
+    stringList = list()
 
     def __init__(self, lex_tokens):
         self.stringList = list()
@@ -190,9 +190,59 @@ class Facts:
         return result
 
 
-class Rule:
+class Predicate:
+    id = None
+    parameterList = list()
+
     def __init__(self, lex_tokens):
         print([i[TYPE] for i in lex_tokens])
+        pass
+
+    def __str__(self):
+        """
+        :return: A string representation of this class
+        """
+        result = "%s(" % self.id[VALUE]
+        for t in self.parameterList:
+            result += t[VALUE] + ","
+
+        # Remove extra comma
+        result = result[:-1]
+
+        return result + ")"
+
+
+class Rule:
+    head = None
+    predicates = list()
+
+    def __init__(self, lex_tokens):
+        # print([i[TYPE] for i in lex_tokens])
+        # Validate the syntax of the Rule
+        new_predicate = list()
+        while lex_tokens:
+            t = lex_tokens.pop(0)
+            new_predicate.append(t)
+            # Once we reach a right-parenthesis it is a new predicate
+            if t[TYPE] == RIGHT_PAREN:
+                if not self.head:
+                    self.head = Predicate(new_predicate)
+                    t = lex_tokens.pop(0)
+                    if not t[TYPE] == COLON_DASH:
+                        raise TokenError(t)
+                else:
+                    self.predicates.append(Predicate(new_predicate))
+                    t = lex_tokens.pop(0)
+                    # If the next token is a period and there are still more tokens, then we have a problem
+                    if t[TYPE] == PERIOD and lex_tokens:
+                        raise TokenError(t)
+                    # The next token should be a comma, or a period if we are at the end of the rule
+                    elif not t[TYPE] == COMMA and not (t[TYPE] == PERIOD and not lex_tokens):
+                        raise TokenError(t)
+                new_predicate.clear()
+
+        if new_predicate:
+            raise TokenError(new_predicate.pop())
         pass
 
     def __str__(self):
@@ -342,6 +392,7 @@ if __name__ == "__main__":
     Run the datalog parser by itself and produce the proper output
     """
     from argparse import ArgumentParser
+
     args = ArgumentParser(description="Run the datalog parser, this will produce output for lab 2")
     args.add_argument('-d', '--debug', action='store_true', default=False)
     args.add_argument('file', help='datalog file to parse')
