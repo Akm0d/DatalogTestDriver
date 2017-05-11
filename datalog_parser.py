@@ -95,7 +95,8 @@ class Domain:
         for fact in sorted(self.items):
             result += "  " + str(fact) + "\n"
         # Remove trailing new line
-        result = result[:-1]
+        if self.items:
+            result = result[:-1]
         return result
 
     def __iter__(self):
