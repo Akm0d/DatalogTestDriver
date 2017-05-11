@@ -79,17 +79,83 @@ class Schemes:
         return result
 
 
-class Facts:
-    domain = None
+class Fact:
+    id = None
+    stringList = None
 
     def __init__(self, lex_tokens):
+        self.stringList = list()
+        t = lex_tokens.pop(0)
+        if not t[TYPE] == ID:
+            raise TokenError(t)
+        self.id = t
+        t = lex_tokens.pop(0)
+        if not t[TYPE] == LEFT_PAREN:
+            raise TokenError(t)
+        # There must be at least one ID inside the parenthesis
+        t = lex_tokens.pop(0)
+        if not t[TYPE] == STRING:
+            raise TokenError(t)
+        self.stringList.append(t)
+        while len(lex_tokens) > 2:
+            t = lex_tokens.pop(0)
+            if not t[TYPE] == COMMA:
+                raise TokenError(t)
+            t = lex_tokens.pop(0)
+            if not t[TYPE] == STRING:
+                raise TokenError(t)
+            self.stringList.append(t)
+        t = lex_tokens.pop(0)
+        if not t[TYPE] == RIGHT_PAREN:
+            raise TokenError(t)
+        t = lex_tokens.pop(0)
+        if not t[TYPE] == PERIOD:
+            raise TokenError(t)
         pass
 
     def __str__(self):
         """
         :return: A string representation of this class
         """
-        return "foo"
+        result = "%s(" % self.id[VALUE]
+        for t in self.stringList:
+            result += t[VALUE] + ","
+
+        # Remove extra comma
+        result = result[:-1]
+
+        return result + ")."
+
+
+class Facts:
+    domain = None
+    facts = list()
+
+    def __init__(self, lex_tokens):
+        # Validate the syntax of the Scheme
+        t = lex_tokens.pop(0)
+        if not t[TYPE] == COLON:
+            raise TokenError(t)
+
+        new_fact = list()
+        while lex_tokens:
+            t = lex_tokens.pop(0)
+            new_fact.append(t)
+            # Once we reach a period it is a new fact
+            if t[TYPE] == PERIOD:
+                self.facts.append(Fact(new_fact))
+                new_fact.clear()
+        if new_fact:
+            raise TokenError(new_fact.pop())
+
+    def __str__(self):
+        """
+        :return: A string representation of this class
+        """
+        result = "Facts(%s):\n" % str(len(self.facts))
+        for fact in self.facts:
+            result += "  " + str(fact) + "\n"
+        return result
 
 
 class Rules:
@@ -192,11 +258,11 @@ if __name__ == "__main__":
     if debug:
         # Print out traces on token errors
         datalog = DatalogProgram(tokens)
-        print(str(datalog))
+        print("Success!\n" + str(datalog))
     else:
         # Ignore traces on token errors
         try:
             datalog = DatalogProgram(tokens)
-            print(str(datalog))
+            print("Success!\n" + str(datalog))
         except TokenError:
             pass
