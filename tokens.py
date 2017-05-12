@@ -55,7 +55,7 @@ class Token:
         RULES: re.compile('^(Rules)(?:[^a-zA-z\d]|$)'),
         QUERIES: re.compile('^(Queries)(?:[^a-zA-z\d]|$)'),
         ID: re.compile('^([a-zA-Z][a-zA-Z0-9]*)'),
-        STRING: re.compile("^(\'(?:(?:[^\']|\'\')*[^\'])?\')(?:[^\']|$)", re.MULTILINE),
+        STRING: re.compile("^(\'(?:\'\'|[^\'])+\')", re.MULTILINE),
         COMMENT: re.compile('((?:^#$)|(?:^#[^|].*)|(?:^#\|(?:.|\n)*\|#))', re.MULTILINE),
         WHITESPACE: re.compile('^(\s+)', re.MULTILINE),
         # This is a temporary token to make parsing easier
