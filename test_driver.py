@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 from argparse import ArgumentParser
+from termcolor import colored, cprint
 from tokens import TokenError
 import lexical_analyzer
 import datalog_parser
@@ -20,6 +21,10 @@ if not (1 <= lab <= 6):
     raise ValueError("Lab number must be an integer from 1 to 6")
 
 for test in test_files:
+    print('-' * 80)
+    print("Testing %s" % test)
+    print('-' * 80)
+
     # Grab the user output from their binary
     actual = None
     if binary:
@@ -57,10 +62,9 @@ for test in test_files:
         temp.write(expected)
 
     if actual == expected:
-        print("Success while comparing output from %s" % test)
+        cprint("Passed", "green")
     else:
         # Print the diff
-        # TODO make this pretty
         if binary:
             print(actual)
         print(expected)
