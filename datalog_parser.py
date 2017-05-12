@@ -112,7 +112,6 @@ class Fact:
     stringList = list()
 
     def __init__(self, lex_tokens):
-        self.stringList = list()
         t = lex_tokens.pop(0)
         if not t[TYPE] == ID:
             raise TokenError(t)
@@ -190,13 +189,64 @@ class Facts:
         return result
 
 
+class Parameter:
+    def __init__(self, lex_tokens):
+        print([i[TYPE] for i in lex_tokens])
+        # Evalueate expressions
+
+
+def get_parameter(lex_tokens):
+    t = lex_tokens.pop(0)
+    expression = list([])
+    if t[TYPE] in [STRING, ID]:
+        return list([t]), lex_tokens
+    # It must be an expression
+    elif t[TYPE] == LEFT_PAREN:
+        palindrome = 1
+        # Look at tokens until there are no more or we balance parenthesis
+        while lex_tokens and palindrome:
+            t = lex_tokens.pop(0)
+            if t[TYPE] == RIGHT_PAREN:
+                palindrome -= 1
+            expression.append(t)
+        if palindrome == 0:
+            return expression, lex_tokens
+        else:
+            raise TokenError(t)
+    else:
+        raise TokenError(t)
+
+
 class Predicate:
     id = None
     parameterList = list()
 
     def __init__(self, lex_tokens):
-        print([i[TYPE] for i in lex_tokens])
-        pass
+        t = lex_tokens.pop(0)
+        if not t[TYPE] == ID:
+            raise TokenError(t)
+        self.id = t
+
+        t = lex_tokens.pop(0)
+        if not t[TYPE] == LEFT_PAREN:
+            raise TokenError(t)
+        # Check if there is a parameter
+        (parameter, lex_tokens) = get_parameter(lex_tokens)
+        self.parameterList.append(Parameter(parameter))
+
+        while len(lex_tokens) > 2:
+            t = lex_tokens.pop(0)
+            if not t[TYPE] == COMMA:
+                raise TokenError(t)
+            (parameter, lex_tokens) = get_parameter(lex_tokens)
+            self.parameterList.append(Parameter(parameter))
+
+        t = lex_tokens.pop(0)
+        if not t[TYPE] == RIGHT_PAREN:
+            raise TokenError(t)
+        t = lex_tokens.pop(0)
+        if not t[TYPE] == PERIOD:
+            raise TokenError(t)
 
     def __str__(self):
         """
@@ -220,28 +270,37 @@ class Rule:
         # print([i[TYPE] for i in lex_tokens])
         # Validate the syntax of the Rule
         new_predicate = list()
+        palindrome = 0
         while lex_tokens:
             t = lex_tokens.pop(0)
             new_predicate.append(t)
-            # Once we reach a right-parenthesis it is a new predicate
-            if t[TYPE] == RIGHT_PAREN:
-                if not self.head:
-                    self.head = Predicate(new_predicate)
-                    t = lex_tokens.pop(0)
-                    if not t[TYPE] == COLON_DASH:
-                        raise TokenError(t)
-                else:
-                    self.predicates.append(Predicate(new_predicate))
-                    t = lex_tokens.pop(0)
-                    # If the next token is a period and there are still more tokens, then we have a problem
-                    if t[TYPE] == PERIOD and lex_tokens:
-                        raise TokenError(t)
-                    # The next token should be a comma, or a period if we are at the end of the rule
-                    elif not t[TYPE] == COMMA and not (t[TYPE] == PERIOD and not lex_tokens):
-                        raise TokenError(t)
-                new_predicate.clear()
+            if t[TYPE] == LEFT_PAREN:
+                palindrome += 1
 
-        if new_predicate:
+            # Once we balance the right-parenthesis it is a new predicate
+            if t[TYPE] == RIGHT_PAREN:
+                palindrome -= 1
+                if palindrome < 0:
+                    raise TokenError(t)
+                elif palindrome == 0:
+                    if not self.head:
+                        # The format for a head predicate is exactly the same as that of a scheme
+                        self.head = Scheme(new_predicate)
+                        t = lex_tokens.pop(0)
+                        if not t[TYPE] == COLON_DASH:
+                            raise TokenError(t)
+                    else:
+                        self.predicates.append(Predicate(new_predicate))
+                        t = lex_tokens.pop(0)
+                        # If the next token is a period and there are still more tokens, then we have a problem
+                        if t[TYPE] == PERIOD and lex_tokens:
+                            raise TokenError(t)
+                        # The next token should be a comma, or a period if we are at the end of the rule
+                        elif not t[TYPE] == COMMA and not (t[TYPE] == PERIOD and not lex_tokens):
+                            raise TokenError(t)
+                    new_predicate.clear()
+
+        if new_predicate or palindrome:
             raise TokenError(new_predicate.pop())
         pass
 
