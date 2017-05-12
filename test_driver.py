@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 from argparse import ArgumentParser
-from difflib import SequenceMatcher, unified_diff
+from difflib import unified_diff
 
-from termcolor import colored, cprint
+import re
+from termcolor import cprint
 from tokens import TokenError
 import lexical_analyzer
 import datalog_parser
@@ -63,10 +64,7 @@ for test in test_files:
     else:
         # Print the test and the diff
         if binary:
-            with open(test) as f:
-                for i in f:
-                    print(i.rstrip('\n'))
-            print('-' * 80)
+            offending_tokens = list()
             diff = unified_diff(expected.splitlines(1), actual.splitlines(1))
             for line in diff:
                 line = line.rstrip('\n')
@@ -78,8 +76,31 @@ for test in test_files:
                 elif line[0] == '+':
                     # This is what the user actually produced
                     cprint(line[1:], 'red')
+                    # If this is lab 1 then I will build a list of offending tokens
+                    if lab == 1:
+                        tokex = re.compile("^\(\w+,(.*),(\d+)\)", re.MULTILINE)
+                        match = tokex.match(line[1:])
+                        if match:
+                            offending_tokens.append((str(match.group(1)), int(match.group(2))))
                 else:
                     cprint(line.lstrip(' '), 'white')
+            print('-' * 80)
+            # Print out the test file
+            with open(test) as f:
+                i = 1
+                for line in f:
+                    line = line.rstrip('\n')
+                    if lab == 1:
+                        # If this line of the file has an offending token, then print the misinterpreted value in red
+                        if i in [x[1] for x in offending_tokens]:
+                            strings = [x[0] for x in offending_tokens if x[1] == i]
+                            # print(strings)
+                            cprint(line, 'yellow')
+                        else:
+                            print(line)
+                        i += 1
+                    else:
+                        print(line)
         else:
             print(expected)
         pass
