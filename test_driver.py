@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 from argparse import ArgumentParser
+from difflib import SequenceMatcher, unified_diff
+
 from termcolor import colored, cprint
 from tokens import TokenError
 import lexical_analyzer
@@ -28,6 +30,8 @@ for test in test_files:
     # Grab the user output from their binary
     actual = None
     if binary:
+        if not binary[0] == '/':
+            binary = "./" + binary
         actual = str(subprocess.check_output("%s %s" % (binary, test), shell=True), 'utf-8')
 
     expected = ''
@@ -54,18 +58,28 @@ for test in test_files:
     elif lab == 6:
         print("Lab %s has not yet been implemented" % str(lab))
 
-    if binary:
-        with open("temp_file_1.tmp", 'w') as temp:
-            temp.write(actual)
-
-    with open("temp_file_2.tmp", 'w') as temp:
-        temp.write(expected)
-
     if actual == expected:
         cprint("Passed", "green")
     else:
-        # Print the diff
+        # Print the test and the diff
         if binary:
-            print(actual)
-        print(expected)
+            with open(test) as f:
+                for i in f:
+                    print(i.rstrip('\n'))
+            print('-' * 80)
+            diff = unified_diff(expected.splitlines(1), actual.splitlines(1))
+            for line in diff:
+                line = line.rstrip('\n')
+                if (line[-2:] == '@@' and line[:2] == '@@') or line in ['--- ', '+++ ']:
+                    pass
+                elif line[0] == '-':
+                    # This is the expected/correct value
+                    cprint(line[1:], 'green')
+                elif line[0] == '+':
+                    # This is what the user actually produced
+                    cprint(line[1:], 'red')
+                else:
+                    cprint(line.lstrip(' '), 'white')
+        else:
+            print(expected)
         pass
