@@ -40,6 +40,8 @@ def scan(datalog_file):
             token = Token(multiline[:-1], multiline_start)
             tokens.append(('UNDEFINED', token.value, token.line_number))
 
+        # If it was an empty file then we want the line number to be 1
+        if line_number == 1: line_number += 1
         tokens.append(('EOF', "", str(line_number - 1)))
     return tokens
 
