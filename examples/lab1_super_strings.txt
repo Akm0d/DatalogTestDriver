@@ -4,7 +4,15 @@ Schemes:
     triplequote ''''''''
  
 Facts:
+    #||#
+    #|||#
     snap('Don''t you believe it?')
+
+    #|
+    This should be it | |#
+
+    |# separate Single line comment with an unidentified |
+
 
     # Comment
     # 'Not a string'
@@ -35,4 +43,4 @@ Rules:
  
 Queries:
     
-    incomplete String '
+    ' incomplete string

@@ -19,10 +19,11 @@ def scan(datalog_file):
             token = Token(file_string)
             file_string = file_string[len(token.value):]
             if token.type == 'INVALID':
-                tokens.append(('UNDEFINED', token.value[0], token.line_number))
+                tokens.append(('UNDEFINED', token.value[0], line_number))
                 file_string = token.value[1:]
             else:
-                tokens.append((token.type, token.value, 0))
+                line_number += token.value.count('\n')
+                tokens.append((token.type, token.value, line_number))
         # If it was an empty file then we want the line number to be 1
         if line_number == 1: line_number += 1
         tokens.append(('EOF', "", str(line_number - 1)))

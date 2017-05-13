@@ -56,7 +56,7 @@ class Token:
         QUERIES: re.compile('^(Queries)(?:[^a-zA-z\d]|$)'),
         ID: re.compile('^([a-zA-Z][a-zA-Z0-9]*)'),
         STRING: re.compile("^(\'(?:\'\'|[^\'])+\')", re.MULTILINE),
-        COMMENT: re.compile('((?:^#[^|][^\n]*)|(?:^#\|(?:))[^(?:#|)]*\|#)', re.MULTILINE),
+        COMMENT: re.compile('((?:^#[^\|][^\n]*)|(?:^#\|(?:.|\n)*?\|#))', re.MULTILINE),
         WHITESPACE: re.compile('^(\s+)', re.MULTILINE),
         # This is a temporary token to make parsing easier
         EOF: re.compile('\Z')
@@ -65,14 +65,13 @@ class Token:
     value = None
     line_number = None
 
-    def __init__(self, s_input, line_number=None):
+    def __init__(self, s_input):
         """
         Choose the token that best matches the input using a certain priority
         :param s_input: 
         :param line_number: 
         """
         self.value = s_input
-        self.line_number = line_number
         if self.TYPE[EOF].match(s_input):
             self.type = EOF
         elif self.TYPE[STRING].match(s_input):
