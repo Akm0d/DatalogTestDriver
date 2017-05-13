@@ -23,10 +23,11 @@ def scan(datalog_file):
                 file_string = token.value[1:]
             else:
                 line_number += token.value.count('\n')
-                tokens.append((token.type, token.value, line_number))
+                if token.type != 'WHITESPACE':
+                    tokens.append((token.type, token.value, line_number))
         # If it was an empty file then we want the line number to be 1
         if line_number == 1: line_number += 1
-        tokens.append(('EOF', "", str(line_number - 1)))
+        tokens.append(('EOF', "", str(line_number)))
     return tokens
 
 
