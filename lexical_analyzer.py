@@ -11,35 +11,18 @@ def scan(datalog_file):
 
     with open(datalog_file) as file:
         line_number = 1
-        multiline = ''
-        multiline_start = line_number
+        file_string = ""
         for line in file:
-            line = multiline + line.replace('\n', '')
-            while line:
-                token = Token(line, multiline_start if multiline else line_number)
-                line = line[len(token.value):]
-                if token.type == 'MULTILINE':
-                    if not multiline:
-                        multiline_start = line_number
-                    multiline = token.value + '\n'
-                    line = ''
-                if token.type == 'INVALID':
-                    tokens.append(('UNDEFINED', token.value[0], token.line_number))
-                    line = token.value[1:]
-                # If this is a regular, single-line token then add it to the list
-                elif not multiline:
-                    # Ignore whitespace
-                    if not token.type == 'WHITESPACE':
-                        tokens.append((token.type, token.value, token.line_number))
-                # if we are currently building a multiline token, and it was identified as something new, then add it
-                elif not token.type == 'MULTILINE':
-                    tokens.append((token.type, token.value, token.line_number))
-                    multiline = ''
-            line_number += 1
-        if multiline:
-            token = Token(multiline[:-1], multiline_start)
-            tokens.append(('UNDEFINED', token.value, token.line_number))
+            file_string = file_string + line
 
+        while file_string:
+            token = Token(file_string)
+            file_string = file_string[len(token.value):]
+            if token.type == 'INVALID':
+                tokens.append(('UNDEFINED', token.value[0], token.line_number))
+                file_string = token.value[1:]
+            else:
+                tokens.append((token.type, token.value, 0))
         # If it was an empty file then we want the line number to be 1
         if line_number == 1: line_number += 1
         tokens.append(('EOF', "", str(line_number - 1)))

@@ -56,10 +56,9 @@ class Token:
         QUERIES: re.compile('^(Queries)(?:[^a-zA-z\d]|$)'),
         ID: re.compile('^([a-zA-Z][a-zA-Z0-9]*)'),
         STRING: re.compile("^(\'(?:\'\'|[^\'])+\')", re.MULTILINE),
-        COMMENT: re.compile('((?:^#$)|(?:^#[^|].*)|(?:^#\|(?:.|\n)*\|#))', re.MULTILINE),
+        COMMENT: re.compile('((?:^#[^|][^\n]*)|(?:^#\|(?:))[^(?:#|)]*\|#)', re.MULTILINE),
         WHITESPACE: re.compile('^(\s+)', re.MULTILINE),
         # This is a temporary token to make parsing easier
-        MULTILINE: re.compile('((?:^\'(?:[^\']|\'\')*$)|(?:^#\|[^|#]*$))', re.MULTILINE),
         EOF: re.compile('\Z')
     }
     type = 'UNDEFINED'
@@ -82,8 +81,6 @@ class Token:
         elif self.TYPE[COMMENT].match(s_input):
             self.type = COMMENT
             self.value = self.TYPE[COMMENT].match(s_input).group(1)
-        elif self.TYPE[MULTILINE].match(s_input):
-            self.type = MULTILINE
         elif self.TYPE[WHITESPACE].match(s_input):
             self.type = WHITESPACE
             self.value = self.TYPE[WHITESPACE].match(s_input).group(1)
