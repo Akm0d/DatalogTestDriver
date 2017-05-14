@@ -56,8 +56,9 @@ class Token:
         QUERIES: re.compile('^(Queries)(?:[^a-zA-z\d]|$)'),
         ID: re.compile('^([a-zA-Z][a-zA-Z0-9]*)'),
         STRING: re.compile("^(\'(?:\'\'|[^\'])+\'|\'\')", re.MULTILINE),
-        COMMENT: re.compile('((?:^#[^\|][^\n]*)|(?:^#\|(?:.|\n)*?\|#))', re.MULTILINE),
+        COMMENT: re.compile('((?:^#[^|][^\n]*)|(?:^#\|(?:.|\n)*?\|#))', re.MULTILINE),
         WHITESPACE: re.compile('^(\s+)', re.MULTILINE),
+        UNDEFINED: re.compile('((?:^#\|(?:.|\n)*?\Z)|(?:^\'(?:\'\'|[^\'])+\Z))', re.MULTILINE),
         # This is a temporary token to make parsing easier
         EOF: re.compile('\Z')
     }
@@ -74,12 +75,15 @@ class Token:
         self.value = s_input
         if self.TYPE[EOF].match(s_input):
             self.type = EOF
-        elif self.TYPE[STRING].match(s_input):
-            self.type = STRING
-            self.value = self.TYPE[STRING].match(s_input).group(1)
         elif self.TYPE[COMMENT].match(s_input):
             self.type = COMMENT
             self.value = self.TYPE[COMMENT].match(s_input).group(1)
+        elif self.TYPE[UNDEFINED].match(s_input):
+            self.type = UNDEFINED
+            self.value = self.TYPE[UNDEFINED].match(s_input).group(1)
+        elif self.TYPE[STRING].match(s_input):
+            self.type = STRING
+            self.value = self.TYPE[STRING].match(s_input).group(1)
         elif self.TYPE[WHITESPACE].match(s_input):
             self.type = WHITESPACE
             self.value = self.TYPE[WHITESPACE].match(s_input).group(1)
