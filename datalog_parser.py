@@ -75,6 +75,8 @@ class Schemes:
         result = "Schemes(%s):\n" % str(len(self.schemes))
         for scheme in self.schemes:
             result += "  " + str(scheme) + "\n"
+        if not self.schemes:
+            result += "\n"
         # Remove trailing new line
         result = result[:-1]
         return result
@@ -307,8 +309,12 @@ class Rule:
         """
         result = str(self.head) + ":-"
         for predicate in self.predicates:
-            result += str(predicate)
-        return result
+            result += str(predicate) + ","
+
+        # Remove extra comma
+        result = result[:-1]
+
+        return result + "."
 
 
 class Rules:
@@ -436,7 +442,7 @@ class DatalogProgram:
         """
         :return: A string representation of this class
         """
-        return '%s\n%s\n%s\n%s\n%s' % (
+        return '%s\n%s\n\n%s\n\n%s\n\n%s' % (
             str(self.schemes),
             str(self.facts),
             str(self.rules),
