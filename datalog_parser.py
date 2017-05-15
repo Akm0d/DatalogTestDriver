@@ -75,8 +75,7 @@ class Schemes:
         result = "Schemes(%s):\n" % str(len(self.schemes))
         for scheme in self.schemes:
             result += "  " + str(scheme) + "\n"
-        if not self.schemes:
-            result += "\n"
+        result += "\n"
         # Remove trailing new line
         result = result[:-1]
         return result
@@ -192,12 +191,25 @@ class Facts:
 
 
 class Parameter:
+    expression = list()
+
     def __init__(self, lex_tokens):
         print([i[TYPE] for i in lex_tokens])
+        t = lex_tokens.pop(0)
+        if t[TYPE] in [STRING, ID]:
+            self.expression = list([t])
+            # If it is a string or ID then there should be nothing else
+            if lex_tokens:
+                t = lex_tokens.pop(0)
+                raise TokenError(t)
+        
         # Evalueate expressions
 
     def __str__(self):
-        return ""
+        result = ""
+        for t in self.expression:
+            result += t[VALUE]
+        return result
 
 
 def get_parameter(lex_tokens):
@@ -214,10 +226,7 @@ def get_parameter(lex_tokens):
             if t[TYPE] == RIGHT_PAREN:
                 palindrome -= 1
             expression.append(t)
-        if palindrome == 0:
-            return expression, lex_tokens
-        else:
-            raise TokenError(t)
+        return expression, lex_tokens
     else:
         raise TokenError(t)
 
