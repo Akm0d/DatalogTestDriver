@@ -73,15 +73,15 @@ for test in test_files:
                 elif line[0] == '-':
                     # This is the expected/correct value
                     cprint(line[1:], 'green')
-                elif line[0] == '+':
-                    # This is what the user actually produced
-                    cprint(line[1:], 'red')
                     # If this is lab 1 then I will build a list of offending tokens
                     if lab == 1:
                         tokex = re.compile("^\(\w+,(.*),(\d+)\)", re.MULTILINE)
                         match = tokex.match(line[1:])
                         if match:
                             offending_tokens.append((str(match.group(1)), int(match.group(2))))
+                elif line[0] == '+':
+                    # This is what the user actually produced
+                    cprint(line[1:], 'red')
                 else:
                     cprint(line.lstrip(' '), 'white')
             print('-' * 80)
