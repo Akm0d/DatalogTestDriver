@@ -227,6 +227,7 @@ class Predicate:
             raise TokenError(t)
         self.id = t
 
+        t = lex_tokens.pop(0)
         if not t[TYPE] == LEFT_PAREN:
             raise TokenError(t)
         # Check if there is a parameter
