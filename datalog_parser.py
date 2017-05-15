@@ -194,6 +194,9 @@ class Parameter:
         print([i[TYPE] for i in lex_tokens])
         # Evalueate expressions
 
+    def __str__(self):
+        return ""
+
 
 def get_parameter(lex_tokens):
     t = lex_tokens.pop(0)
@@ -247,8 +250,8 @@ class Predicate:
         :return: A string representation of this class
         """
         result = "%s(" % self.id[VALUE]
-        for t in self.parameterList:
-            result += t[VALUE] + ","
+        for parameter in self.parameterList:
+            result += str(parameter) + ","
 
         # Remove extra comma
         result = result[:-1]
@@ -302,7 +305,10 @@ class Rule:
         """
         :return: A string representation of this class
         """
-        return ""
+        result = str(self.head) + ":-"
+        for predicate in self.predicates:
+            result += str(predicate)
+        return result
 
 
 class Rules:
