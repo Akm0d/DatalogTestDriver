@@ -227,7 +227,6 @@ class Predicate:
             raise TokenError(t)
         self.id = t
 
-        t = lex_tokens.pop(0)
         if not t[TYPE] == LEFT_PAREN:
             raise TokenError(t)
         # Check if there is a parameter
@@ -241,12 +240,6 @@ class Predicate:
             (parameter, lex_tokens) = get_parameter(lex_tokens)
             self.parameterList.append(Parameter(parameter))
 
-        t = lex_tokens.pop(0)
-        if not t[TYPE] == RIGHT_PAREN:
-            raise TokenError(t)
-        t = lex_tokens.pop(0)
-        if not t[TYPE] == PERIOD:
-            raise TokenError(t)
 
     def __str__(self):
         """
@@ -346,8 +339,7 @@ class Rules:
 class Query:
     def __init__(self, lex_tokens):
         # print([i[TYPE] for i in lex_tokens])
-        pass
-
+        pass 
     def __str__(self):
         """
         :return: A string representation of this class
