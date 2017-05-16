@@ -191,10 +191,10 @@ class Facts:
 
 
 class Parameter:
-    expression = list()
+    expression = None
 
     def __init__(self, lex_tokens):
-        print([i[TYPE] for i in lex_tokens])
+        self.expression = list([])
         t = lex_tokens.pop(0)
         if t[TYPE] in [STRING, ID]:
             self.expression = list([t])
@@ -202,8 +202,21 @@ class Parameter:
             if lex_tokens:
                 t = lex_tokens.pop(0)
                 raise TokenError(t)
-        
-        # Evalueate expressions
+        elif t[TYPE] == LEFT_PAREN:
+            self.expression.append(t)
+            palindrome = 1
+            # Look at tokens until there are no more or we balance parenthesis
+            while lex_tokens and palindrome > 0:
+                # TODO Next token is a parameter
+                # TODO Next is an operator
+                # TODO Next is a parameter
+                t = lex_tokens.pop(0)
+                if t[TYPE] == RIGHT_PAREN:
+                    palindrome -= 1
+                self.expression.append(t)
+
+            if palindrome > 0:
+                raise TokenError(t)
 
     def __str__(self):
         result = ""
@@ -219,9 +232,10 @@ def get_parameter(lex_tokens):
         return list([t]), lex_tokens
     # It must be an expression
     elif t[TYPE] == LEFT_PAREN:
+        expression.append(t)
         palindrome = 1
         # Look at tokens until there are no more or we balance parenthesis
-        while lex_tokens and palindrome:
+        while lex_tokens and palindrome > 0:
             t = lex_tokens.pop(0)
             if t[TYPE] == RIGHT_PAREN:
                 palindrome -= 1
@@ -233,7 +247,7 @@ def get_parameter(lex_tokens):
 
 class Predicate:
     id = None
-    parameterList = list()
+    parameterList = None
 
     def __init__(self, lex_tokens):
         t = lex_tokens.pop(0)
@@ -246,15 +260,14 @@ class Predicate:
             raise TokenError(t)
         # Check if there is a parameter
         (parameter, lex_tokens) = get_parameter(lex_tokens)
-        self.parameterList.append(Parameter(parameter))
+        self.parameterList = list([Parameter(parameter)])
 
         while len(lex_tokens) > 2:
             t = lex_tokens.pop(0)
             if not t[TYPE] == COMMA:
                 raise TokenError(t)
-            (parameter, lex_tokens) = get_parameter(lex_tokens)
-            self.parameterList.append(Parameter(parameter))
-
+            (parameter_tokens, lex_tokens) = get_parameter(lex_tokens)
+            self.parameterList.append(Parameter(parameter_tokens))
 
     def __str__(self):
         """
@@ -272,7 +285,7 @@ class Predicate:
 
 class Rule:
     head = None
-    predicates = list()
+    predicates = None
 
     def __init__(self, lex_tokens):
         # print([i[TYPE] for i in lex_tokens])
@@ -298,7 +311,10 @@ class Rule:
                         if not t[TYPE] == COLON_DASH:
                             raise TokenError(t)
                     else:
-                        self.predicates.append(Predicate(new_predicate))
+                        new_item = Predicate(new_predicate)
+                        if not self.predicates:
+                            self.predicates = list([])
+                        self.predicates.append(new_item)
                         t = lex_tokens.pop(0)
                         # If the next token is a period and there are still more tokens, then we have a problem
                         if t[TYPE] == PERIOD and lex_tokens:
@@ -306,6 +322,8 @@ class Rule:
                         # The next token should be a comma, or a period if we are at the end of the rule
                         elif not t[TYPE] == COMMA and not (t[TYPE] == PERIOD and not lex_tokens):
                             raise TokenError(t)
+                        if t[TYPE] == PERIOD and lex_tokens:
+                            raise TokenError(lex_tokens.pop(0))
                     new_predicate.clear()
 
         if new_predicate or palindrome:
@@ -361,7 +379,8 @@ class Rules:
 class Query:
     def __init__(self, lex_tokens):
         # print([i[TYPE] for i in lex_tokens])
-        pass 
+        pass
+
     def __str__(self):
         """
         :return: A string representation of this class
