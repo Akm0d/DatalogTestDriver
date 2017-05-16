@@ -376,18 +376,6 @@ class Rules:
         return result
 
 
-class Query:
-    def __init__(self, lex_tokens):
-        # print([i[TYPE] for i in lex_tokens])
-        pass
-
-    def __str__(self):
-        """
-        :return: A string representation of this class
-        """
-        return ""
-
-
 class Queries:
     queries = list()
 
@@ -400,11 +388,12 @@ class Queries:
         new_query = list()
         while lex_tokens:
             t = lex_tokens.pop(0)
-            new_query.append(t)
             # Once we reach a question mark it is a new query
             if t[TYPE] == Q_MARK:
-                self.queries.append(Query(new_query))
+                self.queries.append(Predicate(new_query))
                 new_query.clear()
+            else:
+                new_query.append(t)
         if new_query:
             raise TokenError(new_query.pop())
 
@@ -414,7 +403,7 @@ class Queries:
         """
         result = "Queries(%s):\n" % str(len(self.queries))
         for query in self.queries:
-            result += "  " + str(query) + "\n"
+            result += "  " + str(query) + "?\n"
         # Remove trailing new line
         result = result[:-1]
         return result
