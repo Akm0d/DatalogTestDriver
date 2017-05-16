@@ -49,9 +49,10 @@ class Scheme:
 
 
 class Schemes:
-    schemes = list()
+    schemes = None
 
     def __init__(self, lex_tokens):
+        self.schemes = list()
         # Validate the syntax of the Scheme
         t = lex_tokens.pop(0)
         if not t[TYPE] == COLON:
@@ -347,9 +348,10 @@ class Rule:
 
 
 class Rules:
-    rules = list()
+    rules = None
 
     def __init__(self, lex_tokens):
+        self.rules = list()
         # Validate the syntax of the Scheme
         t = lex_tokens.pop(0)
         if not t[TYPE] == COLON:
@@ -379,9 +381,10 @@ class Rules:
 
 
 class Queries:
-    queries = list()
+    queries = None
 
     def __init__(self, lex_tokens):
+        self.queries = list()
         # Validate the syntax of the Scheme
         t = lex_tokens.pop(0)
         if not t[TYPE] == COLON:
