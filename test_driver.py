@@ -11,17 +11,23 @@ import subprocess
 
 args = ArgumentParser(description="Test your binary against a python datalog parser")
 
-args.add_argument('-l', '--lab-number', help="The lab number you are testing. Default is 1", default=1)
+args.add_argument('-l', '--lab', help="The lab number you are testing. Default is 5", default=1)
+args.add_argument('-p', '--part', help="The lab part you are testing. Default is 2", default=2)
 args.add_argument('-b', '--binary', help="Your binary file", default=None)
 args.add_argument("test_files", nargs="+", help="The files that will be used in this test")
 arg = args.parse_args()
 
-lab = int(arg.lab_number)
+lab = int(arg.lab)
 test_files = arg.test_files
 binary = arg.binary
+part = int(arg.part)
 
-if not (1 <= lab <= 6):
+if not (1 <= lab <= 5):
     raise ValueError("Lab number must be an integer from 1 to 6")
+
+if not (1 <= part <= 2):
+    raise ValueError("Part must be either 1 or 2")
+
 
 for test in test_files:
     print('-' * 80)
@@ -47,17 +53,17 @@ for test in test_files:
         # Ignore traces on token errors
         try:
             datalog = datalog_parser.DatalogProgram(lex)
-            expected = "Success!\n" + str(datalog)
+            expected = "Success!" 
+            if part == 2: 
+                expected += "\n" + str(datalog)
         except TokenError:
             pass
     elif lab == 3:
-        print("Lab %s has not yet been implemented" % str(lab))
+        print("Lab %s part %s has not yet been implemented" % (str(lab), str(part)))
     elif lab == 4:
-        print("Lab %s has not yet been implemented" % str(lab))
+        print("Lab %s part %s has not yet been implemented" % (str(lab), str(part)))
     elif lab == 5:
-        print("Lab %s has not yet been implemented" % str(lab))
-    elif lab == 6:
-        print("Lab %s has not yet been implemented" % str(lab))
+        print("Lab %s part %s has not yet been implemented" % (str(lab), str(part)))
 
     if actual == expected:
         cprint("Passed", "green")
