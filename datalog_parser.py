@@ -110,9 +110,10 @@ class Domain:
 
 class Fact:
     id = None
-    stringList = list()
+    stringList = None
 
     def __init__(self, lex_tokens):
+        self.stringList = list()
         t = lex_tokens.pop(0)
         if not t[TYPE] == ID:
             raise TokenError(t)
@@ -157,9 +158,10 @@ class Fact:
 
 class Facts:
     domain = None
-    facts = list()
+    facts = None
 
     def __init__(self, lex_tokens):
+        self.facts = list()
         # Generate the domain from these tokens
         self.domain = Domain(lex_tokens)
         # Validate the syntax of the Scheme
@@ -334,7 +336,7 @@ class Rule:
         """
         :return: A string representation of this class
         """
-        result = str(self.head) + ":-"
+        result = str(self.head) + " :- "
         for predicate in self.predicates:
             result += str(predicate) + ","
 
@@ -459,7 +461,7 @@ class DatalogProgram:
         """
         :return: A string representation of this class
         """
-        return '%s\n%s\n\n%s\n\n%s\n\n%s' % (
+        return '%s%s\n%s\n%s\n%s' % (
             str(self.schemes),
             str(self.facts),
             str(self.rules),

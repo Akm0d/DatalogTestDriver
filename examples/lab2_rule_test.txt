@@ -10,7 +10,8 @@ Facts: #comment
   snap('33333','Snoopy','12 Apple','555-1234').
 
 Rules:
-  HasSameAddress(X,Y) :- snap(A,X,B,C),snap(D,Y,B,E).
+  HasSameAddress(X,Y) :- snap(A,X,B,C),par(D,Y,B,E).
+  doesthis(X,Y) :- op((A + D),d,a,p),pap(b,a,e,d).
 
 #comment
 
