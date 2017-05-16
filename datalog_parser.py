@@ -204,18 +204,18 @@ class Parameter:
                 raise TokenError(t)
         elif t[TYPE] == LEFT_PAREN:
             self.expression.append(t)
-            palindrome = 1
             # Look at tokens until there are no more or we balance parenthesis
-            while lex_tokens and palindrome > 0:
+            while len(lex_tokens) > 1:
                 # TODO Next token is a parameter
                 # TODO Next is an operator
                 # TODO Next is a parameter
                 t = lex_tokens.pop(0)
-                if t[TYPE] == RIGHT_PAREN:
-                    palindrome -= 1
                 self.expression.append(t)
 
-            if palindrome > 0:
+            # end with right parenthesis
+            t = lex_tokens.pop(0)
+            self.expression.append(t)
+            if not t[TYPE] == RIGHT_PAREN:
                 raise TokenError(t)
 
     def __str__(self):
