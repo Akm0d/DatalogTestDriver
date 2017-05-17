@@ -412,13 +412,13 @@ class DatalogProgram:
     def __init__(self, lex_tokens):
         # Remove all comments from tokens
         ignore_types = [WHITESPACE, MULTILINE, COMMENT]
-        lex_tokens = [t for t in lex_tokens if not t[0] in ignore_types]
+        lex_tokens = [t for t in lex_tokens if not t[TYPE] in ignore_types]
         t_tokens = list()
         iteration = None
         for t in lex_tokens:
-            if t[0] == SCHEMES:
+            if t[TYPE] == SCHEMES and not iteration:
                 iteration = SCHEMES
-            elif t[0] == FACTS and iteration == SCHEMES:
+            elif t[TYPE] == FACTS and iteration == SCHEMES:
                 # Everything from the beginning of file to FACTS belongs to schemes
                 self.schemes = Schemes(t_tokens)
                 # There must be at least one scheme
@@ -426,17 +426,17 @@ class DatalogProgram:
                     raise TokenError(t)
                 t_tokens.clear()
                 iteration = FACTS
-            elif t[0] == RULES and iteration == FACTS:
+            elif t[TYPE] == RULES and iteration == FACTS:
                 # Everything form FACTS to RULES belongs to facts
                 self.facts = Facts(t_tokens)
                 t_tokens.clear()
                 iteration = RULES
-            elif t[0] == QUERIES and iteration == RULES:
+            elif t[TYPE] == QUERIES and iteration == RULES:
                 # Everything from RULES to QUERIES belongs to rules
                 self.rules = Rules(t_tokens)
                 t_tokens.clear()
                 iteration = QUERIES
-            elif t[0] == EOF and iteration == QUERIES:
+            elif t[TYPE] == EOF and iteration == QUERIES:
                 # Everything else belongs to queries
                 self.queries = Queries(t_tokens)
             elif not iteration:
