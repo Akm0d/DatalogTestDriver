@@ -115,8 +115,12 @@ class Fact:
                 raise TokenError(t)
             self.domain.add(t[VALUE])
             self.stringList.append(t)
+        if not lex_tokens:
+            raise TokenError(t)
         t = lex_tokens.pop(0)
         if not t[TYPE] == RIGHT_PAREN:
+            raise TokenError(t)
+        if not lex_tokens:
             raise TokenError(t)
         t = lex_tokens.pop(0)
         if not t[TYPE] == PERIOD:
@@ -195,6 +199,8 @@ class Parameter:
             self.expression = list([t])
             # If it is a string or ID then there should be nothing else
             if lex_tokens:
+                if not lex_tokens:
+                    raise TokenError(t)
                 t = lex_tokens.pop(0)
                 raise TokenError(t)
         elif t[TYPE] == LEFT_PAREN:
@@ -208,6 +214,8 @@ class Parameter:
                 self.expression.append(t)
 
             # end with right parenthesis
+            if not lex_tokens:
+                raise TokenError(t)
             t = lex_tokens.pop(0)
             self.expression.append(t)
             if not t[TYPE] == RIGHT_PAREN:
@@ -250,6 +258,8 @@ class Predicate:
             raise TokenError(t)
         self.id = t
 
+        if not lex_tokens:
+            raise TokenError(t)
         t = lex_tokens.pop(0)
         if not t[TYPE] == LEFT_PAREN:
             raise TokenError(t)
@@ -302,6 +312,8 @@ class Rule:
                     if not self.head:
                         # The format for a head predicate is exactly the same as that of a scheme
                         self.head = Scheme(new_predicate)
+                        if not lex_tokens:
+                            raise TokenError(t)
                         t = lex_tokens.pop(0)
                         if not t[TYPE] == COLON_DASH:
                             raise TokenError(t)
