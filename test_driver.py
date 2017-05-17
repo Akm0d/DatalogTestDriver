@@ -12,7 +12,7 @@ import subprocess
 
 args = ArgumentParser(description="Test your binary against a python datalog parser")
 
-args.add_argument('-l', '--lab', help="The lab number you are testing. Default is 5", default=1)
+args.add_argument('-l', '--lab', help="The lab number you are testing. Default is 5", default=5)
 args.add_argument('-p', '--part', help="The lab part you are testing. Default is 2", default=2)
 args.add_argument('-b', '--binary', help="Your binary file", default=None)
 args.add_argument("test_files", nargs="+", help="The files that will be used in this test")
