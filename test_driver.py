@@ -10,6 +10,10 @@ import lexical_analyzer
 import datalog_parser
 import subprocess
 
+# If there are no arguments, then print the help text
+if len(sys.argv) == 1:
+    sys.argv.append("--help")
+
 args = ArgumentParser(description="Test your binary against a python datalog parser")
 
 args.add_argument('-l', '--lab', help="The lab number you are testing. Default is 5", default=5)
