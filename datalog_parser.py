@@ -466,7 +466,7 @@ class DatalogProgram:
             str(self.facts),
             str(self.rules),
             str(self.queries),
-            str(self.facts.print_domain())
+            str(self.facts.print_domain() if self.facts.facts else "Domain(0):")
         )
 
 
