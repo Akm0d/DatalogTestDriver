@@ -9,4 +9,5 @@ Facts:
 Rules:
     NameHasID(N,S) :- snap(S,N,A,P).
  
-Queries:
+#Queries:
+    NameHasID('Snoopy',Id)?
