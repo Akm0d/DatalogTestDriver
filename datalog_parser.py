@@ -29,6 +29,8 @@ class Scheme:
             if not t[TYPE] == ID:
                 raise TokenError(t)
             self.idList.append(t)
+        if not lex_tokens:
+            raise TokenError(t)
         t = lex_tokens.pop(0)
         if not t[TYPE] == RIGHT_PAREN:
             raise TokenError(t)
@@ -67,7 +69,8 @@ class Schemes:
                 self.schemes.append(Scheme(new_scheme))
                 new_scheme.clear()
         if new_scheme:
-            raise TokenError(new_scheme.pop())
+            # If there are any left over tokens then create a new scheme with them to get the right error
+            Scheme(new_scheme)
 
     def __str__(self):
         """
@@ -153,7 +156,7 @@ class Facts:
                 self.facts.append(Fact(new_fact))
                 new_fact.clear()
         if new_fact:
-            raise TokenError(new_fact.pop())
+            Fact(new_fact)
 
     def __str__(self):
         """
@@ -307,6 +310,8 @@ class Rule:
                         if not self.predicates:
                             self.predicates = list([])
                         self.predicates.append(new_item)
+                        if not lex_tokens:
+                            raise TokenError(t)
                         t = lex_tokens.pop(0)
                         # If the next token is a period and there are still more tokens, then we have a problem
                         if t[TYPE] == PERIOD and lex_tokens:
@@ -317,6 +322,9 @@ class Rule:
                         if t[TYPE] == PERIOD and lex_tokens:
                             raise TokenError(lex_tokens.pop(0))
                     new_predicate.clear()
+                else:
+                    # We haven't balanced parenthesis yet
+                    pass
 
         if new_predicate or palindrome:
             raise TokenError(new_predicate.pop())
@@ -355,7 +363,7 @@ class Rules:
                 self.rules.append(Rule(new_rule))
                 new_rule.clear()
         if new_rule:
-            raise TokenError(new_rule.pop())
+            Rule(new_rule)
 
     def __str__(self):
         """
@@ -389,7 +397,7 @@ class Queries:
             else:
                 new_query.append(t)
         if new_query:
-            raise TokenError(new_query.pop())
+            Predicate(new_query)
 
     def __str__(self):
         """

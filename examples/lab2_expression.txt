@@ -11,6 +11,7 @@ Facts: #comment
 
 Rules:
   HasSameAddress(X,Y) :- snap((K + ('Y'),'X',B,C),snap(D,Y,B,E).
+  taco(X,Y) :- snap((K + ('Y'),'X',B,C),snap(D,Y,B,E).
 
 #comment
 

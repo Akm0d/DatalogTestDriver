@@ -5,7 +5,7 @@ Schemes:
 Facts:
  
 Rules:
-    NameHasID(N,S) :- snap(S,N,A,P)?
+    NameHasID(N,S) :- snap(S,N,A,P).
  
 Queries:
     NameHasID('Snoopy',Id)?
