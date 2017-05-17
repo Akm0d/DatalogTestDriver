@@ -453,9 +453,19 @@ class DatalogProgram:
             else:
                 t_tokens.append(t)
 
-        # If every field didn't get populated
-        if not iteration == QUERIES:
-            raise TokenError(t_tokens.pop())
+        # If There are left over tokens, then hand them off to the class of the current iteration so it can give the
+        # proper error
+        if t_tokens:
+            if iteration == SCHEMES:
+                Schemes(t_tokens)
+            elif iteration == FACTS:
+                Facts(t_tokens)
+            elif iteration == RULES:
+                Rules(t_tokens)
+            elif iteration == QUERIES:
+                Queries(t_tokens)
+            else:
+                raise TokenError(t_tokens.pop(0))
 
     def __str__(self):
         """
