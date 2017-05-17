@@ -478,11 +478,15 @@ if __name__ == "__main__":
 
     args = ArgumentParser(description="Run the datalog parser, this will produce output for lab 2")
     args.add_argument('-d', '--debug', action='store_true', default=False)
+    args.add_argument('-p', '--part', help='A 1 or a 2.  Defaults to 2', default=2)
     args.add_argument('file', help='datalog file to parse')
     arg = args.parse_args()
 
     debug = arg.debug
     d_file = arg.file
+    part = int(arg.part)
+    if not (1 <= part <= 2):
+        raise ValueError("Part must be either 1 or 2")
 
     if debug: print("Parsing '%s'" % d_file)
 
@@ -491,11 +495,15 @@ if __name__ == "__main__":
     if debug:
         # Print out traces on token errors
         datalog = DatalogProgram(tokens)
-        print("Success!\n" + str(datalog))
+        print("Success!")
+        if part == 2:
+            print(str(datalog))
     else:
         # Ignore traces on token errors
         try:
             datalog = DatalogProgram(tokens)
-            print("Success!\n" + str(datalog))
+            print("Success!")
+            if part == 2:
+                print(str(datalog))
         except TokenError:
             pass
