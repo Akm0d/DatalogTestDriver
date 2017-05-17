@@ -102,5 +102,7 @@ for test in test_files:
                     else:
                         print(line)
         else:
-            print(expected)
+            # Print all but last new line
+            print(expected[:-1])
+            pass
         pass
