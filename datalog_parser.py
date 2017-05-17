@@ -82,36 +82,11 @@ class Schemes:
         return result
 
 
-class Domain:
-    items = set()
-
-    def __init__(self, lex_tokens):
-        self.items = set([i[VALUE] for i in lex_tokens if i[TYPE] == STRING])
-        pass
-
-    def __str__(self):
-        """
-        :return: A string representation of this class
-        """
-        result = "Domain(%s):\n" % str(len(self.items))
-        for fact in sorted(self.items):
-            result += "  " + str(fact) + "\n"
-        # Remove trailing new line
-        if self.items:
-            result = result[:-1]
-        return result
-
-    def __iter__(self):
-        """
-        When iterating over the domain just give back the ordered set
-        :return: 
-        """
-        return sorted(self.items)
-
-
 class Fact:
     id = None
     stringList = None
+    # This will be shared across every instance of the Fact class
+    domain = set()
 
     def __init__(self, lex_tokens):
         self.stringList = list()
@@ -126,6 +101,7 @@ class Fact:
         t = lex_tokens.pop(0)
         if not t[TYPE] == STRING:
             raise TokenError(t)
+        self.domain.add(t[VALUE])
         self.stringList.append(t)
         while len(lex_tokens) > 2:
             t = lex_tokens.pop(0)
@@ -134,6 +110,7 @@ class Fact:
             t = lex_tokens.pop(0)
             if not t[TYPE] == STRING:
                 raise TokenError(t)
+            self.domain.add(t[VALUE])
             self.stringList.append(t)
         t = lex_tokens.pop(0)
         if not t[TYPE] == RIGHT_PAREN:
@@ -158,13 +135,10 @@ class Fact:
 
 
 class Facts:
-    domain = None
     facts = None
 
     def __init__(self, lex_tokens):
         self.facts = list()
-        # Generate the domain from these tokens
-        self.domain = Domain(lex_tokens)
         # Validate the syntax of the Scheme
         t = lex_tokens.pop(0)
         if not t[TYPE] == COLON:
@@ -191,6 +165,21 @@ class Facts:
         # Remove trailing new line
         result = result[:-1]
         return result
+
+    def print_domain(self):
+        """
+        :return A string representation of the domain of all Fact objects
+        """
+        if self.facts:
+            domain = self.facts[0].domain
+            result = "Domain(%s):\n" % str(len(domain))
+            for item in sorted(domain):
+                result += "  " + item + "\n"
+            # Remove trailing new line
+            result = result[:-1]
+            return result
+        else:
+            return None
 
 
 class Parameter:
@@ -469,7 +458,7 @@ class DatalogProgram:
             str(self.facts),
             str(self.rules),
             str(self.queries),
-            str(self.facts.domain if self.facts else None)
+            str(self.facts.print_domain())
         )
 
 
