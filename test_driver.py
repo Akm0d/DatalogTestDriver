@@ -32,7 +32,10 @@ if not (1 <= part <= 2):
 
 for test in test_files:
     print('-' * 80)
-    print("Testing %s" % test)
+    if lab == 1:
+        print("Testing %s on Lab %s" % (test, str(lab)))
+    else:
+        print("Testing %s on Lab %s Part %s" % (test, str(lab), str(part)))
     print('-' * 80)
 
     # Grab the user output from their binary
