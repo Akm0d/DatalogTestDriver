@@ -5,9 +5,7 @@ from difflib import unified_diff
 import re
 import sys
 from termcolor import cprint
-from tokens import TokenError
 import lexical_analyzer
-import datalog_parser
 import subprocess
 
 # If there are no arguments, then print the help text
@@ -104,7 +102,11 @@ for test in test_files:
                         cprint(line.lstrip(' '), 'white')
                 print('-' * 80)
                 # Print out the test file
+                line_number_width = 0
                 with open(test) as f:
+                    line_number_width = len(str(len(f.readlines())))
+                with open(test) as f:
+                    line_count = 1
                     i = 1
                     for line in f:
                         line = line.rstrip('\n')
@@ -113,12 +115,17 @@ for test in test_files:
                             if i in [x[1] for x in offending_tokens]:
                                 strings = [x[0] for x in offending_tokens if x[1] == i]
                                 # print(strings)
-                                cprint(line, 'yellow')
+                                cprint("%{}s ".format(line_number_width) % str(line_count), 'red', end='')
+                                print(line)
                             else:
+                                print("%{}s ".format(line_number_width) % str(line_count), end='')
                                 print(line)
                             i += 1
                         else:
+                            # Print line numbers in color with a fixed width equal to that of the last line number
+                            cprint("%{}s ".format(line_number_width) % str(line_count), 'yellow', end='')
                             print(line)
+                        line_count += 1
             else:
                 # Print all but last new line
                 print(expected[:-1])
