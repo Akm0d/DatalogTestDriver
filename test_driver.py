@@ -33,8 +33,10 @@ if not (1 <= lab <= 5):
 if not (1 <= part <= 2):
     raise ValueError("Part must be either 1 or 2")
 
-
+tests_total = 0
+tests_passed = 0
 for test in test_files:
+    tests_total += 1
     print('-' * 80)
     if lab == 1:
         print("Testing %s on Lab %s" % (test, str(lab)))
@@ -75,6 +77,7 @@ for test in test_files:
             print("Lab %s part %s has not yet been implemented" % (str(lab), str(part)))
 
         if actual == expected:
+            tests_passed += 1
             cprint("Passed", "green")
         else:
             # Print the test and the diff
@@ -121,3 +124,12 @@ for test in test_files:
                 print(expected[:-1])
                 pass
             pass
+
+print('=' * 80)
+print("Tests Run: %s" % str(tests_total))
+if tests_passed == tests_total:
+    cprint("All tests passed", 'green')
+else:
+    cprint("Passed: %s" % str(tests_passed), 'green')
+    cprint("Failed: %s" % str(tests_total - tests_passed), 'red')
+
