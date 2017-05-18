@@ -106,8 +106,11 @@ class Fact:
             raise TokenError(t)
         self.domain.add(t[VALUE])
         self.stringList.append(t)
-        while len(lex_tokens) > 2:
+        while len(lex_tokens) > 2 and (t[TYPE] in [COMMA, STRING]):
             t = lex_tokens.pop(0)
+            if t[TYPE] == RIGHT_PAREN:
+                # The loop is ending pre-maturely, but an error will be thrown
+                break
             if not t[TYPE] == COMMA:
                 raise TokenError(t)
             t = lex_tokens.pop(0)
@@ -125,6 +128,8 @@ class Fact:
         t = lex_tokens.pop(0)
         if not t[TYPE] == PERIOD:
             raise TokenError(t)
+        if lex_tokens:
+            raise TokenError(lex_tokens.pop(0))
         pass
 
     def __str__(self):
@@ -274,6 +279,13 @@ class Predicate:
             (parameter_tokens, lex_tokens) = get_parameter(lex_tokens)
             self.parameterList.append(Parameter(parameter_tokens))
 
+        t = lex_tokens.pop(0)
+        if not t[TYPE] == RIGHT_PAREN:
+            raise TokenError(t)
+
+        if lex_tokens:
+            raise TokenError(lex_tokens.pop(0))
+
     def __str__(self):
         """
         :return: A string representation of this class
@@ -408,6 +420,7 @@ class Queries:
                 new_query.clear()
             else:
                 new_query.append(t)
+        # If there are leftover tokens then turn them into a predicate to throw the right token error
         if new_query:
             Predicate(new_query)
 
@@ -438,6 +451,9 @@ class DatalogProgram:
         for t in lex_tokens:
             if t[TYPE] == SCHEMES and not iteration:
                 iteration = SCHEMES
+            # If iteration hasn't been defined and the first token wasn't a scheme we need to stop
+            elif not iteration:
+                raise TokenError(t)
             elif t[TYPE] == FACTS and iteration == SCHEMES:
                 # Everything from the beginning of file to FACTS belongs to schemes
                 self.schemes = Schemes(t_tokens)
