@@ -339,12 +339,10 @@ class Rule:
                         t = lex_tokens.pop(0)
                         # If the next token is a period and there are still more tokens, then we have a problem
                         if t[TYPE] == PERIOD and lex_tokens:
-                            raise TokenError(t)
+                            raise TokenError(lex_tokens.pop(0))
                         # The next token should be a comma, or a period if we are at the end of the rule
                         elif not t[TYPE] == COMMA and not (t[TYPE] == PERIOD and not lex_tokens):
                             raise TokenError(t)
-                        if t[TYPE] == PERIOD and lex_tokens:
-                            raise TokenError(lex_tokens.pop(0))
                     new_predicate.clear()
                 else:
                     # We haven't balanced parenthesis yet

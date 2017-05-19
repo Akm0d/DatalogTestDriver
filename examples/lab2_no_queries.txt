@@ -10,4 +10,4 @@ Rules:
     NameHasID(N,S) :- snap(S,N,A,P).
  
 #Queries:
-    NameHasID('Snoopy',Id)?
+    NameHasID('fail here',Id)?
