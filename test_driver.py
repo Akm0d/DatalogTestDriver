@@ -132,11 +132,12 @@ for test in test_files:
                 pass
             pass
 
-print('=' * 80)
-print("Tests Run: %s" % str(tests_total))
-if tests_passed == tests_total:
-    cprint("All tests passed", 'green')
-else:
-    cprint("Passed: %s" % str(tests_passed), 'green')
-    cprint("Failed: %s" % str(tests_total - tests_passed), 'red')
+if binary:
+    print('=' * 80)
+    print("Tests Run: %s" % str(tests_total))
+    if tests_passed == tests_total:
+        cprint("All tests passed", 'green')
+    else:
+        cprint("Passed: %s" % str(tests_passed), 'green')
+        cprint("Failed: %s" % str(tests_total - tests_passed), 'red')
 

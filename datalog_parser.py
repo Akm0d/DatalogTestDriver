@@ -194,63 +194,88 @@ class Facts:
             return None
 
 
+class Expression:
+    param_1 = None
+    operator = None
+    param_2 = None
+
+    def __init__(self, lex_tokens):
+        # Get Param 1
+        t = lex_tokens.pop(0)
+        if not t[TYPE] in [STRING, ID, LEFT_PAREN]:
+            raise TokenError(t)
+        if t[TYPE] in [STRING, ID]:
+            self.param_1 = Parameter(list([t]))
+        # If it is a left parenthesis, then grab tokens until we are palindrome and pass to parameter
+        elif t[TYPE] == LEFT_PAREN:
+            t_tokens = list([])
+            palindrome = 1
+            t_tokens.append(t)
+            # Grab tokens until palindrome is zero
+            while palindrome > 0 and lex_tokens:
+                t = lex_tokens.pop(0)
+                t_tokens.append(t)
+                if t[TYPE] == RIGHT_PAREN:
+                    palindrome -= 1
+                elif t[TYPE] == LEFT_PAREN:
+                    palindrome += 1
+            self.param_1 = Parameter(t_tokens)
+
+        # Get Operator
+        if not lex_tokens:
+            raise TokenError(t)
+        t = lex_tokens.pop(0)
+        if not t[TYPE] in [MULTIPLY, ADD]:
+            raise TokenError(t)
+        self.operator = t
+
+        # Get Param 2
+        if not lex_tokens:
+            raise TokenError(t)
+        t = lex_tokens.pop(0)
+        if not t[TYPE] in [STRING, ID, LEFT_PAREN]:
+            raise TokenError(t)
+        if t[TYPE] in [STRING, ID]:
+            self.param_2 = Parameter(list([t]))
+        # If it is a left parenthesis, then grab tokens until we are palindrome and pass to parameter
+        elif t[TYPE] == LEFT_PAREN:
+            t_tokens = list([])
+            palindrome = 1
+            t_tokens.append(t)
+            # Grab tokens until palindrome is zero
+            while palindrome > 0 and lex_tokens:
+                t = lex_tokens.pop(0)
+                t_tokens.append(t)
+                if t[TYPE] == RIGHT_PAREN:
+                    palindrome -= 1
+                elif t[TYPE] == LEFT_PAREN:
+                    palindrome += 1
+            self.param_2 = Parameter(t_tokens)
+
+    def __str__(self):
+        return "(%s %s %s)" % (str(self.param_1), str(self.operator[VALUE]), str(self.param_2))
+
+
 class Parameter:
+    string_id = None
     expression = None
 
     def __init__(self, lex_tokens):
-        self.expression = list([])
         t = lex_tokens.pop(0)
-        if t[TYPE] in [STRING, ID]:
-            self.expression = list([t])
-            # If it is a string or ID then there should be nothing else
-            if lex_tokens:
-                if not lex_tokens:
-                    raise TokenError(t)
-                t = lex_tokens.pop(0)
+        # If there was only one token, it is a string or an id
+        if not lex_tokens:
+            if not t[TYPE] in [ID, STRING]:
                 raise TokenError(t)
-        elif t[TYPE] == LEFT_PAREN:
-            self.expression.append(t)
-            # Look at tokens until there are no more or we balance parenthesis
-            while len(lex_tokens) > 1:
-                # TODO Next token is a parameter
-                # TODO Next is an operator
-                # TODO Next is a parameter
-                t = lex_tokens.pop(0)
-                self.expression.append(t)
-
-            # end with right parenthesis
-            if not lex_tokens:
-                raise TokenError(t)
-            t = lex_tokens.pop(0)
-            self.expression.append(t)
-            if not t[TYPE] == RIGHT_PAREN:
-                raise TokenError(t)
+            self.string_id = t
+        else:
+            self.expression = Expression(lex_tokens)
 
     def __str__(self):
-        result = ""
-        for t in self.expression:
-            result += t[VALUE]
-        return result
-
-
-def get_parameter(lex_tokens):
-    t = lex_tokens.pop(0)
-    expression = list([])
-    if t[TYPE] in [STRING, ID]:
-        return list([t]), lex_tokens
-    # It must be an expression
-    elif t[TYPE] == LEFT_PAREN:
-        expression.append(t)
-        palindrome = 1
-        # Look at tokens until there are no more or we balance parenthesis
-        while lex_tokens and palindrome > 0:
-            t = lex_tokens.pop(0)
-            if t[TYPE] == RIGHT_PAREN:
-                palindrome -= 1
-            expression.append(t)
-        return expression, lex_tokens
-    else:
-        raise TokenError(t)
+        if self.string_id:
+            assert isinstance(self.string_id, tuple)
+            return self.string_id[VALUE]
+        else:
+            return str(self.expression)
 
 
 class Predicate:
@@ -258,6 +283,7 @@ class Predicate:
     parameterList = None
 
     def __init__(self, lex_tokens):
+        self.parameterList = list([])
         t = lex_tokens.pop(0)
         if not t[TYPE] == ID:
             raise TokenError(t)
@@ -268,17 +294,61 @@ class Predicate:
         t = lex_tokens.pop(0)
         if not t[TYPE] == LEFT_PAREN:
             raise TokenError(t)
-        # Check if there is a parameter
-        (parameter, lex_tokens) = get_parameter(lex_tokens)
-        self.parameterList = list([Parameter(parameter)])
 
-        while len(lex_tokens) > 2:
+        # Check if there is a parameter
+        t = lex_tokens.pop(0)
+        if not t[TYPE] in [STRING, ID, LEFT_PAREN]:
+            raise TokenError(t)
+
+        if t[TYPE] in [STRING, ID]:
+            self.parameterList.append(Parameter(list([t])))
+        # If it is a left parenthesis, then grab tokens until we are palindrome and pass to parameter
+        elif t[TYPE] == LEFT_PAREN:
+            t_tokens = list([])
+            palindrome = 1
+            t_tokens.append(t)
+            # Grab tokens until palindrome is zero
+            while palindrome > 0 and lex_tokens:
+                t = lex_tokens.pop(0)
+                if t[TYPE] == RIGHT_PAREN:
+                    palindrome -= 1
+                elif t[TYPE] == LEFT_PAREN:
+                    palindrome += 1
+                if palindrome != 0: t_tokens.append(t)
+            self.parameterList.append(Parameter(t_tokens))
+            t_tokens.clear()
+
+        while len(lex_tokens) > 1:
+            # Check for comma
             t = lex_tokens.pop(0)
             if not t[TYPE] == COMMA:
                 raise TokenError(t)
-            (parameter_tokens, lex_tokens) = get_parameter(lex_tokens)
-            self.parameterList.append(Parameter(parameter_tokens))
 
+            # Check for another parameter
+            t = lex_tokens.pop(0)
+            if not t[TYPE] in [STRING, ID, LEFT_PAREN]:
+                raise TokenError(t)
+
+            if t[TYPE] in [STRING, ID]:
+                self.parameterList.append(Parameter(list([t])))
+            # If it is a left parenthesis, then grab tokens until we are palindrome and pass to parameter
+            elif t[TYPE] == LEFT_PAREN:
+                t_tokens = list([])
+                palindrome = 1
+                t_tokens.append(t)
+                # Grab tokens until palindrome is zero
+                while palindrome > 0 and lex_tokens:
+                    t = lex_tokens.pop(0)
+                    t_tokens.append(t)
+                    if t[TYPE] == RIGHT_PAREN:
+                        palindrome -= 1
+                    elif t[TYPE] == LEFT_PAREN:
+                        palindrome += 1
+                self.parameterList.append(Parameter(t_tokens))
+                t_tokens.clear()
+
+        if not lex_tokens:
+            raise TokenError(t)
         t = lex_tokens.pop(0)
         if not t[TYPE] == RIGHT_PAREN:
             raise TokenError(t)
@@ -409,18 +479,18 @@ class Queries:
         if not t[TYPE] == COLON:
             raise TokenError(t)
 
-        new_query = list()
+        t_tokens = list()
         while lex_tokens:
             t = lex_tokens.pop(0)
             # Once we reach a question mark it is a new query
             if t[TYPE] == Q_MARK:
-                self.queries.append(Predicate(new_query))
-                new_query.clear()
+                self.queries.append(Predicate(t_tokens))
+                t_tokens.clear()
             else:
-                new_query.append(t)
+                t_tokens.append(t)
         # If there are leftover tokens then turn them into a predicate to throw the right token error
-        if new_query:
-            Predicate(new_query)
+        if t_tokens:
+            Predicate(t_tokens)
 
     def __str__(self):
         """
