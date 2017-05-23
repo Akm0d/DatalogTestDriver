@@ -2,7 +2,7 @@
 
 if [ "$EUID" -ne 0 ]
     then 
-        echo "Usage: sudo -H ./setup.sh"
+        sudo -H ./setup.sh
         exit
 fi
 
