@@ -2,12 +2,15 @@
 from argparse import ArgumentParser
 from difflib import unified_diff
 from lexical_analyzer import scan as lexical_scan
-from lizard import analyze_file
-from os import path as os_path, name as os_name
+from lizard import analyze_file, FunctionInfo
+from os import path as os_path, name as os_name, listdir
 from re import compile as re_compile, MULTILINE
 from subprocess import TimeoutExpired, check_output, check_call
 from sys import path as sys_path, argv
 from termcolor import cprint
+
+# This is the cyclomatic complexity threshhold allowed for each function
+COMPLEXITY_THRESHHOLD = 8
 
 # If there are no arguments, then print the help text
 if len(argv) == 1:
@@ -17,7 +20,9 @@ args = ArgumentParser(description="Test your binary against a python datalog par
 
 args.add_argument('-b', '--binary', help="Your binary file", default=None)
 args.add_argument('-c', '--compile', help="The directory where your main.cpp can be found. "
-                  "Supplying this argument also allows your code to be analyzed for cyclomatic complexity", default=None
+                                          "Supplying this argument also allows your code to be analyzed for "
+                                          "cyclomatic complexity",
+                  default=None
                   )
 args.add_argument('-l', '--lab', help="The lab number you are testing. Default is 5", default=5)
 args.add_argument('-p', '--part', help="The lab part you are testing. Default is 2", default=2)
@@ -36,8 +41,7 @@ if not (1 <= lab <= 5):
 if not (1 <= part <= 2):
     raise ValueError("Part must be either 1 or 2")
 
-
-# If a code directory was given, then check for compile and check for complexity
+# If a code directory was given, then try to compile it
 if code_directory:
     # If they gave a code directory but not a binary name, then name the binary now
     if not binary:
@@ -48,14 +52,8 @@ if code_directory:
         pass
     else:
         # Compile using g++
-        check_call("g++ -std=c++14 -o %s -g -Wall %s/" % (binary, os_path.join(code_directory, "main.cpp")))
+        check_call("g++ -std=c++14 -o %s -g -Wall %s" % (binary, os_path.join(code_directory, "*.cpp")), shell=True)
         pass
-
-    # TODO Check code complexity
-    foo = analyze_file(os_path.join(code_directory, "main.cpp"))
-    print(foo)
-
-
 
 tests_total = 0
 tests_passed = 0
@@ -91,8 +89,7 @@ for test in test_files:
                 expected = expected + '(%s,"%s",%s)' % line + "\n"
             expected = expected + ("Total Tokens = %s\n" % len(lex))
         elif lab == 2:
-            # TODO Use python3
-            command = "python \"%s\" --part %s %s" % (os_path.join(sys_path[0], "datalog_parser.py"), str(part), test)
+            command = "python3 \"%s\" --part %s %s" % (os_path.join(sys_path[0], "datalog_parser.py"), str(part), test)
             expected = str(check_output(command, shell=True), 'utf-8')
         elif lab == 3:
             print("Lab %s part %s has not yet been implemented" % (str(lab), str(part)))
@@ -159,12 +156,42 @@ for test in test_files:
                 pass
             pass
 
+# Now we are printing test results
+
+# Check code cyclomatic complexity
+complex_functions = list()
+simple = True
+if code_directory:
+    for file in listdir(code_directory):
+        if file.endswith('.cpp'):
+            cc = analyze_file(os_path.join(code_directory, file))
+            for func in cc.function_list:
+                assert isinstance(func, FunctionInfo)
+                if func.cyclomatic_complexity > COMPLEXITY_THRESHHOLD:
+                    simple = False
+                    complex_functions.append(func)
+
+# Print out only the complex functions
+if complex_functions:
+    padding = 0
+    # Find the longest function name
+    for func in complex_functions:
+        if len(func.name) > padding:
+            padding = len(func.name)
+    padding += 1
+
+    print('=' * 80)
+    print("Function".ljust(padding) + "Cyclomatic Complexity")
+    print("--------" + " " * (padding - len("Function")) + "---------------------")
+    for func in complex_functions:
+        assert isinstance(func, FunctionInfo)
+        cprint("%s %s" % (str(func.name).ljust(padding), func.cyclomatic_complexity), "red")
+
 if binary:
     print('=' * 80)
     print("Tests Run: %s" % str(tests_total))
-    if tests_passed == tests_total:
+    if tests_passed == tests_total and simple:
         cprint("All tests passed", 'green')
     else:
         cprint("Passed: %s" % str(tests_passed), 'green')
         cprint("Failed: %s" % str(tests_total - tests_passed), 'red')
-
