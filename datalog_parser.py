@@ -523,6 +523,16 @@ class DatalogProgram:
             elif not iteration:
                 raise TokenError(t)
             elif t[TYPE] == FACTS and iteration == SCHEMES:
+                # If Schemes didn't end correctly then throw an error
+                last = t_tokens.pop()
+                if not last[TYPE] in [RIGHT_PAREN, COLON]:
+                    if last[TYPE] == COLON:
+                        last_type = t_tokens.pop()
+                        if not last_type[TYPE] == SCHEMES:
+                            raise TokenError(t)
+                        t_tokens.append(last_type)
+                    raise TokenError(t)
+                t_tokens.append(last)
                 # Everything from the beginning of file to FACTS belongs to schemes
                 self.schemes = Schemes(t_tokens)
                 # There must be at least one scheme
@@ -531,16 +541,46 @@ class DatalogProgram:
                 t_tokens.clear()
                 iteration = FACTS
             elif t[TYPE] == RULES and iteration == FACTS:
+                # If Facts didn't end correctly then throw an error
+                last = t_tokens.pop()
+                if not last[TYPE] in [PERIOD, COLON]:
+                    if last[TYPE] == COLON:
+                        last_type = t_tokens.pop()
+                        if not last_type[TYPE] == FACTS:
+                            raise TokenError(t)
+                        t_tokens.append(last_type)
+                    raise TokenError(t)
+                t_tokens.append(last)
                 # Everything form FACTS to RULES belongs to facts
                 self.facts = Facts(t_tokens)
                 t_tokens.clear()
                 iteration = RULES
             elif t[TYPE] == QUERIES and iteration == RULES:
+                # If Rules didn't end correctly then throw an error
+                last = t_tokens.pop()
+                if not last[TYPE] in [PERIOD, COLON]:
+                    if last[TYPE] == COLON:
+                        last_type = t_tokens.pop()
+                        if not last_type[TYPE] == RULES:
+                            raise TokenError(t)
+                        t_tokens.append(last_type)
+                    raise TokenError(t)
+                t_tokens.append(last)
                 # Everything from RULES to QUERIES belongs to rules
                 self.rules = Rules(t_tokens)
                 t_tokens.clear()
                 iteration = QUERIES
             elif t[TYPE] == EOF and iteration == QUERIES:
+                # If there isn't a question mark at the ned then we have an error
+                last = t_tokens.pop()
+                if not last[TYPE] in [Q_MARK, COLON]:
+                    if last[TYPE] == COLON:
+                        last_type = t_tokens.pop()
+                        if not last_type[TYPE] == QUERIES:
+                            raise TokenError(t)
+                        t_tokens.append(last_type)
+                    raise TokenError(t)
+                t_tokens.append(last)
                 # Everything else belongs to queries
                 self.queries = Queries(t_tokens)
             elif not iteration:
