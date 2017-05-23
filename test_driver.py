@@ -4,6 +4,7 @@ from difflib import unified_diff
 
 import re
 import sys
+from os import path
 from termcolor import cprint
 import lexical_analyzer
 import subprocess
@@ -65,7 +66,7 @@ for test in test_files:
                 expected = expected + '(%s,"%s",%s)' % line + "\n"
             expected = expected + ("Total Tokens = %s\n" % len(lex))
         elif lab == 2:
-            command = "%s/%s --part %s %s" % (sys.path[0], "datalog_parser.py", str(part), test)
+            command = "python \"%s\" --part %s %s" % (path.join(sys.path[0], "datalog_parser.py"), str(part), test)
             expected = str(subprocess.check_output(command, shell=True), 'utf-8')
         elif lab == 3:
             print("Lab %s part %s has not yet been implemented" % (str(lab), str(part)))
