@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
-from tokens import *
+from tokens import COMMA, PERIOD, Q_MARK, LEFT_PAREN, RIGHT_PAREN, COLON, COLON_DASH, MULTIPLY
+from tokens import ADD, SCHEMES, FACTS, RULES, QUERIES, ID, STRING, COMMENT, WHITESPACE, EOF
+from tokens import TokenError, TYPE, VALUE
 import lexical_analyzer
 
 
@@ -512,7 +514,7 @@ class DatalogProgram:
 
     def __init__(self, lex_tokens):
         # Remove all comments from tokens
-        ignore_types = [WHITESPACE, MULTILINE, COMMENT]
+        ignore_types = [WHITESPACE, COMMENT]
         lex_tokens = [t for t in lex_tokens if not t[TYPE] in ignore_types]
         t_tokens = list()
         iteration = None

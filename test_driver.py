@@ -1,23 +1,26 @@
 #!/usr/bin/env python3
 from argparse import ArgumentParser
 from difflib import unified_diff
-
-import re
-import sys
-from os import path
+from lexical_analyzer import scan as lexical_scan
+from lizard import analyze_file
+from os import path as os_path, name as os_name
+from re import compile as re_compile, MULTILINE
+from subprocess import TimeoutExpired, check_output, check_call
+from sys import path as sys_path, argv
 from termcolor import cprint
-import lexical_analyzer
-import subprocess
 
 # If there are no arguments, then print the help text
-if len(sys.argv) == 1:
-    sys.argv.append("--help")
+if len(argv) == 1:
+    argv.append("--help")
 
 args = ArgumentParser(description="Test your binary against a python datalog parser")
 
+args.add_argument('-b', '--binary', help="Your binary file", default=None)
+args.add_argument('-c', '--compile', help="The directory where your main.cpp can be found. "
+                  "Supplying this argument also allows your code to be analyzed for cyclomatic complexity", default=None
+                  )
 args.add_argument('-l', '--lab', help="The lab number you are testing. Default is 5", default=5)
 args.add_argument('-p', '--part', help="The lab part you are testing. Default is 2", default=2)
-args.add_argument('-b', '--binary', help="Your binary file", default=None)
 args.add_argument("test_files", nargs="+", help="The files that will be used in this test")
 arg = args.parse_args()
 
@@ -25,12 +28,34 @@ lab = int(arg.lab)
 test_files = arg.test_files
 binary = arg.binary
 part = int(arg.part)
+code_directory = arg.compile
 
 if not (1 <= lab <= 5):
     raise ValueError("Lab number must be an integer from 1 to 6")
 
 if not (1 <= part <= 2):
     raise ValueError("Part must be either 1 or 2")
+
+
+# If a code directory was given, then check for compile and check for complexity
+if code_directory:
+    # If they gave a code directory but not a binary name, then name the binary now
+    if not binary:
+        binary = "lab%sp%s.%s" % (str(lab), str(part), "exe" if os_name == 'nt' else "bin")
+    if os_name == 'nt':
+        # TODO compile using cl
+        print("Unable to compile %s, make sure you are using a unix based operating system" % binary)
+        pass
+    else:
+        # Compile using g++
+        check_call("g++ -std=c++14 -o %s -g -Wall %s/" % (binary, os_path.join(code_directory, "main.cpp")))
+        pass
+
+    # TODO Check code complexity
+    foo = analyze_file(os_path.join(code_directory, "main.cpp"))
+    print(foo)
+
+
 
 tests_total = 0
 tests_passed = 0
@@ -52,8 +77,8 @@ for test in test_files:
         # Wait at most 60 seconds for the binary to run
         actual = ""
         try:
-            actual = str(subprocess.check_output("%s %s" % (binary, test), shell=True, timeout=60), 'utf-8')
-        except subprocess.TimeoutExpired:
+            actual = str(check_output("%s %s" % (binary, test), shell=True, timeout=60), 'utf-8')
+        except TimeoutExpired:
             cprint("Failed! Timeout exceeded", 'red')
             timeout = True
 
@@ -61,13 +86,14 @@ for test in test_files:
         expected = ''
         # Compute the correct output from the python script
         if lab == 1:
-            lex = lexical_analyzer.scan(test)
+            lex = lexical_scan(test)
             for line in lex:
                 expected = expected + '(%s,"%s",%s)' % line + "\n"
             expected = expected + ("Total Tokens = %s\n" % len(lex))
         elif lab == 2:
-            command = "python \"%s\" --part %s %s" % (path.join(sys.path[0], "datalog_parser.py"), str(part), test)
-            expected = str(subprocess.check_output(command, shell=True), 'utf-8')
+            # TODO Use python3
+            command = "python \"%s\" --part %s %s" % (os_path.join(sys_path[0], "datalog_parser.py"), str(part), test)
+            expected = str(check_output(command, shell=True), 'utf-8')
         elif lab == 3:
             print("Lab %s part %s has not yet been implemented" % (str(lab), str(part)))
         elif lab == 4:
@@ -92,7 +118,7 @@ for test in test_files:
                         cprint(line[1:], 'green')
                         # If this is lab 1 then I will build a list of offending tokens
                         if lab == 1:
-                            tokex = re.compile("^\(\w+,(.*),(\d+)\)", re.MULTILINE)
+                            tokex = re_compile("^\(\w+,(.*),(\d+)\)", MULTILINE)
                             match = tokex.match(line[1:])
                             if match:
                                 offending_tokens.append((str(match.group(1)), int(match.group(2))))
@@ -112,7 +138,7 @@ for test in test_files:
                     for line in f:
                         line = line.rstrip('\n')
                         if lab == 1:
-                            # If this line of the file has an offending token, then print the misinterpreted value in red
+                            # If this line of the file has an offending token, then print the misinterpreted value red
                             if i in [x[1] for x in offending_tokens]:
                                 strings = [x[0] for x in offending_tokens if x[1] == i]
                                 # print(strings)
