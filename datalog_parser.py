@@ -54,6 +54,7 @@ class Scheme:
 
 class Schemes:
     schemes = None
+    parent_error = False
 
     def __init__(self, lex_tokens):
         self.schemes = list()
@@ -71,8 +72,13 @@ class Schemes:
                 self.schemes.append(Scheme(new_scheme))
                 new_scheme.clear()
         if new_scheme:
+            last = new_scheme.pop()
+            if not last[TYPE] == RIGHT_PAREN:
+                self.parent_error = True
             # If there are any left over tokens then create a new scheme with them to get the right error
-            Scheme(new_scheme)
+            else:
+                new_scheme.append(last)
+                Scheme(new_scheme)
 
     def __str__(self):
         """
@@ -467,9 +473,9 @@ class Rules:
 
         if new_rule:
             temp = Rule(new_rule)
-            if temp and not t[TYPE] == PERIOD:
+            if temp:
                 raise TokenError(t)
-            elif not t[TYPE] == PERIOD:
+            else:
                 self.parent_error = True
 
     def __str__(self):
@@ -551,6 +557,8 @@ class DatalogProgram:
             elif t[TYPE] == FACTS and iteration == SCHEMES:
                 # Everything from the beginning of file to FACTS belongs to schemes
                 self.schemes = Schemes(t_tokens)
+                if self.schemes.parent_error:
+                    raise TokenError(t)
                 # There must be at least one scheme
                 if not self.schemes.schemes:
                     raise TokenError(t)
