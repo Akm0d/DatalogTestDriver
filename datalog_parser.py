@@ -150,6 +150,7 @@ class Fact:
 
 class Facts:
     facts = None
+    parent_error = False
 
     def __init__(self, lex_tokens):
         self.facts = list()
@@ -167,7 +168,12 @@ class Facts:
                 self.facts.append(Fact(new_fact))
                 new_fact.clear()
         if new_fact:
-            Fact(new_fact)
+            # we have an incomplete fact, the next token should fail
+            last = new_fact.pop()
+            if not last == PERIOD:
+                self.parent_error = True
+            else:
+                Fact(new_fact)
 
     def __str__(self):
         """
@@ -544,6 +550,8 @@ class DatalogProgram:
             elif t[TYPE] == RULES and iteration == FACTS:
                 # Everything form FACTS to RULES belongs to facts
                 self.facts = Facts(t_tokens)
+                if self.facts.parent_error:
+                    raise TokenError(t)
                 t_tokens.clear()
                 iteration = RULES
             elif t[TYPE] == QUERIES and iteration == RULES:
