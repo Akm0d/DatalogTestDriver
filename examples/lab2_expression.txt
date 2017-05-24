@@ -22,7 +22,16 @@ Rules:
   Y,
   B,
   E).
-  taco(X,Y) :- snap((K + ('Y' + D),'X',B,C)),snap(D,Y,B,E).
+  taco(X,
+  Y) :- snap((K + ('Y' + D),
+  'X',
+  B,
+  C)
+  ),
+  snap(D,
+  Y,
+  B,
+  E).
 
 #comment
 
