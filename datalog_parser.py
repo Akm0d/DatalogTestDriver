@@ -339,7 +339,7 @@ class Predicate:
                 palindrome = 1
                 t_tokens.append(t)
                 # Grab tokens until palindrome is zero
-                while palindrome > 0 and lex_tokens:
+                while palindrome > 0 and lex_tokens > 1:
                     t = lex_tokens.pop(0)
                     t_tokens.append(t)
                     if t[TYPE] == RIGHT_PAREN:
@@ -490,6 +490,10 @@ class Queries:
             t = lex_tokens.pop(0)
             # Once we reach a question mark it is a new query
             if t[TYPE] == Q_MARK:
+                last = t_tokens.pop()
+                if not last[TYPE] == RIGHT_PAREN:
+                    raise TokenError(t)
+                t_tokens.append(last)
                 self.queries.append(Predicate(t_tokens))
                 t_tokens.clear()
             else:
