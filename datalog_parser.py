@@ -173,6 +173,7 @@ class Facts:
             if not last == PERIOD:
                 self.parent_error = True
             else:
+                new_fact.append(last)
                 Fact(new_fact)
 
     def __str__(self):
@@ -465,9 +466,11 @@ class Rules:
                 new_rule.clear()
 
         if new_rule:
-            Rule(new_rule)
-            if not t[TYPE] == PERIOD:
+            temp = Rule(new_rule)
+            if temp and not t[TYPE] == PERIOD:
                 raise TokenError(t)
+            elif not t[TYPE] == PERIOD:
+                self.parent_error = True
 
     def __str__(self):
         """
@@ -483,6 +486,7 @@ class Rules:
 
 class Queries:
     queries = None
+    parent_error = False
 
     def __init__(self, lex_tokens):
         self.queries = list()
@@ -507,7 +511,12 @@ class Queries:
 
         # If there are leftover tokens then turn them into a predicate to throw the right token error
         if t_tokens:
-            Predicate(t_tokens)
+            last = t_tokens.pop()
+            if not last[TYPE] == Q_MARK:
+                self.parent_error = True
+            else:
+                t_tokens.append(last)
+                Predicate(t_tokens)
 
     def __str__(self):
         """
@@ -565,6 +574,8 @@ class DatalogProgram:
             elif t[TYPE] == EOF and iteration == QUERIES:
                 # Everything else belongs to queries
                 self.queries = Queries(t_tokens)
+                if self.queries.parent_error:
+                    raise TokenError(t)
                 # There must be at least one query
                 if not self.queries.queries:
                     raise TokenError(t)
