@@ -70,6 +70,8 @@ class RDBMS:
         relation = self.RelationalDatabase[query]
         assert isinstance(relation, set)
 
+        # TODO Find all relations that match the query
+
     def select(self):
         pass
 
@@ -126,4 +128,10 @@ if __name__ == "__main__":
     for query_object in datalog.queries.queries:
         rdbms = RDBMS(datalog, query_object)
 
-    print(str(rdbms))
+    if part == 1:
+        # TODO perform a single project, select, and rename on the input file, one at a time
+        # print out something helpful, not what they say to print out, that's lame
+        print("Part 1 hasn't yet been implemented")
+    else:
+        print(str(rdbms))
+
