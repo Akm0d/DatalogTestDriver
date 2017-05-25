@@ -32,6 +32,7 @@ class Relation:
         self.pairs = list()
 
     def append(self, pair):
+        assert isinstance(pair, Pair)
         self.pairs.append(pair)
 
     def __str__(self):
@@ -70,7 +71,7 @@ class RDBMS:
         relation = self.RelationalDatabase[query]
         assert isinstance(relation, set)
 
-        # TODO Find all relations that match the query
+        # TODO Find all relations that match the query, add them to the set
 
     def select(self):
         pass
@@ -134,4 +135,3 @@ if __name__ == "__main__":
         print("Part 1 hasn't yet been implemented")
     else:
         print(str(rdbms))
-
