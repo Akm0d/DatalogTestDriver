@@ -133,6 +133,11 @@ class Token:
             self.type = 'INVALID'
         pass
 
+    def __hash__(self):
+        # This is so that we can have sets of tokens
+        hash(str(self.TYPE) + str(self.value))
+
+
 if __name__ == "__main__":
     from argparse import ArgumentParser
     arg = ArgumentParser(description="Pass in strings on the command line to test their interpretation")

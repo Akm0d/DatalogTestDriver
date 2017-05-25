@@ -9,6 +9,7 @@ class Pair:
     """
     The format of a pair is v= 's', where v is the variable and 's' is the string value. 
     """
+    # An attribute is the name associated with each data value in a tuple entry.
     attribute = None
     value = None
 
@@ -51,14 +52,16 @@ class Relation:
     Each relation has a name, a schema, and a set of tuples. A schema is a set of attributes. 
     """
     name = None
+    # A schema is a set of attributes.
     schema = None
+    # A tuple is a set of attribute/value pairs.
     tuples = None
 
-    def __init__(self, scheme, fact):
+    def __init__(self, scheme, facts):
         assert isinstance(scheme, datalog_parser.Scheme)
         self.name = scheme.id
         self.schema = set(scheme.idList)
-        assert isinstance(fact, datalog_parser.Fact)
+        assert isinstance(facts, datalog_parser.Facts)
         self.tuples = set()
 
     def __str__(self):
@@ -86,9 +89,11 @@ class RDBMS:
     datalog = None
 
     def __init__(self, datalog_program):
+        self.relations = list()
         assert isinstance(datalog_program, datalog_parser.DatalogProgram)
         self.datalog = datalog_program
         for datalog_scheme in self.datalog.schemes.schemes:
+            self.relations.append(Relation(datalog_scheme, self.datalog.facts))
             pass
 
     def evaluate_query(self, query):
