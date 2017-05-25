@@ -389,6 +389,13 @@ class Predicate:
 
         return result + ")"
 
+    def __hash__(self):
+        """
+        This is necessary if we want to use queries as a key in lab 3
+        :return: The hashed form of the string representation of this class
+        """
+        return hash(str(self))
+
 
 class Rule:
     head = None
