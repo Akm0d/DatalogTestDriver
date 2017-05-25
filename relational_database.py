@@ -64,8 +64,11 @@ class RDBMS:
     def __init__(self, datalog_program, query):
         # Manipulate this datalog_program object so that we find all relations that match the query
         self.datalog = datalog_program
+
         # Each query contains a set of relations
-        self.RelationalDatabase[query] = set([])
+        self.RelationalDatabase[query] = set()
+        relation = self.RelationalDatabase[query]
+        assert isinstance(relation, set)
 
     def select(self):
         pass
@@ -84,7 +87,17 @@ class RDBMS:
         If there are free variables in the query, print the tuples of the resulting relation, 
         one per line and indented by two spaces, according to the following directions.
         """
-        return ""
+        result = ""
+        for query in self.RelationalDatabase.keys():
+            result += str(query) + "? "
+            relations = self.RelationalDatabase[query]
+            if not relations:  # The set is empty
+                result += "No\n"
+            else:  # The set isn't empty
+                result += "Yes(" + str(len(relations)) + ")\n"
+                for relation in sorted(relations):
+                    result += "  " + str(relation) + "\n"
+        return result.rstrip("\n")
 
 
 if __name__ == "__main__":
@@ -113,3 +126,4 @@ if __name__ == "__main__":
     for query_object in datalog.queries.queries:
         rdbms = RDBMS(datalog, query_object)
 
+    print(str(rdbms))
