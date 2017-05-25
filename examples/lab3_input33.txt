@@ -1,0 +1,23 @@
+# evaluates queries with a scheme that contains more than two parameters
+
+Schemes:
+  A(u,v,w,x,y,z)
+
+Facts:
+  A('a','b','c','d','e','f').
+  A('a','a','a','b','b','b').
+  A('a','a','b','b','c','c').
+  A('c','c','c','d','d','d').
+  A('d','d','e','e','f','f').
+  A('a','b','a','b','a','b').
+  A('b','a','b','a','b','a').
+
+Rules:
+
+Queries:
+  A(X,Y,Z,'d','e','f')?
+  A('a','b','c',X,Y,Z)?
+  A('a','b','c',X,X,X)?
+  A(X,X,X,Y,Y,Y)?
+  A(U,U,V,V,W,W)?
+  A(A,B,A,B,A,B)?

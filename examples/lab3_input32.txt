@@ -1,0 +1,29 @@
+# evaluates queries containing string literals and identifiers
+
+Schemes:
+  sibling(x,y)
+
+Facts:
+  sibling('Reuben','Simeon').
+  sibling('Reuben','Levi').
+  sibling('Reuben','Judah').
+  sibling('Reuben','Issachar').
+  sibling('Reuben','Zebulun').
+  sibling('Reuben','Dan').
+  sibling('Reuben','Naphtali').
+  sibling('Reuben','Gad').
+  sibling('Simeon','Naphtali').
+  sibling('Reuben','Asher').
+  sibling('Levi','Naphtali').
+  sibling('Reuben','Joseph').
+  sibling('Judah','Naphtali').
+  sibling('Reuben','Benjamin').
+
+Rules:
+
+Queries:
+  sibling('Reuben','Simeon')?
+  sibling('Reuben',anyone)?
+  sibling(anyone,'Naphtali')?
+  sibling('Gad','Asher')?
+  sibling('Levi','Joseph')?

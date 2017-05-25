@@ -1,0 +1,43 @@
+# combines previous tests and mixes the order of facts and queries
+
+Schemes:
+  sibling(x,y)
+  A(u,v,w,x,y,z)
+
+Facts:
+  sibling('Reuben','Simeon').
+  sibling('Reuben','Levi').
+  sibling('Reuben','Judah').
+  A('a','b','c','d','e','f').
+  sibling('Reuben','Issachar').
+  sibling('Reuben','Zebulun').
+  A('a','a','a','b','b','b').
+  A('a','a','b','b','c','c').
+  sibling('Reuben','Dan').
+  sibling('Reuben','Naphtali').
+  A('c','c','c','d','d','d').
+  sibling('Reuben','Gad').
+  A('d','d','e','e','f','f').
+  sibling('Simeon','Naphtali').
+  A('a','b','a','b','a','b').
+  sibling('Reuben','Asher').
+  sibling('Levi','Naphtali').
+  sibling('Reuben','Joseph').
+  sibling('Judah','Naphtali').
+  sibling('Reuben','Benjamin').
+  A('b','a','b','a','b','a').
+
+Rules:
+
+Queries:
+  A(X,Y,Z,'d','e','f')?
+  sibling('Reuben','Simeon')?
+  A('a','b','c',X,Y,Z)?
+  sibling('Reuben',anyone)?
+  A('a','b','c',X,X,X)?
+  sibling(anyone,'Naphtali')?
+  A(X,X,X,Y,Y,Y)?
+  sibling('Gad','Asher')?
+  A(U,U,V,V,W,W)?
+  sibling('Levi','Joseph')?
+  A(A,B,A,B,A,B)?

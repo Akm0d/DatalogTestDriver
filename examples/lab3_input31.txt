@@ -1,0 +1,23 @@
+# evaluates queries containing only identifiers
+
+Schemes:
+  sibling(x,y)
+
+Facts:
+  sibling('Reuben','Simeon').
+  sibling('Simeon','Levi').
+  sibling('Levi','Judah').
+  sibling('Judah','Issachar').
+  sibling('Issachar','Zebulun').
+  sibling('Zebulun','Dan').
+  sibling('Dan','Naphtali').
+  sibling('Naphtali','Gad').
+  sibling('Gad','Asher').
+  sibling('Asher','Joseph').
+  sibling('Joseph','Benjamin').
+
+Rules:
+
+Queries:
+  sibling(a,b)?
+  sibling(a,a)?
