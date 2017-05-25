@@ -135,7 +135,7 @@ class Token:
 
     def __hash__(self):
         # This is so that we can have sets of tokens
-        hash(str(self.TYPE) + str(self.value))
+        hash(str(self.value) + str(self.type))
 
 
 if __name__ == "__main__":
