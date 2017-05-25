@@ -86,7 +86,10 @@ class RDBMS:
     datalog = None
 
     def __init__(self, datalog_program):
+        assert isinstance(datalog_program, datalog_parser.DatalogProgram)
         self.datalog = datalog_program
+        for datalog_scheme in self.datalog.schemes.schemes:
+            pass
 
     def evaluate_query(self, query):
         # Each query contains a set of relations
@@ -149,8 +152,8 @@ if __name__ == "__main__":
 
     rdbms = RDBMS(datalog)
 
-    for query in datalog.queries.queries:
-        rdbms.evaluate_query(query)
+    for datalog_query in datalog.queries.queries:
+        rdbms.evaluate_query(datalog_query)
 
     if part == 1:
         # TODO perform a single project, select, and rename on the input file, one at a time
@@ -159,5 +162,5 @@ if __name__ == "__main__":
     else:
         print(str(rdbms))
 
-    # Each fact in the Datalog Program defines a tuple in a relation.
-    # The fact name identifies a relation to which the tuple belongs.
+        # Each fact in the Datalog Program defines a tuple in a relation.
+        # The fact name identifies a relation to which the tuple belongs.
