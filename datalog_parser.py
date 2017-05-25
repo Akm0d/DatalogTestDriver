@@ -54,31 +54,36 @@ class Scheme:
 
 class Schemes:
     schemes = None
-    parent_error = False
 
     def __init__(self, lex_tokens):
         self.schemes = list()
-        # Validate the syntax of the Scheme
+        # SCHEMES
+        t = lex_tokens.pop(0)
+        if not t[TYPE] == SCHEMES:
+            raise TokenError(t)
+        # COLON
         t = lex_tokens.pop(0)
         if not t[TYPE] == COLON:
             raise TokenError(t)
-
-        new_scheme = list()
-        while lex_tokens:
+        # SCHEMELIST
+        t_tokens = list()
+        while len(lex_tokens) > 1:
             t = lex_tokens.pop(0)
-            new_scheme.append(t)
+            t_tokens.append(t)
             # Once we reach a right parenthesis it is a new scheme
             if t[TYPE] == RIGHT_PAREN:
-                self.schemes.append(Scheme(new_scheme))
-                new_scheme.clear()
-        if new_scheme:
-            last = new_scheme.pop()
-            if not last[TYPE] == RIGHT_PAREN:
-                self.parent_error = True
-            # If there are any left over tokens then create a new scheme with them to get the right error
-            else:
-                new_scheme.append(last)
-                Scheme(new_scheme)
+                self.schemes.append(Scheme(t_tokens))
+                t_tokens.clear()
+
+        # If ther are tokens left over then make a scheme out of them
+        t = lex_tokens.pop(0)
+
+        if t_tokens:
+            t_tokens.append(t)
+            Scheme(t_tokens)
+
+        if not t[TYPE] == FACTS:
+            raise TokenError(t)
 
     def __str__(self):
         """
@@ -156,7 +161,6 @@ class Fact:
 
 class Facts:
     facts = None
-    parent_error = False
 
     def __init__(self, lex_tokens):
         self.facts = list()
@@ -165,22 +169,23 @@ class Facts:
         if not t[TYPE] == COLON:
             raise TokenError(t)
 
-        new_fact = list()
-        while lex_tokens:
+        t_tokens = list()
+        while len(lex_tokens) > 1:
             t = lex_tokens.pop(0)
-            new_fact.append(t)
+            t_tokens.append(t)
             # Once we reach a period it is a new fact
             if t[TYPE] == PERIOD:
-                self.facts.append(Fact(new_fact))
-                new_fact.clear()
-        if new_fact:
-            # we have an incomplete fact, the next token should fail
-            last = new_fact.pop()
-            if not last == PERIOD:
-                self.parent_error = True
-            else:
-                new_fact.append(last)
-                Fact(new_fact)
+                self.facts.append(Fact(t_tokens))
+                t_tokens.clear()
+
+        t = lex_tokens.pop(0)
+
+        if t_tokens:
+            t_tokens.append(t)
+            Fact(t_tokens)
+
+        if not t[TYPE] == RULES:
+            raise TokenError(t)
 
     def __str__(self):
         """
@@ -390,13 +395,11 @@ class Rule:
     predicates = None
 
     def __init__(self, lex_tokens):
-        # print([i[TYPE] for i in lex_tokens])
-        # Validate the syntax of the Rule
-        new_predicate = list()
+        t_tokens = list()
         palindrome = 0
-        while lex_tokens:
+        while len(lex_tokens) > 1:
             t = lex_tokens.pop(0)
-            new_predicate.append(t)
+            t_tokens.append(t)
             if t[TYPE] == LEFT_PAREN:
                 palindrome += 1
 
@@ -408,33 +411,33 @@ class Rule:
                 elif palindrome == 0:
                     if not self.head:
                         # The format for a head predicate is exactly the same as that of a scheme
-                        self.head = Scheme(new_predicate)
+                        self.head = Scheme(t_tokens)
                         if not lex_tokens:
                             raise TokenError(t)
                         t = lex_tokens.pop(0)
                         if not t[TYPE] == COLON_DASH:
                             raise TokenError(t)
                     else:
-                        new_item = Predicate(new_predicate)
+                        new_item = Predicate(t_tokens)
                         if not self.predicates:
                             self.predicates = list([])
                         self.predicates.append(new_item)
                         if not lex_tokens:
-                            raise TokenError(t)
-                        t = lex_tokens.pop(0)
-                        # If the next token is a period and there are still more tokens, then we have a problem
-                        if t[TYPE] == PERIOD and lex_tokens:
-                            raise TokenError(lex_tokens.pop(0))
-                        # The next token should be a comma, unless we are at the end of a rule
-                        elif not t[TYPE] == COMMA and lex_tokens:
-                            raise TokenError(t)
-                    new_predicate.clear()
+                            self.parent_error = True
+                        else:
+                            t = lex_tokens.pop(0)
+                            if not t[TYPE] == COMMA and len(lex_tokens) > 1:
+                                raise TokenError(t)
+                    t_tokens.clear()
                 else:
                     # We haven't balanced parenthesis yet
                     pass
 
-        if new_predicate or palindrome:
-            raise TokenError(new_predicate.pop())
+        if not t[TYPE] == PERIOD:
+            raise TokenError(t)
+
+        if t_tokens or palindrome:
+            raise TokenError(t_tokens.pop())
         pass
 
     def __str__(self):
@@ -453,7 +456,6 @@ class Rule:
 
 class Rules:
     rules = None
-    parent_error = False
 
     def __init__(self, lex_tokens):
         self.rules = list()
@@ -462,21 +464,23 @@ class Rules:
         if not t[TYPE] == COLON:
             raise TokenError(t)
 
-        new_rule = list()
-        while lex_tokens:
+        t_tokens = list()
+        while len(lex_tokens) > 1:
             t = lex_tokens.pop(0)
-            new_rule.append(t)
+            t_tokens.append(t)
             # Once we reach a period it is a new rule
             if t[TYPE] == PERIOD:
-                self.rules.append(Rule(new_rule))
-                new_rule.clear()
+                self.rules.append(Rule(t_tokens))
+                t_tokens.clear()
 
-        if new_rule:
-            temp = Rule(new_rule)
-            if temp:
-                raise TokenError(t)
-            else:
-                self.parent_error = True
+        t = lex_tokens.pop(0)
+
+        if t_tokens:
+            t_tokens.append(t)
+            Rule(t_tokens)
+
+        if not t[TYPE] == QUERIES:
+            raise TokenError(t)
 
     def __str__(self):
         """
@@ -492,7 +496,6 @@ class Rules:
 
 class Queries:
     queries = None
-    parent_error = False
 
     def __init__(self, lex_tokens):
         self.queries = list()
@@ -502,7 +505,7 @@ class Queries:
             raise TokenError(t)
 
         t_tokens = list()
-        while lex_tokens:
+        while len(lex_tokens) > 1:
             t = lex_tokens.pop(0)
             # Once we reach a question mark it is a new query
             if t[TYPE] == Q_MARK:
@@ -515,14 +518,19 @@ class Queries:
             else:
                 t_tokens.append(t)
 
+        if not t[TYPE] == Q_MARK:
+            t = lex_tokens.pop(0)
+            raise TokenError(t)
+
+        t = lex_tokens.pop(0)
+
         # If there are leftover tokens then turn them into a predicate to throw the right token error
         if t_tokens:
-            last = t_tokens.pop()
-            if not last[TYPE] == Q_MARK:
-                self.parent_error = True
-            else:
-                t_tokens.append(last)
-                Predicate(t_tokens)
+            t_tokens.append(t)
+            Predicate(t_tokens)
+
+        if not t[TYPE] == EOF:
+            raise TokenError(t)
 
     def __str__(self):
         """
@@ -549,6 +557,7 @@ class DatalogProgram:
         t_tokens = list()
         iteration = None
         for t in lex_tokens:
+            t_tokens.append(t)
             if t[TYPE] == SCHEMES and not iteration:
                 iteration = SCHEMES
             # If iteration hasn't been defined and the first token wasn't a scheme we need to stop
@@ -557,8 +566,6 @@ class DatalogProgram:
             elif t[TYPE] == FACTS and iteration == SCHEMES:
                 # Everything from the beginning of file to FACTS belongs to schemes
                 self.schemes = Schemes(t_tokens)
-                if self.schemes.parent_error:
-                    raise TokenError(t)
                 # There must be at least one scheme
                 if not self.schemes.schemes:
                     raise TokenError(t)
@@ -567,31 +574,23 @@ class DatalogProgram:
             elif t[TYPE] == RULES and iteration == FACTS:
                 # Everything form FACTS to RULES belongs to facts
                 self.facts = Facts(t_tokens)
-                if self.facts.parent_error:
-                    raise TokenError(t)
                 t_tokens.clear()
                 iteration = RULES
             elif t[TYPE] == QUERIES and iteration == RULES:
                 # Everything from RULES to QUERIES belongs to rules
                 self.rules = Rules(t_tokens)
                 # Make sure it ended correctly
-                if self.rules.parent_error:
-                    raise TokenError(t)
                 t_tokens.clear()
                 iteration = QUERIES
             elif t[TYPE] == EOF and iteration == QUERIES:
                 # Everything else belongs to queries
                 self.queries = Queries(t_tokens)
-                if self.queries.parent_error:
-                    raise TokenError(t)
                 # There must be at least one query
                 if not self.queries.queries:
                     raise TokenError(t)
             elif not iteration:
                 # If Schemes haven't been seen yet
                 raise TokenError(t)
-            else:
-                t_tokens.append(t)
 
         # If There are left over tokens, then hand them off to the class of the current iteration so it can give the
         # proper error
