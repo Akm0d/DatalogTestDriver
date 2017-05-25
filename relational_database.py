@@ -7,39 +7,62 @@ import datalog_parser
 
 class Pair:
     """
-     The format of a pair is v= 's', where v is the variable and 's' is the string value. 
+    The format of a pair is v= 's', where v is the variable and 's' is the string value. 
     """
-    # An ID
-    variable = None
-    # A string
+    attribute = None
     value = None
 
-    def __init__(self, id, string):
-        self.variable = id
-        self.value = string
+    def __init__(self, v, s):
+        self.attribute = v
+        self.value = s
 
     def __str__(self):
-        return "%s='%s'" % (self.variable[VALUE], self.value[VALUE])
+        return "%s='%s'" % (self.attribute[VALUE], self.value[VALUE])
+
+    def __hash__(self):
+        return hash(str(self))
 
 
-class Relation:
+class Tuple:
     """
-     A tuple-like list of pairs.  A list of these will be mapped to a query
+    A Tuple is a set of attribute/value pairs.
     """
     pairs = None
 
     def __init__(self):
-        self.pairs = list()
+        self.pairs = set()
 
-    def append(self, pair):
+    def add(self, pair):
         assert isinstance(pair, Pair)
-        self.pairs.append(pair)
+        self.pairs.add(pair)
 
     def __str__(self):
-        result = ""
-        for pair in self.pairs:
-            result += str(pair)
-        return ", ".join(map(str, self.pairs))
+        return ", ".join(str(pair) for pair in self.pairs)
+
+    def __hash__(self):
+        return hash(str(self))
+
+
+class Relation:
+    """
+    Each scheme in a Datalog Program defines a relation in the Database.
+    The scheme defines the name of the relation. 
+    The attribute list of the scheme defines the schema of the relation. 
+    Each relation has a name, a schema, and a set of tuples. A schema is a set of attributes. 
+    """
+    name = None
+    schema = None
+    tuples = None
+
+    def __init__(self, scheme, fact):
+        assert isinstance(scheme, datalog_parser.Scheme)
+        self.name = scheme.id
+        self.schema = set(scheme.idList)
+        assert isinstance(fact, datalog_parser.Fact)
+        self.tuples = set()
+
+    def __str__(self):
+        return ""
 
     def __hash__(self):
         """
@@ -52,25 +75,24 @@ class Relation:
 
 class RDBMS:
     """
-    A relational Database Management system that can add Relations to a query
+    The basic data structure is a database consisting of relations, each with their own name, schema, and set of tuples.
+    A relational database management system (RDBMS) maintains data sets called relations.
+    This builds a relational database system from a Datalog file, and then answers queries using relational algebra. 
     """
     # A query mapped to a set of relations
     # This will be shared amongst all instances of this class
     RelationalDatabase = OrderedDict()
-
-    # A copy of the datalog program that we can manipulate for this query
-    # This will be unique each time the class is created
+    relations = None
     datalog = None
 
-    def __init__(self, datalog_program, query):
-        # Manipulate this datalog_program object so that we find all relations that match the query
+    def __init__(self, datalog_program):
         self.datalog = datalog_program
 
+    def evaluate_query(self, query):
         # Each query contains a set of relations
         self.RelationalDatabase[query] = set()
         relation = self.RelationalDatabase[query]
         assert isinstance(relation, set)
-
         # TODO Find all relations that match the query, add them to the set
 
     def select(self):
@@ -125,9 +147,10 @@ if __name__ == "__main__":
     tokens = lexical_analyzer.scan(d_file)
     datalog = datalog_parser.DatalogProgram(tokens)
 
-    rdbms = None
-    for query_object in datalog.queries.queries:
-        rdbms = RDBMS(datalog, query_object)
+    rdbms = RDBMS(datalog)
+
+    for query in datalog.queries.queries:
+        rdbms.evaluate_query(query)
 
     if part == 1:
         # TODO perform a single project, select, and rename on the input file, one at a time
@@ -135,3 +158,6 @@ if __name__ == "__main__":
         print("Part 1 hasn't yet been implemented")
     else:
         print(str(rdbms))
+
+    # Each fact in the Datalog Program defines a tuple in a relation.
+    # The fact name identifies a relation to which the tuple belongs.
