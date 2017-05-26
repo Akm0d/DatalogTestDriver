@@ -324,12 +324,13 @@ def main(d_file, part=2, debug=False):
             rdbms.evaluate_query(datalog_query)
 
         if part == 1:
+            global RelationalDatabase
             # This is the same thing that comes from evaluate queries, but we are going to stop at each point and print
             one_query = datalog.queries.queries[0]
             assert isinstance(one_query, datalog_parser.Predicate)
             # Each query contains a set of relations
-            rdbms.RelationalDatabase[one_query] = set()
-            relation = rdbms.RelationalDatabase[one_query]
+            RelationalDatabase[one_query] = set()
+            relation = RelationalDatabase[one_query]
             assert isinstance(relation, set)
             # select, project, then rename
             one_selected = rdbms.relations
@@ -340,7 +341,7 @@ def main(d_file, part=2, debug=False):
             for p in one_query.parameterList:
                 assert isinstance(p, datalog_parser.Parameter)
                 if p.expression:
-                    result += ("I can't evaluate expressions yet")
+                    result += "I can't evaluate expressions yet\n"
                 else:  # It is a string or id
                     if p.string_id[TYPE] == STRING:
                         if one_selected and one_selected[0].name:
@@ -353,44 +354,44 @@ def main(d_file, part=2, debug=False):
             # Print original database
             result += (str(one_query) + "? ")
             if rdbms.relations:
-                result += ("Yes(" + str(len(rdbms.relations[0].tuples)) + ")")
+                result += ("Yes(" + str(len(rdbms.relations[0].tuples)) + ")\n")
                 for r in sorted(rdbms.relations[0].tuples):
-                    result += ("  " + str(r))
+                    result += ("  " + str(r)) + "\n"
             else:
-                result += ("No")
+                result += "No\n"
 
             # Print after select
-            result += ("AFTER SELECT")
+            result += "AFTER SELECT\n"
             result += (str(one_query) + "? ")
             if one_selected:
-                result += ("Yes(" + str(len(one_selected[0].tuples)) + ")")
+                result += ("Yes(" + str(len(one_selected[0].tuples)) + ")\n")
                 for r in sorted(one_selected[0].tuples):
-                    result += ("  " + str(r))
+                    result += ("  " + str(r)) + "\n"
             else:
-                result += ("No")
+                result += "No\n"
 
             # Print after project
-            result += ("AFTER PROJECT")
+            result += "AFTER PROJECT\n"
             result += (str(one_query) + "? ")
             one_projected = rdbms.project(one_selected, one_query.id, one_project_columns)
             if one_projected:
-                result += ("Yes(" + str(len(one_projected[0].tuples)) + ")")
+                result += ("Yes(" + str(len(one_projected[0].tuples)) + ")\n")
                 for r in sorted(one_projected[0].tuples):
-                    result += ("  " + str(r))
+                    result += ("  " + str(r)) + "\n"
             else:
-                result += ("No")
+                result += "No\n"
 
             # Print after rename
-            result += ("AFTER RENAME")
+            result += "AFTER RENAME\n"
             result += (str(one_query) + "? ")
             one_renamed = rdbms.rename(one_projected, one_query.id, one_new_names)
             one_renamed = rdbms.project(one_renamed, one_query.id, one_project_columns)
             if one_projected:
-                result += ("Yes(" + str(len(one_renamed[0].tuples)) + ")")
+                result += ("Yes(" + str(len(one_renamed[0].tuples)) + ")\n")
                 for r in sorted(one_renamed[0].tuples):
                     result += ("  " + str(r))
             else:
-                result += ("No")
+                result += "No\n"
 
         else:
             result += (str(rdbms))
