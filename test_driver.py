@@ -92,7 +92,8 @@ for test in test_files:
             command = "python3 \"%s\" --part %s %s" % (os_path.join(sys_path[0], "datalog_parser.py"), str(part), test)
             expected = str(check_output(command, shell=True), 'utf-8')
         elif lab == 3:
-            print("Lab %s part %s has not yet been implemented" % (str(lab), str(part)))
+            command = "python3 \"%s\" --part %s %s" % (os_path.join(sys_path[0], "relational_database.py"), str(part), test)
+            expected = str(check_output(command, shell=True), 'utf-8')
         elif lab == 4:
             print("Lab %s part %s has not yet been implemented" % (str(lab), str(part)))
         elif lab == 5:

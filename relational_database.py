@@ -2,7 +2,7 @@
 from collections import OrderedDict
 from itertools import zip_longest
 from orderedset._orderedset import OrderedSet
-from tokens import VALUE, STRING, TYPE, ID
+from tokens import VALUE, STRING, TYPE, ID, TokenError
 
 import lexical_analyzer
 import datalog_parser
@@ -311,16 +311,26 @@ if __name__ == "__main__":
 
     # Create class objects
     tokens = lexical_analyzer.scan(d_file)
-    datalog = datalog_parser.DatalogProgram(tokens)
 
-    rdbms = RDBMS(datalog)
-
-    for datalog_query in datalog.queries.queries:
-        rdbms.evaluate_query(datalog_query)
-
-    if part == 1:
-        # TODO perform a single project, select, and rename on the input file, one at a time
-        # print out something helpful, not what they say to print out, that's lame
-        print("Part 1 hasn't yet been implemented")
+    datalog = None
+    if debug:
+        datalog = datalog_parser.DatalogProgram(tokens)
     else:
-        print(str(rdbms))
+        try:
+            datalog = datalog_parser.DatalogProgram(tokens)
+        except TokenError:
+            pass
+
+    if datalog:
+        rdbms = RDBMS(datalog)
+
+        for datalog_query in datalog.queries.queries:
+            rdbms.evaluate_query(datalog_query)
+
+        if part == 1:
+            # TODO perform a single project, select, and rename on the input file, one at a time
+            # print out something helpful, not what they say to print out, that's lame
+            print("Part 1 hasn't yet been implemented")
+        else:
+            print(str(rdbms))
+
