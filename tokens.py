@@ -33,8 +33,8 @@ EOF         = 'EOF'
 class TokenError(Exception):
     def __init__(self, token):
         assert isinstance(token, tuple)
-        print("Failure!")
-        print('  (%s,"%s",%s)' % token)
+        # print("Failure!")
+        # print('  (%s,"%s",%s)' % token)
 
 
 class Token:

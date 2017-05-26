@@ -363,18 +363,17 @@ if __name__ == "__main__":
                 one_i += 1
 
             # Print original database
-            print(str(one_query), end=" ")
+            print(str(one_query) + "?", end=" ")
             if rdbms.relations:
-                print("(" + str(len(rdbms.relations[0].tuples)) + ")")
+                print("Yes(" + str(len(rdbms.relations[0].tuples)) + ")")
                 for r in sorted(rdbms.relations[0].tuples):
                     print("  " + str(r))
             else:
-                print("No Queries were found")
-                exit()
+                print("No")
 
             # Print after select
             print("AFTER SELECT")
-            print(str(one_query) + "? ", end="")
+            print(str(one_query) + "?", end=" ")
             if one_selected:
                 print("Yes(" + str(len(one_selected[0].tuples)) + ")")
                 for r in sorted(one_selected[0].tuples):
@@ -384,7 +383,7 @@ if __name__ == "__main__":
 
             # Print after project
             print("AFTER PROJECT")
-            print(str(one_query) + "? ", end="")
+            print(str(one_query) + "?", end=" ")
             one_projected = rdbms.project(one_selected, one_query.id, one_project_columns)
             if one_projected:
                 print("Yes(" + str(len(one_projected[0].tuples)) + ")")
@@ -395,7 +394,7 @@ if __name__ == "__main__":
 
             # Print after rename
             print("AFTER RENAME")
-            print(str(one_query) + "? ", end="")
+            print(str(one_query) + "?", end=" ")
             one_renamed = rdbms.rename(one_projected, one_query.id, one_new_names)
             one_renamed = rdbms.project(one_renamed, one_query.id, one_project_columns)
             if one_projected:

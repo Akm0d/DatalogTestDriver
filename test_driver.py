@@ -9,7 +9,13 @@ from subprocess import TimeoutExpired, check_output, check_call
 from sys import path as sys_path, argv
 from termcolor import cprint
 
+import datalog_parser
+import relational_database
+import datalog_interpreter
+
 # This is the cyclomatic complexity threshhold allowed for each function
+from tokens import TokenError
+
 COMPLEXITY_THRESHHOLD = 8
 
 # If there are no arguments, then print the help text
@@ -89,8 +95,7 @@ for test in test_files:
                 expected = expected + '(%s,"%s",%s)' % line + "\n"
             expected = expected + ("Total Tokens = %s\n" % len(lex))
         elif lab == 2:
-            command = "python3 \"%s\" --part %s %s" % (os_path.join(sys_path[0], "datalog_parser.py"), str(part), test)
-            expected = str(check_output(command, shell=True), 'utf-8')
+            expected = datalog_parser.main(test, part=part, debug=False)
         elif lab == 3:
             command = "python3 \"%s\" --part %s %s" % (os_path.join(sys_path[0], "relational_database.py"), str(part), test)
             expected = str(check_output(command, shell=True), 'utf-8')

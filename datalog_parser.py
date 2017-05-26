@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
-from tokens import COMMA, PERIOD, Q_MARK, LEFT_PAREN, RIGHT_PAREN, COLON, COLON_DASH, MULTIPLY
+from ast import literal_eval
+
+from tokens import COMMA, PERIOD, Q_MARK, LEFT_PAREN, RIGHT_PAREN, COLON, COLON_DASH, MULTIPLY, Token
 from tokens import ADD, SCHEMES, FACTS, RULES, QUERIES, ID, STRING, COMMENT, WHITESPACE, EOF
 from tokens import TokenError, TYPE, VALUE
 import lexical_analyzer
@@ -98,11 +100,15 @@ class Schemes:
         return result
 
 
+# This will eventually become a set
+domain = None
+
+
 class Fact:
     id = None
     stringList = None
+
     # This will be shared across every instance of the Fact class
-    domain = set()
 
     def __init__(self, lex_tokens):
         self.stringList = list()
@@ -117,7 +123,7 @@ class Fact:
         t = lex_tokens.pop(0)
         if not t[TYPE] == STRING:
             raise TokenError(t)
-        self.domain.add(t[VALUE])
+        domain.add(t[VALUE])
         self.stringList.append(t)
         while len(lex_tokens) > 2 and (t[TYPE] in [COMMA, STRING]):
             t = lex_tokens.pop(0)
@@ -129,7 +135,7 @@ class Fact:
             t = lex_tokens.pop(0)
             if not t[TYPE] == STRING:
                 raise TokenError(t)
-            self.domain.add(t[VALUE])
+            domain.add(t[VALUE])
             self.stringList.append(t)
         if not lex_tokens:
             raise TokenError(t)
@@ -163,6 +169,8 @@ class Facts:
     facts = None
 
     def __init__(self, lex_tokens):
+        global domain
+        domain = set()
         self.facts = list()
         # Validate the syntax of the Scheme
         t = lex_tokens.pop(0)
@@ -203,12 +211,11 @@ class Facts:
         :return A string representation of the domain of all Fact objects
         """
         if self.facts:
-            domain = self.facts[0].domain
             result = "Domain(%s):\n" % str(len(domain))
             for item in sorted(domain):
                 result += "  " + item + "\n"
             # Remove trailing new line
-            result = result[:-1]
+            result = result.strip()
             return result
         else:
             return None
@@ -626,6 +633,33 @@ class DatalogProgram:
         )
 
 
+def main(d_file, part=2, debug=False):
+    result = ""
+    if not (1 <= part <= 2):
+        raise ValueError("Part must be either 1 or 2")
+
+    if debug: print("Parsing '%s'" % d_file)
+
+    tokens = lexical_analyzer.scan(d_file)
+
+    if debug:
+        # Print out traces on token errors
+        datalog = DatalogProgram(tokens)
+        result += "Success!\n"
+        if part == 2:
+            result += str(datalog) + "\n"
+    else:
+        # Ignore traces on token errors
+        try:
+            datalog = DatalogProgram(tokens)
+            result += "Success!\n"
+            if part == 2:
+                result += str(datalog) + "\n"
+        except TokenError as t:
+            return 'Failure!\n  (%s,"%s",%s)\n' % tuple(literal_eval(str(t)))
+    return result
+
+
 if __name__ == "__main__":
     """
     Run the datalog parser by itself and produce the proper output
@@ -638,28 +672,4 @@ if __name__ == "__main__":
     args.add_argument('file', help='datalog file to parse')
     arg = args.parse_args()
 
-    debug = arg.debug
-    d_file = arg.file
-    part = int(arg.part)
-    if not (1 <= part <= 2):
-        raise ValueError("Part must be either 1 or 2")
-
-    if debug: print("Parsing '%s'" % d_file)
-
-    tokens = lexical_analyzer.scan(d_file)
-
-    if debug:
-        # Print out traces on token errors
-        datalog = DatalogProgram(tokens)
-        print("Success!")
-        if part == 2:
-            print(str(datalog))
-    else:
-        # Ignore traces on token errors
-        try:
-            datalog = DatalogProgram(tokens)
-            print("Success!")
-            if part == 2:
-                print(str(datalog))
-        except TokenError:
-            pass
+    str(main(arg.file, part=int(arg.part), debug=arg.debug))
