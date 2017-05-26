@@ -2,29 +2,11 @@
 from collections import OrderedDict
 from itertools import zip_longest
 
+from orderedset._orderedset import OrderedSet
+
 from tokens import VALUE
 import lexical_analyzer
 import datalog_parser
-
-"""
-TODO in may be necessary to define these functions for set oprations to work on classes.  
-TODO it may need to be done on tokens as well
-object.__lt__(self, other)
-object.__le__(self, other)
-object.__eq__(self, other)
-object.__ne__(self, other)
-object.__gt__(self, other)
-object.__ge__(self, other)
-
-These are the so-called “rich comparison” methods. 
-The correspondence between operator symbols and method names is as follows: 
-    x<y calls x.__lt__(y)
-    x<=y calls x.__le__(y)
-    x==y calls x.__eq__(y)
-    x!=y calls x.__ne__(y)
-    x>y calls x.__gt__(y)
-    x>=y calls x.__ge__(y).00
-"""
 
 
 class Pair:
@@ -53,7 +35,7 @@ class Tuple:
     pairs = None
 
     def __init__(self):
-        self.pairs = set()
+        self.pairs = OrderedSet()
 
     def add(self, pair):
         assert isinstance(pair, Pair)
@@ -64,6 +46,24 @@ class Tuple:
 
     def __hash__(self):
         return hash(str(self))
+
+    def __eq__(self, other):
+        return str(self) == str(other)
+
+    def __ne__(self, other):
+        return str(self) != str(other)
+
+    def __lt__(self, other):
+        return str(self) < str(other)
+
+    def __le__(self, other):
+        return str(self) <= str(other)
+
+    def __ge__(self, other):
+        return str(self) >= str(other)
+
+    def __gt__(self, other):
+        return str(self) > str(other)
 
 
 class Relation:
@@ -91,7 +91,7 @@ class Relation:
                 new_tuple = Tuple()
 
                 # Iterate over both lists in parallel
-                # If one list is longer than the other then fill the shorter list with None types
+                # If one list is longer than the other, then fill the shorter list with None types
                 for attribute, value in zip_longest(scheme.idList, fact.stringList, fillvalue=None):
                     # add pairs to the tuple
                     new_tuple.add(Pair(attribute, value))
@@ -99,15 +99,18 @@ class Relation:
                 self.tuples.add(new_tuple)
 
     def __str__(self):
-        result = ""
-        return result
-
-    def __hash__(self):
         """
         Sort the tuples alphabetically based on string values in the tuples' variables 
         (sort with the first sort key as the first variable (in order of appearance in the query),
         the second sort key as the second variable, and so on). 
         """
+        result = ""
+        tuples = sorted(self.tuples)
+        for thing in tuples:
+            result += str(thing) + "\n"
+        return result
+
+    def __hash__(self):
         return hash(str(self))
 
 
@@ -205,8 +208,10 @@ if __name__ == "__main__":
         # Each fact in the Datalog Program defines a tuple in a relation.
         # The fact name identifies a relation to which the tuple belongs.
 
-    print("RELATIONS")
+    print("\nRELATIONS\n" + "-"*80)
     for database_relation in rdbms.relations:
-        print("NAME: " + str(database_relation.name))
-        print("SCHEMA: " + ", ".join(str(x) for x in database_relation.schema))
-        print("TUPLES: " + "\n".join(str(x) for x in database_relation.tuples))
+        print("NAME: " + str(database_relation.name[VALUE]))
+        print("SCHEMA: " + str(database_relation.schema))
+        print("STRING: \n" + str(database_relation))
+        print("-" * 80)
+
