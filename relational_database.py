@@ -355,16 +355,16 @@ if __name__ == "__main__":
             else:
                 print(
                     "Selecting %s from scheme '%s' at index %s" % (p.string_id[VALUE], single_query.id[VALUE], str(i)))
-                print("." * 80)
+                print("." * 60)
                 sel = rdbms.select(relations=rdbms.relations, index=i, name=single_query.id, value=p.string_id)
                 print(str(single_query) + "? ", end="")
                 if sel:
                     print("Yes(" + str(len(sel[0].tuples)) + ")")
-                    for r in sel[0].tuples:
+                    for r in sorted(sel[0].tuples):
                         print("  " + str(r))
                 else:
                     print("No")
-            print("." * 80)
+            print("." * 60)
 
             # SINGLE PROJECT OPERATION
             single_query = None
@@ -395,41 +395,39 @@ if __name__ == "__main__":
                 print(str(single_query) + "? ", end="")
                 if pro:
                     print("Yes(" + str(len(pro[0].tuples)) + ")")
-                    for r in pro[0].tuples:
+                    for r in sorted(pro[0].tuples):
                         print("  " + str(r))
-                print("." * 80)
+                print("." * 60)
 
             # SINGLE RENAME OPERATION
             single_query = None
             p = None
-            i = None
+            id_list = list()
             # Find a query to work with
             for datalog_query in datalog.queries.queries:
                 assert isinstance(datalog_query, datalog_parser.Predicate)
-                it = 0
+                p_columns.clear()
                 for param in datalog_query.parameterList:
                     assert isinstance(param, datalog_parser.Parameter)
                     if param.string_id:
                         if param.string_id[TYPE] == ID:
                             single_query = datalog_query
                             p = param
-                            i = it
-                            break
-                it += 1
+                            id_list.append(param.string_id)
                 if single_query:
                     break
 
-            if not single_query:
-                print("Could not perform select operation, no strings found in any of the parameters")
+            if not (single_query and id_list):
+                print("Could not perform rename operation, no id's found in any of the parameters")
             else:
                 print(
-                    "Selecting %s from scheme '%s' at index %s" % (p.string_id[VALUE], single_query.id[VALUE], str(i)))
-                print("." * 80)
-                sel = rdbms.select(relations=rdbms.relations, index=i, name=single_query.id, value=p.string_id)
+                    "Renaming ID's from scheme '%s' to %s" % (single_query.id[VALUE], ([x[VALUE] for x in id_list])))
+                print("." * 60)
+                ren = rdbms.rename(relations=pro, name=single_query.id, new_names=id_list)
                 print(str(single_query) + "? ", end="")
-                if sel:
-                    print("Yes(" + str(len(sel[0].tuples)) + ")")
-                    for r in sel[0].tuples:
+                if ren:
+                    print("Yes(" + str(len(ren[0].tuples)) + ")")
+                    for r in sorted(ren[0].tuples):
                         print("  " + str(r))
                 else:
                     print("No")
