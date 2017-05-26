@@ -241,8 +241,21 @@ class RDBMS:
                     new_t = Tuple()
                     # Iterate over the pairs and new names
                     for p, n in zip_longest(t.pairs, new_names, fillvalue=None):
+                        if not p:
+                            p = Pair(None, None)
                         new_t.add(Pair(n, p.value))
-                    tuples.add(new_t)
+
+                    # If pairs in the tuple have the same ID but not the same value then the tuple is invalid
+                    valid = True
+                    for p in new_t.pairs:
+                        assert isinstance(p, Pair)
+                        # Iterate over the same list twice and make sure all pairs with the same ID have same value
+                        for o in new_t.pairs:
+                            assert isinstance(o, Pair)
+                            if p.attribute == o.attribute and not (p.value == o.value):
+                                valid = False
+                    if valid:
+                        tuples.add(new_t)
             if tuples:
                 result.append(Relation(tuples=tuples, name=name))
         return result
