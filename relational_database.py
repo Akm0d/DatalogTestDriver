@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
 from collections import OrderedDict
 from itertools import zip_longest
-
 from orderedset._orderedset import OrderedSet
-
 from tokens import VALUE
+
 import lexical_analyzer
 import datalog_parser
 
