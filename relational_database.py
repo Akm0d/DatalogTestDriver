@@ -294,6 +294,12 @@ class RDBMS:
 
 
 if __name__ == "__main__":
+    """
+    For part 1, this will perform single select, project, and rename operations for the file provided.  
+    It will select the first query in the list and use it for all 3 operations, in succession
+    
+    For part 2, all queries will be analyzed and a thorough output will be printed
+    """
     from argparse import ArgumentParser
 
     args = ArgumentParser(description="Run the datalog parser, this will produce output for lab 2")
@@ -330,107 +336,74 @@ if __name__ == "__main__":
             rdbms.evaluate_query(datalog_query)
 
         if part == 1:
-            # SINGLE SELECT OPERATION
-            single_query = None
-            p = None
-            i = None
-            # Find a query to work with
-            for datalog_query in datalog.queries.queries:
-                assert isinstance(datalog_query, datalog_parser.Predicate)
-                it = 0
-                for param in datalog_query.parameterList:
-                    assert isinstance(param, datalog_parser.Parameter)
-                    if param.string_id:
-                        if param.string_id[TYPE] == STRING:
-                            single_query = datalog_query
-                            p = param
-                            i = it
-                            break
-                it += 1
-                if single_query:
-                    break
+            # This is the same thing that comes from evaluate queries, but we are going to stop at each point and print
+            one_query = datalog.queries.queries[0]
+            assert isinstance(one_query, datalog_parser.Predicate)
+            # Each query contains a set of relations
+            rdbms.RelationalDatabase[one_query] = set()
+            relation = rdbms.RelationalDatabase[one_query]
+            assert isinstance(relation, set)
+            # select, project, then rename
+            one_selected = rdbms.relations
+            one_project_columns = list()
+            one_new_names = list()
+            one_i = 0
+            # Perform the select operation
+            for p in one_query.parameterList:
+                assert isinstance(p, datalog_parser.Parameter)
+                if p.expression:
+                    print("I can't evaluate expressions yet")
+                else:  # It is a string or id
+                    if p.string_id[TYPE] == STRING:
+                        if one_selected and one_selected[0].name:
+                            one_selected = rdbms.select(relations=one_selected, index=one_i, name=one_query.id, value=p.string_id)
+                    elif p.string_id[TYPE] == ID:
+                        one_project_columns.append(one_i)
+                        one_new_names.append(p.string_id)
+                one_i += 1
 
-            if not single_query:
-                print("Could not perform select operation, no strings found in any of the parameters")
+            # Print original database
+            print(str(one_query), end=" ")
+            if rdbms.relations:
+                print("(" + str(len(rdbms.relations[0].tuples)) + ")")
+                for r in sorted(rdbms.relations[0].tuples):
+                    print("  " + str(r))
             else:
-                print(
-                    "Selecting %s from scheme '%s' at index %s" % (p.string_id[VALUE], single_query.id[VALUE], str(i)))
-                print("." * 60)
-                sel = rdbms.select(relations=rdbms.relations, index=i, name=single_query.id, value=p.string_id)
-                print(str(single_query) + "? ", end="")
-                if sel:
-                    print("Yes(" + str(len(sel[0].tuples)) + ")")
-                    for r in sorted(sel[0].tuples):
-                        print("  " + str(r))
-                else:
-                    print("No")
-            print("." * 60)
+                print("No Queries were found")
+                exit()
 
-            # SINGLE PROJECT OPERATION
-            single_query = None
-            p = None
-            p_columns = list()
-            # Find a query to work with
-            for datalog_query in datalog.queries.queries:
-                assert isinstance(datalog_query, datalog_parser.Predicate)
-                p_columns.clear()
-                i = 0
-                for param in datalog_query.parameterList:
-                    assert isinstance(param, datalog_parser.Parameter)
-                    if param.string_id:
-                        if param.string_id[TYPE] == ID:
-                            single_query = datalog_query
-                            p = param
-                            p_columns.append(i)
-                    i += 1
-                if single_query:
-                    break
-
-            if not single_query:
-                print("Could not perform project operation, no id's found in any of the parameters")
+            # Print after select
+            print("AFTER SELECT")
+            print(str(one_query) + "? ", end="")
+            if one_selected:
+                print("Yes(" + str(len(one_selected[0].tuples)) + ")")
+                for r in sorted(one_selected[0].tuples):
+                    print("  " + str(r))
             else:
-                print("Projecting column numbers %s from scheme '%s'" %
-                      (", ".join([str(i) for i in p_columns]), single_query.id[VALUE]))
-                pro = rdbms.project(relations=rdbms.relations, columns=p_columns, name=single_query.id)
-                print(str(single_query) + "? ", end="")
-                if pro:
-                    print("Yes(" + str(len(pro[0].tuples)) + ")")
-                    for r in sorted(pro[0].tuples):
-                        print("  " + str(r))
-                print("." * 60)
+                print("No")
 
-            # SINGLE RENAME OPERATION
-            single_query = None
-            p = None
-            id_list = list()
-            # Find a query to work with
-            for datalog_query in datalog.queries.queries:
-                assert isinstance(datalog_query, datalog_parser.Predicate)
-                p_columns.clear()
-                for param in datalog_query.parameterList:
-                    assert isinstance(param, datalog_parser.Parameter)
-                    if param.string_id:
-                        if param.string_id[TYPE] == ID:
-                            single_query = datalog_query
-                            p = param
-                            id_list.append(param.string_id)
-                if single_query:
-                    break
-
-            if not (single_query and id_list):
-                print("Could not perform rename operation, no id's found in any of the parameters")
+            # Print after project
+            print("AFTER PROJECT")
+            print(str(one_query) + "? ", end="")
+            one_projected = rdbms.project(one_selected, one_query.id, one_project_columns)
+            if one_projected:
+                print("Yes(" + str(len(one_projected[0].tuples)) + ")")
+                for r in sorted(one_projected[0].tuples):
+                    print("  " + str(r))
             else:
-                print(
-                    "Renaming ID's from scheme '%s' to %s" % (single_query.id[VALUE], ([x[VALUE] for x in id_list])))
-                print("." * 60)
-                ren = rdbms.rename(relations=pro, name=single_query.id, new_names=id_list)
-                print(str(single_query) + "? ", end="")
-                if ren:
-                    print("Yes(" + str(len(ren[0].tuples)) + ")")
-                    for r in sorted(ren[0].tuples):
-                        print("  " + str(r))
-                else:
-                    print("No")
+                print("No")
+
+            # Print after rename
+            print("AFTER RENAME")
+            print(str(one_query) + "? ", end="")
+            one_renamed = rdbms.rename(one_projected, one_query.id, one_new_names)
+            one_renamed = rdbms.project(one_renamed, one_query.id, one_project_columns)
+            if one_projected:
+                print("Yes(" + str(len(one_renamed[0].tuples)) + ")")
+                for r in sorted(one_renamed[0].tuples):
+                    print("  " + str(r))
+            else:
+                print("No")
 
         else:
             print(str(rdbms))
