@@ -1,3 +1,7 @@
-orderedset
+appdirs==1.4.3
 lizard==1.12.10
+orderedset==2.0
+packaging==16.8
+pyparsing==2.2.0
+six==1.10.0
 termcolor==1.1.0
