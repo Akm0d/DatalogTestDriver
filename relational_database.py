@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 from collections import OrderedDict
-from copy import deepcopy
 from itertools import zip_longest
 from orderedset._orderedset import OrderedSet
-from tokens import VALUE, STRING, TYPE
+from tokens import VALUE, STRING, TYPE, ID
 
 import lexical_analyzer
 import datalog_parser
@@ -147,21 +146,27 @@ class RDBMS:
         assert isinstance(relation, set)
         # select, project, then rename
         selected = self.relations
+        project_columns = list()
         i = 0
+        # Perform the select operation
         for p in query.parameterList:
             assert isinstance(p, datalog_parser.Parameter)
             if p.expression:
                 print("I can't evaluate expressions yet")
             else:  # It is a string or id
                 if p.string_id[TYPE] == STRING:
-                    if selected[0].name:
+                    if selected and selected[0].name:
                         selected = self.select(relations=selected, index=i, name=query.id, value=p.string_id)
+                elif p.string_id[TYPE] == ID:
+                    project_columns.append(i)
             i += 1
 
         # Make sure relations were found before iterating over them
         if selected[0].tuples:
-            for item in selected[0].tuples:
-                self.RelationalDatabase[query].add(item)
+            projected = self.project(selected, query.id, project_columns)
+            if projected[0].tuples:
+                for item in projected[0].tuples:
+                    self.RelationalDatabase[query].add(item)
 
     @staticmethod
     def select(relations, name, index, value):
@@ -184,13 +189,30 @@ class RDBMS:
         return list([Relation(tuples=tuples, name=name)])
 
     @staticmethod
-    def project(relations):
+    def project(relations, name, columns):
         """
-        Return (a) column(s) from the table.
+        :param relations: 
+        :param name: The table/scheme id
+        :param columns: a list of indices of IDs in a query
+        :return: A relation with only the specified columns from the table.
         """
-        return relations
-        # Each fact in the Datalog Program defines a tuple in a relation.
-        # The fact name identifies a relation to which the tuple belongs.
+        assert isinstance(relations, list)
+        tuples = set()
+        for relation in relations:
+            assert isinstance(relation, Relation)
+            if relation.name[VALUE] == name[VALUE]:
+                for t in relation.tuples:
+                    assert isinstance(t, Tuple)
+                    new_t = Tuple()
+                    i = 0
+                    for p in t.pairs:
+                        if i in columns:
+                            new_t.add(p)
+                        i += 1
+                    tuples.add(new_t)
+
+        return list([Relation(tuples=tuples, name=name)])
+
 
     @staticmethod
     def rename(relations):
@@ -216,7 +238,10 @@ class RDBMS:
             if not tuples:  # The set is empty
                 result += "No\n"
             else:  # The set isn't empty
-                result += "Yes(" + str(len(tuples)) + ")\n"
+                result += "Yes(" + str(len(tuples)) + ")"
+                assert isinstance(tuples, set)
+                if next(iter(tuples)).pairs:
+                    result += "\n"
                 for t in tuples:
                     result += "  " + str(t) + "\n"
         return result.rstrip("\n")
