@@ -97,7 +97,7 @@ class Relation:
                         new_tuple.add(Pair(attribute, value))
                         # Add the full tuple to our set
                     self.tuples.add(new_tuple)
-        elif tuples and name:# and schema:
+        elif tuples and name:  # and schema:
             self.name = name
             self.tuples = tuples
             self.schema = schema
@@ -147,6 +147,7 @@ class RDBMS:
         # select, project, then rename
         selected = self.relations
         project_columns = list()
+        new_names = list()
         i = 0
         # Perform the select operation
         for p in query.parameterList:
@@ -159,14 +160,16 @@ class RDBMS:
                         selected = self.select(relations=selected, index=i, name=query.id, value=p.string_id)
                 elif p.string_id[TYPE] == ID:
                     project_columns.append(i)
+                    new_names.append(p.string_id)
             i += 1
 
         # Make sure relations were found before iterating over them
-        if selected[0].tuples:
-            projected = self.project(selected, query.id, project_columns)
-            if projected[0].tuples:
-                for item in projected[0].tuples:
-                    self.RelationalDatabase[query].add(item)
+        projected = self.project(selected, query.id, project_columns)
+        renamed = self.rename(projected, query.id, new_names)
+        for r in renamed:
+            if r.tuples:
+                for t in r.tuples:
+                    self.RelationalDatabase[query].add(t)
 
     @staticmethod
     def select(relations, name, index, value):
@@ -175,8 +178,9 @@ class RDBMS:
         Return all rows that match a certain condition from the table
         """
         assert isinstance(relations, list)
-        tuples = set()
+        result = list()
         for relation in relations:
+            tuples = set()
             assert isinstance(relation, Relation)
             if relation.name[VALUE] == name[VALUE]:
                 for t in relation.tuples:
@@ -185,8 +189,9 @@ class RDBMS:
                     assert isinstance(p, Pair)
                     if p.value[VALUE] == value[VALUE]:
                         tuples.add(t)
-        # TODO IDK WHAT to do with schema
-        return list([Relation(tuples=tuples, name=name)])
+            if tuples:
+                result.append(Relation(tuples=tuples, name=name))
+        return result
 
     @staticmethod
     def project(relations, name, columns):
@@ -197,8 +202,9 @@ class RDBMS:
         :return: A relation with only the specified columns from the table.
         """
         assert isinstance(relations, list)
-        tuples = set()
+        result = list()
         for relation in relations:
+            tuples = set()
             assert isinstance(relation, Relation)
             if relation.name[VALUE] == name[VALUE]:
                 for t in relation.tuples:
@@ -210,17 +216,36 @@ class RDBMS:
                             new_t.add(p)
                         i += 1
                     tuples.add(new_t)
-
-        return list([Relation(tuples=tuples, name=name)])
-
+            if tuples:
+                result.append(Relation(tuples=tuples, name=name))
+        return result
 
     @staticmethod
-    def rename(relations):
+    def rename(relations, name, new_names):
         """
         Always rename all columns at the same time, that way if A,B is being renamed to B,A you don't end up with B,B
         Return a table with the specified columns renamed
+        :param relations: 
+        :param name: The table/scheme id
+        :param new_names: a list of IDs that will be the new names for the all columns
+        :return: A relation with columns renamed to the new_names
         """
-        return relations
+        assert isinstance(relations, list)
+        result = list()
+        for relation in relations:
+            tuples = set()
+            assert isinstance(relation, Relation)
+            if relation.name[VALUE] == name[VALUE]:
+                for t in relation.tuples:
+                    assert isinstance(t, Tuple)
+                    new_t = Tuple()
+                    # Iterate over the pairs and new names
+                    for p, n in zip_longest(t.pairs, new_names, fillvalue=None):
+                        new_t.add(Pair(n, p.value))
+                    tuples.add(new_t)
+            if tuples:
+                result.append(Relation(tuples=tuples, name=name))
+        return result
 
     def __str__(self):
         """
@@ -280,4 +305,3 @@ if __name__ == "__main__":
         print("Part 1 hasn't yet been implemented")
     else:
         print(str(rdbms))
-
