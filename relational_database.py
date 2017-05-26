@@ -271,7 +271,7 @@ class RDBMS:
         For each query, print the query and a space. 
         Then, if the query's resulting relation is empty, output “No”; and if the resulting relation is not empty, 
         output “Yes(n)” where n is the number of tuples in the resulting relation. 
-        If there are free variables in the query, print the tuples of the resulting relation, 
+        If there are free variables in the query, print the tuples of the resulting relation,
         one per line and indented by two spaces, according to the following directions.
         """
         result = ""
@@ -288,6 +288,8 @@ class RDBMS:
                     result += "\n"
                 for t in sorted(tuples):
                     result += "  " + str(t) + "\n"
+                # Remove whitespace after line
+                result = result.rstrip() + "\n"
         return result.rstrip("\n")
 
 
