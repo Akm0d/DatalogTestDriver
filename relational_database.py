@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 from collections import OrderedDict
+from copy import deepcopy
 from itertools import zip_longest
 from orderedset._orderedset import OrderedSet
-from tokens import VALUE
+from tokens import VALUE, STRING, TYPE
 
 import lexical_analyzer
 import datalog_parser
@@ -138,16 +139,55 @@ class RDBMS:
         self.RelationalDatabase[query] = set()
         relation = self.RelationalDatabase[query]
         assert isinstance(relation, set)
-        # TODO Find all relations that match the query, add them to the set
+        # select, project, then rename
+        print("Evaluating " + str(query))  # TODO REMOVE PRINT
+        selected = self.select(self.relations, query)
+        for database_relation in selected:
+            print("NAME: " + str(database_relation.name[VALUE]))
+            print("SCHEMA: " + str(database_relation.schema))
+            print("STRING: \n" + str(database_relation))
+            print("-" * 80)
 
-    def select(self):
-        pass
+    @staticmethod
+    def select(relations, query):
+        """
+        Always do select first, it doesn't mutilate the tuples
+        Return all rows that match a certain condition from the table
+        """
+        assert isinstance(query, datalog_parser.Predicate)
+        tuples = set()
+        i = 0
+        for parameter in query.parameterList:
+            if parameter.expression:
+                print("I can't handle expressions yet")
+            else: # We are dealing with a string or id
+                if parameter.string_id[TYPE] == STRING:
+                    for relation in relations:
+                        if relation.name[VALUE] == query.id[VALUE]:
+                            for t in relation.tuples:
+                                assert isinstance(t, Tuple)
+                                p = t.pairs[i]
+                                assert isinstance(p, Pair)
+                                if p.value[VALUE] == parameter.string_id[VALUE]:
+                                    print(str(t))
+                                    tuples.add(t)
+            i += 1
+        return relations
 
-    def project(self):
-        pass
+    @staticmethod
+    def project(relations):
+        """
+        Return (a) column(s) from the table.
+        """
+        return relations
 
-    def rename(self):
-        pass
+    @staticmethod
+    def rename(relations):
+        """
+        Always rename all columns at the same time, that way if A,B is being renamed to B,A you don't end up with B,B
+        Return a table with the specified columns renamed
+        """
+        return relations
 
     def __str__(self):
         """
@@ -207,10 +247,9 @@ if __name__ == "__main__":
         # Each fact in the Datalog Program defines a tuple in a relation.
         # The fact name identifies a relation to which the tuple belongs.
 
-    print("\nRELATIONS\n" + "-"*80)
+    print("\nRELATIONS\n" + "-" * 80)
     for database_relation in rdbms.relations:
         print("NAME: " + str(database_relation.name[VALUE]))
         print("SCHEMA: " + str(database_relation.schema))
         print("STRING: \n" + str(database_relation))
         print("-" * 80)
-
