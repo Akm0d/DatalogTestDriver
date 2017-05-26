@@ -1,0 +1,12 @@
+Schemes:
+  Stats(Name, Age, Height, Weight)
+Facts:
+  Stats('Sally','10','54','70').
+  Stats('Fred','27','70','160').
+  Stats('Joe','15','67','125').
+  Stats('George','2','34','26').
+  Stats('Jose','4','40','40').
+  Stats('Amy','36','64','130').
+Rules:
+Queries:
+  Stats(A,'c')?
