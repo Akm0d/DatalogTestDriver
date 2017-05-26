@@ -242,7 +242,7 @@ class RDBMS:
                 assert isinstance(tuples, set)
                 if next(iter(tuples)).pairs:
                     result += "\n"
-                for t in tuples:
+                for t in sorted(tuples):
                     result += "  " + str(t) + "\n"
         return result.rstrip("\n")
 
