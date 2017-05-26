@@ -330,9 +330,41 @@ if __name__ == "__main__":
             rdbms.evaluate_query(datalog_query)
 
         if part == 1:
-            # TODO perform a single project, select, and rename on the input file, one at a time
-            # print out something helpful, not what they say to print out, that's lame
-            print("Part 1 hasn't yet been implemented")
+            # SINGLE SELECT OPERATION
+            single_query = None
+            p = None
+            i = None
+            # Find a query to work with
+            for datalog_query in datalog.queries.queries:
+                assert isinstance (datalog_query, datalog_parser.Predicate)
+                it = 0
+                for param in datalog_query.parameterList:
+                    assert isinstance(param, datalog_parser.Parameter)
+                    if param.string_id:
+                        if param.string_id[TYPE] == STRING:
+                            single_query = datalog_query
+                            p = param
+                            i = it
+                            break
+                it += 1
+                if single_query:
+                    break
+
+            if not single_query:
+                print("Could not perform select operation, no strings found in any of the queries")
+            else:
+                print("Selecting %s from scheme '%s' at index %s" % (p.string_id[VALUE], single_query.id[VALUE], str(i)))
+                print("." * 80)
+                sel = rdbms.select(relations=rdbms.relations, index=i, name=single_query.id, value=p.string_id)
+                print(str(single_query) + "? ", end="")
+                if sel:
+                    print("Yes(" + str(len(sel[0].tuples)) + ")")
+                    for r in sel[0].tuples:
+                        print("  " + str(r))
+                else:
+                    print("No")
+
+            # SINGLE PROJECT OPERATION
         else:
             print(str(rdbms))
 
