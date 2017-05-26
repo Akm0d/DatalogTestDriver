@@ -79,24 +79,29 @@ class Relation:
     # A tuple is a set of attribute/value pairs.
     tuples = None
 
-    def __init__(self, scheme, facts):
-        assert isinstance(scheme, datalog_parser.Scheme)
-        self.name = scheme.id
-        self.schema = set(scheme.idList)
-        assert isinstance(facts, datalog_parser.Facts)
-        self.tuples = set()
-        for fact in facts.facts:
-            if fact.id[VALUE] == scheme.id[VALUE]:
-                # Create a new tuple
-                new_tuple = Tuple()
+    def __init__(self, scheme=None, facts=None, tuples=None, name=None, schema=None):
+        if scheme and facts:
+            assert isinstance(scheme, datalog_parser.Scheme)
+            self.name = scheme.id
+            self.schema = set(scheme.idList)
+            assert isinstance(facts, datalog_parser.Facts)
+            self.tuples = set()
+            for fact in facts.facts:
+                if fact.id[VALUE] == scheme.id[VALUE]:
+                    # Create a new tuple
+                    new_tuple = Tuple()
 
-                # Iterate over both lists in parallel
-                # If one list is longer than the other, then fill the shorter list with None types
-                for attribute, value in zip_longest(scheme.idList, fact.stringList, fillvalue=None):
-                    # add pairs to the tuple
-                    new_tuple.add(Pair(attribute, value))
-                    # Add the full tuple to our set
-                self.tuples.add(new_tuple)
+                    # Iterate over both lists in parallel
+                    # If one list is longer than the other, then fill the shorter list with None types
+                    for attribute, value in zip_longest(scheme.idList, fact.stringList, fillvalue=None):
+                        # add pairs to the tuple
+                        new_tuple.add(Pair(attribute, value))
+                        # Add the full tuple to our set
+                    self.tuples.add(new_tuple)
+        elif tuples and name:# and schema:
+            self.name = name
+            self.tuples = tuples
+            self.schema = schema
 
     def __str__(self):
         """
@@ -131,48 +136,49 @@ class RDBMS:
         assert isinstance(datalog_program, datalog_parser.DatalogProgram)
         self.datalog = datalog_program
         for datalog_scheme in self.datalog.schemes.schemes:
-            self.relations.append(Relation(datalog_scheme, self.datalog.facts))
+            self.relations.append(Relation(scheme=datalog_scheme, facts=self.datalog.facts))
             pass
 
     def evaluate_query(self, query):
+        assert isinstance(query, datalog_parser.Predicate)
         # Each query contains a set of relations
         self.RelationalDatabase[query] = set()
         relation = self.RelationalDatabase[query]
         assert isinstance(relation, set)
         # select, project, then rename
-        print("Evaluating " + str(query))  # TODO REMOVE PRINT
-        selected = self.select(self.relations, query)
-        for database_relation in selected:
-            print("NAME: " + str(database_relation.name[VALUE]))
-            print("SCHEMA: " + str(database_relation.schema))
-            print("STRING: \n" + str(database_relation))
-            print("-" * 80)
+        selected = self.relations
+        i = 0
+        for p in query.parameterList:
+            assert isinstance(p, datalog_parser.Parameter)
+            if p.expression:
+                print("I can't evaluate expressions yet")
+            else:  # It is a string or id
+                if p.string_id[TYPE] == STRING:
+                    selected = self.select(relations=selected, index=i, name=query.id, value=p.string_id)
+            i += 1
+
+        for item in selected[0].tuples:
+            self.RelationalDatabase[query].add(item)
 
     @staticmethod
-    def select(relations, query):
+    def select(relations, name, index, value):
         """
         Always do select first, it doesn't mutilate the tuples
         Return all rows that match a certain condition from the table
         """
-        assert isinstance(query, datalog_parser.Predicate)
+        assert isinstance(relations, list)
         tuples = set()
-        i = 0
-        for parameter in query.parameterList:
-            if parameter.expression:
-                print("I can't handle expressions yet")
-            else: # We are dealing with a string or id
-                if parameter.string_id[TYPE] == STRING:
-                    for relation in relations:
-                        if relation.name[VALUE] == query.id[VALUE]:
-                            for t in relation.tuples:
-                                assert isinstance(t, Tuple)
-                                p = t.pairs[i]
-                                assert isinstance(p, Pair)
-                                if p.value[VALUE] == parameter.string_id[VALUE]:
-                                    print(str(t))
-                                    tuples.add(t)
-            i += 1
-        return relations
+        for relation in relations:
+            assert isinstance(relation, Relation)
+            if relation.name[VALUE] == name[VALUE]:
+                for t in relation.tuples:
+                    assert isinstance(t, Tuple)
+                    p = t.pairs[index]
+                    assert isinstance(p, Pair)
+                    if p.value[VALUE] == value[VALUE]:
+                        tuples.add(t)
+        # TODO IDK WHAT to do with schema
+        return list([Relation(tuples=tuples, name=name)])
 
     @staticmethod
     def project(relations):
@@ -180,6 +186,8 @@ class RDBMS:
         Return (a) column(s) from the table.
         """
         return relations
+        # Each fact in the Datalog Program defines a tuple in a relation.
+        # The fact name identifies a relation to which the tuple belongs.
 
     @staticmethod
     def rename(relations):
@@ -200,13 +208,14 @@ class RDBMS:
         result = ""
         for query in self.RelationalDatabase.keys():
             result += str(query) + "? "
-            relations = self.RelationalDatabase[query]
-            if not relations:  # The set is empty
+            tuples = self.RelationalDatabase[query]
+
+            if not tuples:  # The set is empty
                 result += "No\n"
             else:  # The set isn't empty
-                result += "Yes(" + str(len(relations)) + ")\n"
-                for relation in relations:
-                    result += "  " + str(relation) + "\n"
+                result += "Yes(" + str(len(tuples)) + ")\n"
+                for t in tuples:
+                    result += "  " + str(t) + "\n"
         return result.rstrip("\n")
 
 
@@ -244,12 +253,3 @@ if __name__ == "__main__":
     else:
         print(str(rdbms))
 
-        # Each fact in the Datalog Program defines a tuple in a relation.
-        # The fact name identifies a relation to which the tuple belongs.
-
-    print("\nRELATIONS\n" + "-" * 80)
-    for database_relation in rdbms.relations:
-        print("NAME: " + str(database_relation.name[VALUE]))
-        print("SCHEMA: " + str(database_relation.schema))
-        print("STRING: \n" + str(database_relation))
-        print("-" * 80)
