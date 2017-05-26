@@ -336,7 +336,7 @@ if __name__ == "__main__":
             i = None
             # Find a query to work with
             for datalog_query in datalog.queries.queries:
-                assert isinstance (datalog_query, datalog_parser.Predicate)
+                assert isinstance(datalog_query, datalog_parser.Predicate)
                 it = 0
                 for param in datalog_query.parameterList:
                     assert isinstance(param, datalog_parser.Parameter)
@@ -351,9 +351,10 @@ if __name__ == "__main__":
                     break
 
             if not single_query:
-                print("Could not perform select operation, no strings found in any of the queries")
+                print("Could not perform select operation, no strings found in any of the parameters")
             else:
-                print("Selecting %s from scheme '%s' at index %s" % (p.string_id[VALUE], single_query.id[VALUE], str(i)))
+                print(
+                    "Selecting %s from scheme '%s' at index %s" % (p.string_id[VALUE], single_query.id[VALUE], str(i)))
                 print("." * 80)
                 sel = rdbms.select(relations=rdbms.relations, index=i, name=single_query.id, value=p.string_id)
                 print(str(single_query) + "? ", end="")
@@ -363,8 +364,43 @@ if __name__ == "__main__":
                         print("  " + str(r))
                 else:
                     print("No")
+            print("." * 80)
 
             # SINGLE PROJECT OPERATION
+            single_query = None
+            p = None
+            p_columns = list()
+            # Find a query to work with
+            for datalog_query in datalog.queries.queries:
+                assert isinstance(datalog_query, datalog_parser.Predicate)
+                p_columns.clear()
+                i = 0
+                for param in datalog_query.parameterList:
+                    assert isinstance(param, datalog_parser.Parameter)
+                    if param.string_id:
+                        if param.string_id[TYPE] == ID:
+                            single_query = datalog_query
+                            p = param
+                            p_columns.append(i)
+                            break
+                i += 1
+                if single_query:
+                    break
+
+            if not single_query:
+                print("Could not perform project operation, no id's found in any of the parameters")
+            else:
+                print("Projecting column numbers %s from scheme '%s'" %
+                      (", ".join([str(i) for i in p_columns]), single_query.id[VALUE]))
+                pro = rdbms.project(relations=rdbms.relations, columns=p_columns, name=single_query.id)
+                print(str(single_query) + "? ", end="")
+                if pro:
+                    print("Yes(" + str(len(pro[0].tuples)) + ")")
+                    for r in pro[0].tuples:
+                        print("  " + str(r))
+                print("." * 80)
+
+            # SINGLE RENAME OPERATION
+
         else:
             print(str(rdbms))
-
