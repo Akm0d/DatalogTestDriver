@@ -1,8 +1,30 @@
 #!/usr/bin/env python3
 from collections import OrderedDict
+from itertools import zip_longest
+
 from tokens import VALUE
 import lexical_analyzer
 import datalog_parser
+
+"""
+TODO in may be necessary to define these functions for set oprations to work on classes.  
+TODO it may need to be done on tokens as well
+object.__lt__(self, other)
+object.__le__(self, other)
+object.__eq__(self, other)
+object.__ne__(self, other)
+object.__gt__(self, other)
+object.__ge__(self, other)
+
+These are the so-called “rich comparison” methods. 
+The correspondence between operator symbols and method names is as follows: 
+    x<y calls x.__lt__(y)
+    x<=y calls x.__le__(y)
+    x==y calls x.__eq__(y)
+    x!=y calls x.__ne__(y)
+    x>y calls x.__gt__(y)
+    x>=y calls x.__ge__(y).00
+"""
 
 
 class Pair:
@@ -18,7 +40,7 @@ class Pair:
         self.value = s
 
     def __str__(self):
-        return "%s='%s'" % (self.attribute[VALUE], self.value[VALUE])
+        return "%s=%s" % (self.attribute[VALUE], self.value[VALUE])
 
     def __hash__(self):
         return hash(str(self))
@@ -63,9 +85,22 @@ class Relation:
         self.schema = set(scheme.idList)
         assert isinstance(facts, datalog_parser.Facts)
         self.tuples = set()
+        for fact in facts.facts:
+            if fact.id[VALUE] == scheme.id[VALUE]:
+                # Create a new tuple
+                new_tuple = Tuple()
+
+                # Iterate over both lists in parallel
+                # If one list is longer than the other then fill the shorter list with None types
+                for attribute, value in zip_longest(scheme.idList, fact.stringList, fillvalue=None):
+                    # add pairs to the tuple
+                    new_tuple.add(Pair(attribute, value))
+                    # Add the full tuple to our set
+                self.tuples.add(new_tuple)
 
     def __str__(self):
-        return ""
+        result = ""
+        return result
 
     def __hash__(self):
         """
@@ -128,7 +163,7 @@ class RDBMS:
                 result += "No\n"
             else:  # The set isn't empty
                 result += "Yes(" + str(len(relations)) + ")\n"
-                for relation in sorted(relations):
+                for relation in relations:
                     result += "  " + str(relation) + "\n"
         return result.rstrip("\n")
 
@@ -169,3 +204,9 @@ if __name__ == "__main__":
 
         # Each fact in the Datalog Program defines a tuple in a relation.
         # The fact name identifies a relation to which the tuple belongs.
+
+    print("RELATIONS")
+    for database_relation in rdbms.relations:
+        print("NAME: " + str(database_relation.name))
+        print("SCHEMA: " + ", ".join(str(x) for x in database_relation.schema))
+        print("TUPLES: " + "\n".join(str(x) for x in database_relation.tuples))
