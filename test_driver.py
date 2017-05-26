@@ -6,7 +6,7 @@ from lizard import analyze_file, FunctionInfo
 from os import path as os_path, name as os_name, listdir
 from re import compile as re_compile, MULTILINE
 from subprocess import TimeoutExpired, check_output, check_call
-from sys import path as sys_path, argv
+from sys import argv
 from termcolor import cprint
 
 import datalog_parser
@@ -14,8 +14,6 @@ import relational_database
 import datalog_interpreter
 
 # This is the cyclomatic complexity threshhold allowed for each function
-from tokens import TokenError
-
 COMPLEXITY_THRESHHOLD = 8
 
 # If there are no arguments, then print the help text
@@ -97,8 +95,7 @@ for test in test_files:
         elif lab == 2:
             expected = datalog_parser.main(test, part=part, debug=False)
         elif lab == 3:
-            command = "python3 \"%s\" --part %s %s" % (os_path.join(sys_path[0], "relational_database.py"), str(part), test)
-            expected = str(check_output(command, shell=True), 'utf-8')
+            expected = relational_database.main(test, part=part, debug=False)
         elif lab == 4:
             print("Lab %s part %s has not yet been implemented" % (str(lab), str(part)))
         elif lab == 5:

@@ -124,6 +124,9 @@ class Relation:
         return hash(str(self))
 
 
+RelationalDatabase = None
+
+
 class RDBMS:
     """
     The basic data structure is a database consisting of relations, each with their own name, schema, and set of tuples.
@@ -132,11 +135,12 @@ class RDBMS:
     """
     # A query mapped to a set of relations
     # This will be shared amongst all instances of this class
-    RelationalDatabase = OrderedDict()
     relations = None
     datalog = None
 
     def __init__(self, datalog_program):
+        global RelationalDatabase
+        RelationalDatabase = OrderedDict()
         self.relations = list()
         assert isinstance(datalog_program, datalog_parser.DatalogProgram)
         self.datalog = datalog_program
@@ -145,10 +149,11 @@ class RDBMS:
             pass
 
     def evaluate_query(self, query):
+        global RelationalDatabase
         assert isinstance(query, datalog_parser.Predicate)
         # Each query contains a set of relations
-        self.RelationalDatabase[query] = set()
-        relation = self.RelationalDatabase[query]
+        RelationalDatabase[query] = set()
+        relation = RelationalDatabase[query]
         assert isinstance(relation, set)
         # select, project, then rename
         selected = self.relations
@@ -175,7 +180,7 @@ class RDBMS:
         for r in renamed:
             if r.tuples:
                 for t in r.tuples:
-                    self.RelationalDatabase[query].add(t)
+                    RelationalDatabase[query].add(t)
 
     @staticmethod
     def select(relations, name, index, value):
@@ -275,9 +280,9 @@ class RDBMS:
         one per line and indented by two spaces, according to the following directions.
         """
         result = ""
-        for query in self.RelationalDatabase.keys():
+        for query in RelationalDatabase.keys():
             result += str(query) + "? "
-            tuples = self.RelationalDatabase[query]
+            tuples = RelationalDatabase[query]
 
             if not tuples:  # The set is empty
                 result += "No\n"
@@ -293,29 +298,12 @@ class RDBMS:
         return result.rstrip("\n")
 
 
-if __name__ == "__main__":
-    """
-    For part 1, this will perform single select, project, and rename operations for the file provided.  
-    It will select the first query in the list and use it for all 3 operations, in succession
-    
-    For part 2, all queries will be analyzed and a thorough output will be printed
-    """
-    from argparse import ArgumentParser
-
-    args = ArgumentParser(description="Run the datalog parser, this will produce output for lab 2")
-    args.add_argument('-d', '--debug', action='store_true', default=False)
-    args.add_argument('-p', '--part', help='A 1 or a 2.  Defaults to 2', default=2)
-    args.add_argument('file', help='datalog file to parse')
-    arg = args.parse_args()
-
-    debug = arg.debug
-    d_file = arg.file
-    part = int(arg.part)
-
+def main(d_file, part=2, debug=False):
+    result = ""
     if not (1 <= part <= 2):
         raise ValueError("Part must be either 1 or 2")
 
-    if debug: print("Parsing '%s'" % d_file)
+    if debug: result += ("Parsing '%s'" % d_file)
 
     # Create class objects
     tokens = lexical_analyzer.scan(d_file)
@@ -352,7 +340,7 @@ if __name__ == "__main__":
             for p in one_query.parameterList:
                 assert isinstance(p, datalog_parser.Parameter)
                 if p.expression:
-                    print("I can't evaluate expressions yet")
+                    result += ("I can't evaluate expressions yet")
                 else:  # It is a string or id
                     if p.string_id[TYPE] == STRING:
                         if one_selected and one_selected[0].name:
@@ -363,46 +351,64 @@ if __name__ == "__main__":
                 one_i += 1
 
             # Print original database
-            print(str(one_query) + "?", end=" ")
+            result += (str(one_query) + "? ")
             if rdbms.relations:
-                print("Yes(" + str(len(rdbms.relations[0].tuples)) + ")")
+                result += ("Yes(" + str(len(rdbms.relations[0].tuples)) + ")")
                 for r in sorted(rdbms.relations[0].tuples):
-                    print("  " + str(r))
+                    result += ("  " + str(r))
             else:
-                print("No")
+                result += ("No")
 
             # Print after select
-            print("AFTER SELECT")
-            print(str(one_query) + "?", end=" ")
+            result += ("AFTER SELECT")
+            result += (str(one_query) + "? ")
             if one_selected:
-                print("Yes(" + str(len(one_selected[0].tuples)) + ")")
+                result += ("Yes(" + str(len(one_selected[0].tuples)) + ")")
                 for r in sorted(one_selected[0].tuples):
-                    print("  " + str(r))
+                    result += ("  " + str(r))
             else:
-                print("No")
+                result += ("No")
 
             # Print after project
-            print("AFTER PROJECT")
-            print(str(one_query) + "?", end=" ")
+            result += ("AFTER PROJECT")
+            result += (str(one_query) + "? ")
             one_projected = rdbms.project(one_selected, one_query.id, one_project_columns)
             if one_projected:
-                print("Yes(" + str(len(one_projected[0].tuples)) + ")")
+                result += ("Yes(" + str(len(one_projected[0].tuples)) + ")")
                 for r in sorted(one_projected[0].tuples):
-                    print("  " + str(r))
+                    result += ("  " + str(r))
             else:
-                print("No")
+                result += ("No")
 
             # Print after rename
-            print("AFTER RENAME")
-            print(str(one_query) + "?", end=" ")
+            result += ("AFTER RENAME")
+            result += (str(one_query) + "? ")
             one_renamed = rdbms.rename(one_projected, one_query.id, one_new_names)
             one_renamed = rdbms.project(one_renamed, one_query.id, one_project_columns)
             if one_projected:
-                print("Yes(" + str(len(one_renamed[0].tuples)) + ")")
+                result += ("Yes(" + str(len(one_renamed[0].tuples)) + ")")
                 for r in sorted(one_renamed[0].tuples):
-                    print("  " + str(r))
+                    result += ("  " + str(r))
             else:
-                print("No")
+                result += ("No")
 
         else:
-            print(str(rdbms))
+            result += (str(rdbms))
+    return result + "\n"
+
+if __name__ == "__main__":
+    """
+    For part 1, this will perform single select, project, and rename operations for the file provided.  
+    It will select the first query in the list and use it for all 3 operations, in succession
+    
+    For part 2, all queries will be analyzed and a thorough output will be printed
+    """
+    from argparse import ArgumentParser
+
+    args = ArgumentParser(description="Run the datalog parser, this will produce output for lab 2")
+    args.add_argument('-d', '--debug', action='store_true', default=False)
+    args.add_argument('-p', '--part', help='A 1 or a 2.  Defaults to 2', default=2)
+    args.add_argument('file', help='datalog file to parse')
+    arg = args.parse_args()
+
+    print(main(arg.file, part=int(arg.part), debug=arg.debug))
