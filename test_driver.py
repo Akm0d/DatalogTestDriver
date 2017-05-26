@@ -195,4 +195,4 @@ if binary:
         cprint("All tests passed", 'green')
     else:
         cprint("Passed: %s" % str(tests_passed), 'green')
-        cprint("Failed: %s" % str(tests_total - tests_passed), 'red')
+        cprint("Failed: %s" % str((tests_total - tests_passed) + len(complex_functions)), 'red')
