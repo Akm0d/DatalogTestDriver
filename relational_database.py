@@ -154,11 +154,14 @@ class RDBMS:
                 print("I can't evaluate expressions yet")
             else:  # It is a string or id
                 if p.string_id[TYPE] == STRING:
-                    selected = self.select(relations=selected, index=i, name=query.id, value=p.string_id)
+                    if selected[0].name:
+                        selected = self.select(relations=selected, index=i, name=query.id, value=p.string_id)
             i += 1
 
-        for item in selected[0].tuples:
-            self.RelationalDatabase[query].add(item)
+        # Make sure relations were found before iterating over them
+        if selected[0].tuples:
+            for item in selected[0].tuples:
+                self.RelationalDatabase[query].add(item)
 
     @staticmethod
     def select(relations, name, index, value):
