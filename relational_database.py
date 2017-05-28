@@ -398,7 +398,7 @@ def main(d_file, part=2, debug=False):
 
         else:
             result += (str(rdbms))
-    return result + "\n"
+    return result
 
 if __name__ == "__main__":
     """
