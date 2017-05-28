@@ -4,6 +4,6 @@ Facts:
   dc('ralph','howard').
 Rules:
 Queries:
-  dc('ralph', X, Y)?
+  dc('ralph', X, Y, Z, Z)?
   dc(X)?
   dc('bob','bob')?
