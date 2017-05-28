@@ -1,9 +1,9 @@
 Schemes:
   dc(D,C)
 Facts:
-  dc('ralph','howard').
+  dc('ralph','howard', 'taco', 'bell').
 Rules:
 Queries:
-  dc('ralph', X, Y, Z, Z)?
+  dc('ralph', X, Y, Z)?
   dc(X)?
   dc('bob','bob')?

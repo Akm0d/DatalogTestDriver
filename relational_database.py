@@ -361,7 +361,7 @@ def main(d_file, part=2, debug=False):
                 for r in sorted(rdbms.relations[0].tuples):
                     result += ("  " + str(r)) + "\n"
             else:
-                result += "No\n"
+                result += "No"
 
             # Print after select
             result += "AFTER SELECT\n"
@@ -371,7 +371,7 @@ def main(d_file, part=2, debug=False):
                 for r in sorted(one_selected[0].tuples):
                     result += ("  " + str(r)) + "\n"
             else:
-                result += "No\n"
+                result += "No"
 
             # Print after project
             result += "AFTER PROJECT\n"
@@ -382,19 +382,20 @@ def main(d_file, part=2, debug=False):
                 for r in sorted(one_projected[0].tuples):
                     result += ("  " + str(r)) + "\n"
             else:
-                result += "No\n"
+                result += "No"
 
             # Print after rename
             result += "AFTER RENAME\n"
             result += (str(one_query) + "? ")
             one_renamed = rdbms.rename(one_projected, one_query.id, one_new_names)
             one_renamed = rdbms.project(one_renamed, one_query.id, one_project_columns)
-            if one_projected:
+            if one_renamed:
                 result += ("Yes(" + str(len(one_renamed[0].tuples)) + ")\n")
                 for r in sorted(one_renamed[0].tuples):
                     result += ("  " + str(r))
             else:
-                result += "No\n"
+                result += "No"
+            result.rstrip("\n")
 
         else:
             result += (str(rdbms))
