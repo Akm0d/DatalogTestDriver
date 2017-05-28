@@ -22,10 +22,9 @@ class Pair:
         self.value = s
 
     def __str__(self):
-        if self.value is None:
-            return str(None)
-        else:
-            return "%s=%s" % (self.attribute[VALUE], self.value[VALUE])
+        value = self.value[VALUE] if self.value else "NULL"
+        attribute = self.attribute[VALUE] if self.attribute else "NULL"
+        return "%s=%s" % (attribute, value)
 
     def __hash__(self):
         return hash(str(self))
