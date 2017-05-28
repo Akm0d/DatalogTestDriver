@@ -656,7 +656,7 @@ def main(d_file, part=2, debug=False):
             if part == 2:
                 result += str(datalog) + "\n"
         except TokenError as t:
-            return 'Failure!\n  (%s,"%s",%s)\n' % tuple(literal_eval(str(t)))
+            return 'Failure!\n  (%s,"%s",%s)' % tuple(literal_eval(str(t)))
     return result
 
 

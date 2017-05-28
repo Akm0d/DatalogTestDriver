@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+from ast import literal_eval
 from collections import OrderedDict
 from itertools import zip_longest
 from orderedset._orderedset import OrderedSet
@@ -314,8 +315,8 @@ def main(d_file, part=2, debug=False):
     else:
         try:
             datalog = datalog_parser.DatalogProgram(tokens)
-        except TokenError:
-            pass
+        except TokenError as t:
+            return 'Failure!\n  (%s,"%s",%s)' % tuple(literal_eval(str(t)))
 
     if datalog:
         rdbms = RDBMS(datalog)
