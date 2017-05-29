@@ -155,7 +155,7 @@ for test in test_files:
                         line_count += 1
             else:
                 # Print all but last new line
-                print(expected[:-1])
+                print(expected.rstrip('\n'))
                 pass
             pass
 
