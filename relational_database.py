@@ -9,6 +9,10 @@ import lexical_analyzer
 import datalog_parser
 
 
+# An ordered dictionary for storing all the query values
+RelationalDatabase = None
+
+
 class Pair:
     """
     The format of a pair is v= 's', where v is the variable and 's' is the string value. 
@@ -127,9 +131,6 @@ class Relation:
         return hash(str(self))
 
 
-RelationalDatabase = None
-
-
 class RDBMS:
     """
     The basic data structure is a database consisting of relations, each with their own name, schema, and set of tuples.
@@ -156,8 +157,6 @@ class RDBMS:
         assert isinstance(query, datalog_parser.Predicate)
         # Each query contains a set of relations
         RelationalDatabase[query] = set()
-        relation = RelationalDatabase[query]
-        assert isinstance(relation, set)
         # select, project, then rename
         selected = self.relations
         project_columns = list()
@@ -273,6 +272,11 @@ class RDBMS:
             if tuples:
                 result.append(Relation(tuples=tuples, name=name))
         return result
+
+    @staticmethod
+    def get_database():
+        global RelationalDatabase
+        return RelationalDatabase
 
     def __str__(self):
         """
@@ -390,7 +394,7 @@ def main(d_file, part=2, debug=False):
         if one_renamed:
             result += ("Yes(" + str(len(one_renamed[0].tuples)) + ")\n")
             for r in sorted(one_renamed[0].tuples):
-                result += ("  " + str(r))
+                result += ("  " + str(r)) + "\n"
         else:
             result += "No"
         result.rstrip("\n")
