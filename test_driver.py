@@ -5,7 +5,7 @@ from lexical_analyzer import scan as lexical_scan
 from lizard import analyze_file, FunctionInfo
 from os import path as os_path, name as os_name, listdir
 from re import compile as re_compile, MULTILINE
-from subprocess import TimeoutExpired, check_output, check_call
+from subprocess import TimeoutExpired, check_output, check_call, CalledProcessError
 from sys import argv
 from termcolor import cprint
 
@@ -83,6 +83,8 @@ for test in test_files:
         except TimeoutExpired:
             cprint("Failed! Timeout exceeded", 'red')
             timeout = True
+        except CalledProcessError:
+            cprint("Failed! Non-zero exit status", 'red')
 
     if not timeout:
         expected = ''
@@ -96,6 +98,7 @@ for test in test_files:
             expected = datalog_parser.main(test, part=part, debug=False)
         elif lab == 3:
             expected = relational_database.main(test, part=part, debug=False)
+            expected += "\n"
         elif lab == 4:
             print("Lab %s part %s has not yet been implemented" % (str(lab), str(part)))
         elif lab == 5:
