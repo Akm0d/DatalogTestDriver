@@ -98,9 +98,8 @@ for test in test_files:
             expected = datalog_parser.main(test, part=part, debug=False)
         elif lab == 3:
             expected = relational_database.main(test, part=part, debug=False)
-            expected += "\n"
         elif lab == 4:
-            print("Lab %s part %s has not yet been implemented" % (str(lab), str(part)))
+            expected = datalog_interpreter.main(test, part=part, debug=False)
         elif lab == 5:
             print("Lab %s part %s has not yet been implemented" % (str(lab), str(part)))
 

@@ -149,7 +149,7 @@ def main(d_file, part=2, debug=False):
     result += "Schemes populated after %s passes through the Rules.\n" % str(interpreter.passes)
     result += (str(rdbms))
 
-    return result.rstrip("\n")
+    return result
 
 
 if __name__ == "__main__":
