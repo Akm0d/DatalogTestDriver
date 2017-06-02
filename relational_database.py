@@ -302,6 +302,11 @@ class RDBMS:
                 result = result.rstrip(' \t\n\r') + "\n"
         return result
 
+    @staticmethod
+    def set_database(database):
+        global RelationalDatabase
+        RelationalDatabase = database
+
 
 def main(d_file, part=2, debug=False):
     global RelationalDatabase
