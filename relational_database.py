@@ -122,9 +122,10 @@ class Relation:
         the second sort key as the second variable, and so on). 
         """
         result = ""
-        tuples = sorted(self.tuples)
-        for thing in tuples:
-            result += str(thing) + "\n"
+        if self.tuples:
+            tuples = sorted(self.tuples)
+            for thing in tuples:
+                result += str(thing) + "\n"
         return result
 
     def __hash__(self):
@@ -144,7 +145,8 @@ class RDBMS:
 
     def __init__(self, datalog_program):
         global RelationalDatabase
-        RelationalDatabase = OrderedDict()
+        if not RelationalDatabase:
+            RelationalDatabase = OrderedDict()
         self.relations = list()
         assert isinstance(datalog_program, datalog_parser.DatalogProgram)
         self.datalog = datalog_program
@@ -153,10 +155,7 @@ class RDBMS:
             pass
 
     def evaluate_query(self, query):
-        global RelationalDatabase
         assert isinstance(query, datalog_parser.Predicate)
-        # Each query contains a set of relations
-        RelationalDatabase[query] = set()
         # select, project, then rename
         selected = self.relations
         project_columns = list()
@@ -179,10 +178,7 @@ class RDBMS:
         # Make sure relations were found before iterating over them
         projected = self.project(selected, query.id, project_columns)
         renamed = self.rename(projected, query.id, new_names)
-        for r in renamed:
-            if r.tuples:
-                for t in r.tuples:
-                    RelationalDatabase[query].add(t)
+        return renamed
 
     @staticmethod
     def select(relations, name, index, value):
@@ -276,6 +272,8 @@ class RDBMS:
     @staticmethod
     def get_database():
         global RelationalDatabase
+        if not RelationalDatabase:
+            RelationalDatabase = OrderedDict()
         return RelationalDatabase
 
     def __str__(self):
@@ -306,6 +304,9 @@ class RDBMS:
 
 
 def main(d_file, part=2, debug=False):
+    global RelationalDatabase
+    if not RelationalDatabase:
+        RelationalDatabase = OrderedDict()
     result = ""
     if not (1 <= part <= 2):
         raise ValueError("Part must be either 1 or 2")
@@ -326,10 +327,14 @@ def main(d_file, part=2, debug=False):
     rdbms = RDBMS(datalog)
 
     for datalog_query in datalog.queries.queries:
-        rdbms.evaluate_query(datalog_query)
+        for r in rdbms.evaluate_query(datalog_query):
+            # Each query contains a set of relations
+            RelationalDatabase[datalog_query] = set()
+            if r.tuples:
+                for t in r.tuples:
+                    RelationalDatabase[datalog_query].add(t)
 
     if part == 1:
-        global RelationalDatabase
         # This is the same thing that comes from evaluate queries, but we are going to stop at each point and print
         one_query = datalog.queries.queries[0]
         assert isinstance(one_query, datalog_parser.Predicate)
