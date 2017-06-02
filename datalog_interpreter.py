@@ -29,28 +29,74 @@ class DatalogInterpreter:
         self.database = rdbms.get_database()
         assert isinstance(self.database, OrderedDict)
 
+        # TODO if no new relations were added then call this again and again
+        # While (no new relations):
+        #     self.fixed_point()
+        self.fixed_point()
+
+    def fixed_point(self):
+        """
+        Each rule potentially adds new facts to a relation.
+        The fixed-point algorithm repeatedly performs iterations on the rules adding new facts from each rule as the facts are generated.
+        Each iteration may change the database by adding at least one new tuple to at least one relation in the database.
+        The fixed-point algorithm terminates when an iteration of the rule expression set does not union a new tuple to any relation in the database.
+        """
         for rule in self.rules:
             print("Rule: " + str(rule))
             self.evaluate_rule(rule)
 
     def evaluate_rule(self, rule):
-        relations = self.join(rule.predicates)
-        print("RULE: " + str(rule))
-        for r in relations:
-            assert isinstance(r, relational_database.Relation)
-            print("SCHEME:" + r.name[1])
-            print(r)
+        """
+        For every predicate on the right hand side of a rule,
+        evaluate that predicate in the same way queries are evaluated in the previous project.
+        The result of the evaluation should be a relation. If there are n predicates on the right hand side of a rule,
+        then there should be n intermediate relations from each predicate.
+        """
+        joined = self.join(rule.head, rule.predicates)
 
-    def join(self, predicates):
+        # DEBUG
+        print("RULE: " + str(rule))
+        for j in joined:
+            assert isinstance(j, relational_database.Relation)
+            print("SCHEME:" + j.name[1])
+            print(j)
+        # END DEBUG
+
+        self.union(rule.head, joined)
+
+    def join(self, head, predicates):
+        """
+        if there is a single predicate on the right hand side of the rule,
+        use the single intermediate result from Step 1 as the result for Step 2.
+        If there are two or more predicates on the right-hand side of a rule,
+        join all the intermediate results to form the single result for Step 2.
+        Thus, if p1, p2, and p3 are the intermediate results from step one;
+        you should construct a relation: p1 |x| p2 |x| p3.
+        :return: A list of relations
+        """
         assert isinstance(predicates, list)
         result = list()
         for predicate in predicates:
             result.extend(self.rdbms.evaluate_query(predicate))
 
+        # TODO Make it return a single relation, not a list of relations, keep only those relations
+        # whose attribute names appear in the head predicate of the new rule
+
+        # Rename the attributes of thew new relation to match the head predicate
+
+        # TODO make sure the caller is expecting a single relation
         return result
 
     def union(self, head, joined):
-        pass
+        """
+        Union the results of the join with the relation in the database whose name is equal to the name of the head of
+        the rule. In "join" we called this relation in the database r.
+        Add tuples to relation r from the result of the join.
+        :param head: A head predicate
+        :param joined: Relations
+        :return: A single relation
+        """
+        return head
 
 
 def main(d_file, part=2, debug=False):
