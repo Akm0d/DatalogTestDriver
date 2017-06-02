@@ -25,57 +25,31 @@ class DatalogInterpreter:
         self.rules = rules.rules
         assert isinstance(rdbms, relational_database.RDBMS)
         self.rdbms = rdbms
-        self.relations = list()
-        assert isinstance(self.relations, list)
+        self.relations = rdbms.relations
         self.database = rdbms.get_database()
         assert isinstance(self.database, OrderedDict)
 
         for rule in self.rules:
+            print("Rule: " + str(rule))
             self.evaluate_rule(rule)
 
-
     def evaluate_rule(self, rule):
-        """
-        For every predicate on the right hand side of a rule,
-        evaluate that predicate in the same way queries are evaluated in the previous project.
-        The result of the evaluation should be a relation. If there are n predicates on the right hand side of a rule,
-        then there should be n intermediate relations from each predicate.
-        """
-        for predicate in rule.predicates:
-            assert isinstance(predicate, datalog_parser.Predicate)
-            # select, project, then rename
-            selected = self.relations
-            project_columns = list()
-            new_names = list()
-            i = 0
-            # Perform the select operation
-            for p in predicate.parameterList:
-                assert isinstance(p, datalog_parser.Parameter)
-                if p.expression:
-                    print("I can't evaluate expressions yet")
-                else:  # It is a string or id
-                    if p.string_id[TYPE] == STRING:
-                        if selected and selected[0].name:
-                            selected = self.rdbms.select(relations=selected, index=i, name=predicate.id, value=p.string_id)
-                    elif p.string_id[TYPE] == ID:
-                        project_columns.append(i)
-                        new_names.append(p.string_id)
-                i += 1
+        relations = self.join(rule.predicates)
+        print("RULE: " + str(rule))
+        for r in relations:
+            assert isinstance(r, relational_database.Relation)
+            print("SCHEME:" + r.name[1])
+            print(r)
 
-            # Make sure relations were found before iterating over them
-            projected = self.rdbms.project(selected, predicate.id, project_columns)
-            renamed = self.rdbms.rename(projected, predicate.id, new_names)
-            for r in renamed:
-                if r.tuples:
-                    for t in r.tuples:
-                        self.relations[predicate].add(t)
+    def join(self, predicates):
+        assert isinstance(predicates, list)
+        result = list()
+        for predicate in predicates:
+            result.extend(self.rdbms.evaluate_query(predicate))
 
+        return result
 
-    def natural_join(self):
-        pass
-
-
-    def union(self):
+    def union(self, head, joined):
         pass
 
 
