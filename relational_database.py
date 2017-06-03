@@ -113,6 +113,10 @@ class Relation:
             self.name = name
             self.tuples = tuples
             self.schema = schema
+        else:
+            self.tuples = set()
+            self.schema = set()
+            self.name = ("", "", "")
 
     def __str__(self):
         """

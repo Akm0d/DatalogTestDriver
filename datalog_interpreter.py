@@ -71,31 +71,47 @@ class DatalogInterpreter:
         for predicate in rule.predicates:
             relations.extend(self.rdbms.evaluate_query(predicate))
 
-        facts = list()
-        attributes = deepcopy(rule.head.idList)
+        # print("STARTING:")
+        # for r in relations:
+        #    assert isinstance(r, relational_database.Relation)
+        #    print(str(r))
+        # print("---")
 
         # Make a relation with only attributes whose names appear in the head predicate of the rule
-        for r in relations:
-            assert isinstance(r, relational_database.Relation)
-            for t in r.tuples:
-                assert isinstance(t, relational_database.Tuple)
-                for p in t.pairs:
-                    assert isinstance(p, relational_database.Pair)
-                    for i, f in enumerate(attributes):
-                        if p.attribute[VALUE] == f[VALUE]:
-                            attributes[i] = p.value
-                        if all(at[TYPE] == STRING for at in attributes):
-                            facts.append(datalog_parser.Fact(name=rule.head.id, attributes=deepcopy(attributes)))
-                            attributes.clear()
-                            for at in rule.head.idList:
-                                attributes.append(at)
+        relation = relational_database.Relation()
+        if relations:
+            relation = relations.pop(0)
+            while relations:
+                r = relations.pop(0)
+                # Add all of the tuples in this new relation to the old relations
+                old_tuples = deepcopy(relation.tuples)
+                relation.tuples.clear()
+                for o in old_tuples:
+                    for t in r.tuples:
+                        new_tuple = deepcopy(o)
+                        for p in t.pairs:
+                            new_tuple.add(p)
+                        relation.tuples.add(new_tuple)
 
-        relation = relational_database.Relation(scheme=rule.head, facts=facts)
+        # Tuples are sets, if there are two pairs in a tuple with the same attribute the tuple is invalid
+        good_tuples = set()
+        for t in relation.tuples:
+            valid = True
+            for p in t.pairs:
+                for p2 in t.pairs:
+                    if p.attribute[VALUE] == p2.attribute[VALUE] and p.value[VALUE] != p2.value[VALUE]:
+                        valid = False
+            if valid:
+                good_tuples.add(t)
+
+        relation.tuples.clear()
+        relation.name = rule.head.id
+        relation.tuples = good_tuples
 
         # If this is part one then print out info from this intermediary step
         if _part == 1:
-            print("Joining %s:" % str(rule))
-            print("Relations:")
+            print("Joining %s" % str(rule))
+            print("Relation:")
             print(relation)
 
         return relation
@@ -110,6 +126,7 @@ class DatalogInterpreter:
         :return: True if the database is now larger, False if not
         """
         if head not in self.relations:
+            print("NEW ONE! " + str(joined.name) + "\n" + str(joined))
             self.relations.append(joined)
             return True
         else:
