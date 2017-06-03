@@ -102,7 +102,9 @@ class DatalogInterpreter:
                     if p.attribute[VALUE] == p2.attribute[VALUE] and p.value[VALUE] != p2.value[VALUE]:
                         valid = False
             if valid:
-                good_tuples.add(t)
+                assert isinstance(t, relational_database.Tuple)
+                if len(t.pairs) == len(rule.head.idList):
+                    good_tuples.add(t)
 
         relation.tuples.clear()
         relation.name = rule.head.id
