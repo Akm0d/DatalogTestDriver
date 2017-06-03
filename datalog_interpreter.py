@@ -8,6 +8,9 @@ import lexical_analyzer
 import datalog_parser
 import relational_database
 
+# If part is 1 then more steps will be printed
+_part = 2
+
 
 class DatalogInterpreter:
     """
@@ -34,12 +37,13 @@ class DatalogInterpreter:
 
         self.passes = 0
         # TODO if no new relations were added then call this again and again
+        # This is the fixed point algorithm
         # While (no new relations):
-        #     self.fixed_point()
+        #     self.evaluate_rules()
         #     self.passes += 1
-        self.fixed_point()
+        self.evaluate_rules()
 
-    def fixed_point(self):
+    def evaluate_rules(self):
         """
         Each rule potentially adds new facts to a relation.
         The fixed-point algorithm repeatedly performs iterations on the rules adding new facts from each rule as the facts are generated.
@@ -47,26 +51,8 @@ class DatalogInterpreter:
         The fixed-point algorithm terminates when an iteration of the rule expression set does not union a new tuple to any relation in the database.
         """
         for rule in self.rules:
-            self.evaluate_rule(rule)
-
-    def evaluate_rule(self, rule):
-        """
-        For every predicate on the right hand side of a rule,
-        evaluate that predicate in the same way queries are evaluated in the previous project.
-        The result of the evaluation should be a relation. If there are n predicates on the right hand side of a rule,
-        then there should be n intermediate relations from each predicate.
-        """
-        joined = self.join(rule)
-
-        # DEBUG
-        print("RULE: " + str(rule))
-        for j in joined:
-            assert isinstance(j, relational_database.Relation)
-            print("SCHEME:" + j.name[1])
-            print(j)
-        # END DEBUG
-
-        self.union(rule.head, joined)
+            joined = self.join(rule)
+            self.union(rule.head, joined)
 
     def join(self, rule):
         """
@@ -102,16 +88,15 @@ class DatalogInterpreter:
                             for at in rule.head.idList:
                                 attributes.append(at)
 
-        # TODO if part one then print out this fact and the rule and such
-        print("FACTS")
-        for f in facts:
-            print(f)
+        relation = relational_database.Relation(scheme=rule.head, facts=facts)
 
-        # Rename the attributes of thew new relation to match the head predicate
+        # If this is part one then print out info from this intermediary step
+        if _part == 1:
+            print("Joining %s:" % str(rule))
+            print("Relations:")
+            print(relation)
 
-        # return relational_database.Relation(scheme=head, facts=facts)
-        # TODO make sure the caller is expecting a single relation
-        return relations
+        return relation
 
     def union(self, head, joined):
         """
@@ -122,10 +107,12 @@ class DatalogInterpreter:
         :param joined: Relations
         :return: A single relation
         """
-        return head
+        pass
 
 
 def main(d_file, part=2, debug=False):
+    global _part
+    _part = part
     result = ""
     if not (1 <= part <= 2):
         raise ValueError("Part must be either 1 or 2")

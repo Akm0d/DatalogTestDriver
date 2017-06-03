@@ -96,9 +96,9 @@ class Relation:
             assert isinstance(scheme, datalog_parser.Scheme)
             self.name = scheme.id
             self.schema = set(scheme.idList)
-            assert isinstance(facts, datalog_parser.Facts)
+            assert isinstance(facts, list)
             self.tuples = set()
-            for fact in facts.facts:
+            for fact in facts:
                 if fact.id[VALUE] == scheme.id[VALUE]:
                     # Create a new tuple
                     new_tuple = Tuple()
@@ -151,7 +151,7 @@ class RDBMS:
         assert isinstance(datalog_program, datalog_parser.DatalogProgram)
         self.datalog = datalog_program
         for datalog_scheme in self.datalog.schemes.schemes:
-            self.relations.append(Relation(scheme=datalog_scheme, facts=self.datalog.facts))
+            self.relations.append(Relation(scheme=datalog_scheme, facts=self.datalog.facts.facts))
             pass
 
     def evaluate_query(self, query):
