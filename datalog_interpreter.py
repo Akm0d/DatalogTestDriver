@@ -71,11 +71,11 @@ class DatalogInterpreter:
         for predicate in rule.predicates:
             relations.extend(self.rdbms.evaluate_query(predicate))
 
-        # print("STARTING:")
-        # for r in relations:
-        #    assert isinstance(r, relational_database.Relation)
-        #    print(str(r))
-        # print("---")
+        print("STARTING:")
+        for r in relations:
+            assert isinstance(r, relational_database.Relation)
+            print(str(r))
+        print("---")
 
         # Make a relation with only attributes whose names appear in the head predicate of the rule
         relation = relational_database.Relation()
@@ -84,15 +84,9 @@ class DatalogInterpreter:
             while relations:
                 r = relations.pop(0)
                 # Add all of the tuples in this new relation to the old relations
-                old_tuples = deepcopy(relation.tuples)
-                relation.tuples.clear()
-                for o in old_tuples:
-                    for t in r.tuples:
-                        new_tuple = deepcopy(o)
-                        for p in t.pairs:
-                            new_tuple.add(p)
-                        relation.tuples.add(new_tuple)
+                relation.tuples = self.join_relations(r, relation)
 
+        print("ALL TUPLES: " + str(relation))
         # Tuples are sets, if there are two pairs in a tuple with the same attribute the tuple is invalid
         good_tuples = set()
         for t in relation.tuples:
@@ -100,11 +94,22 @@ class DatalogInterpreter:
             for p in t.pairs:
                 for p2 in t.pairs:
                     if p.attribute[VALUE] == p2.attribute[VALUE] and p.value[VALUE] != p2.value[VALUE]:
+                        print("Throwing out " + str(t))
                         valid = False
+
+            print("HEAD: " + str(rule.head))
+            correct = relational_database.Tuple()
+            for at in rule.head.idList:
+                found = False
+                for p in t.pairs:
+                    if p.attribute[VALUE] == at[VALUE]:
+                        found = True
+                        correct.add(p)
+                if not found:
+                    valid = False
+
             if valid:
-                assert isinstance(t, relational_database.Tuple)
-                if len(t.pairs) == len(rule.head.idList):
-                    good_tuples.add(t)
+                good_tuples.add(correct)
 
         relation.tuples.clear()
         relation.name = rule.head.id
@@ -117,6 +122,12 @@ class DatalogInterpreter:
             print(relation)
 
         return relation
+
+    @staticmethod
+    def join_relations(r1, r2):
+        print("Adding %s to %s" % (str(r1).rstrip("\n"), str(r2)))
+        tuples = set()
+        return tuples
 
     def union(self, head, joined):
         """
