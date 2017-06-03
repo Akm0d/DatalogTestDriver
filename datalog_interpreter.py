@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 from ast import literal_eval
-from tokens import TokenError, TYPE, STRING, ID
+
+from copy import deepcopy
+
+from tokens import TokenError, TYPE, STRING, ID, VALUE
 from collections import OrderedDict
 import lexical_analyzer
 import datalog_parser
@@ -45,7 +48,6 @@ class DatalogInterpreter:
         The fixed-point algorithm terminates when an iteration of the rule expression set does not union a new tuple to any relation in the database.
         """
         for rule in self.rules:
-            print("Rule: " + str(rule))
             self.evaluate_rule(rule)
 
     def evaluate_rule(self, rule):
@@ -77,18 +79,42 @@ class DatalogInterpreter:
         you should construct a relation: p1 |x| p2 |x| p3.
         :return: A list of relations
         """
+        assert isinstance(head, datalog_parser.Scheme)
         assert isinstance(predicates, list)
-        result = list()
+        relations = list()
         for predicate in predicates:
-            result.extend(self.rdbms.evaluate_query(predicate))
+            relations.extend(self.rdbms.evaluate_query(predicate))
+
+        facts = list()
+        attributes = deepcopy(head.idList)
 
         # TODO Make it return a single relation, not a list of relations, keep only those relations
         # whose attribute names appear in the head predicate of the new rule
+        for r in relations:
+            assert isinstance(r, relational_database.Relation)
+            for t in r.tuples:
+                assert isinstance(t, relational_database.Tuple)
+                for p in t.pairs:
+                    assert isinstance(p, relational_database.Pair)
+                    for i, f in enumerate(attributes):
+                        if p.attribute[VALUE] == f[VALUE]:
+                            attributes[i] = p.value
+                        if all(at[TYPE] == STRING for at in attributes):
+                            facts.append(datalog_parser.Fact(name=head.id, attributes=deepcopy(attributes)))
+                            attributes.clear()
+                            for at in head.idList:
+                                attributes.append(at)
+
+        # TODO if part one then print out this fact
+        print("FACTS")
+        for f in facts:
+            print(f)
 
         # Rename the attributes of thew new relation to match the head predicate
 
+        # return relational_database.Relation(scheme=head, facts=facts)
         # TODO make sure the caller is expecting a single relation
-        return result
+        return relations
 
     def union(self, head, joined):
         """

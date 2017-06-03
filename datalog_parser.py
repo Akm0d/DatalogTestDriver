@@ -110,46 +110,52 @@ class Fact:
 
     # This will be shared across every instance of the Fact class
 
-    def __init__(self, lex_tokens):
-        self.stringList = list()
-        t = lex_tokens.pop(0)
-        if not t[TYPE] == ID:
-            raise TokenError(t)
-        self.id = t
-        t = lex_tokens.pop(0)
-        if not t[TYPE] == LEFT_PAREN:
-            raise TokenError(t)
-        # There must be at least one ID inside the parenthesis
-        t = lex_tokens.pop(0)
-        if not t[TYPE] == STRING:
-            raise TokenError(t)
-        domain.add(t[VALUE])
-        self.stringList.append(t)
-        while len(lex_tokens) > 2 and (t[TYPE] in [COMMA, STRING]):
+    def __init__(self, lex_tokens=None, name=None, attributes=None):
+        if name and attributes:
+            assert isinstance(name, tuple)
+            self.id = name
+            assert isinstance(attributes, list)
+            self.stringList = attributes
+        else:
+            self.stringList = list()
             t = lex_tokens.pop(0)
-            if t[TYPE] == RIGHT_PAREN:
-                # The loop is ending pre-maturely, but an error will be thrown
-                break
-            if not t[TYPE] == COMMA:
+            if not t[TYPE] == ID:
                 raise TokenError(t)
+            self.id = t
+            t = lex_tokens.pop(0)
+            if not t[TYPE] == LEFT_PAREN:
+                raise TokenError(t)
+            # There must be at least one ID inside the parenthesis
             t = lex_tokens.pop(0)
             if not t[TYPE] == STRING:
                 raise TokenError(t)
             domain.add(t[VALUE])
             self.stringList.append(t)
-        if not lex_tokens:
-            raise TokenError(t)
-        t = lex_tokens.pop(0)
-        if not t[TYPE] == RIGHT_PAREN:
-            raise TokenError(t)
-        if not lex_tokens:
-            raise TokenError(t)
-        t = lex_tokens.pop(0)
-        if not t[TYPE] == PERIOD:
-            raise TokenError(t)
-        if lex_tokens:
-            raise TokenError(lex_tokens.pop(0))
-        pass
+            while len(lex_tokens) > 2 and (t[TYPE] in [COMMA, STRING]):
+                t = lex_tokens.pop(0)
+                if t[TYPE] == RIGHT_PAREN:
+                    # The loop is ending pre-maturely, but an error will be thrown
+                    break
+                if not t[TYPE] == COMMA:
+                    raise TokenError(t)
+                t = lex_tokens.pop(0)
+                if not t[TYPE] == STRING:
+                    raise TokenError(t)
+                domain.add(t[VALUE])
+                self.stringList.append(t)
+            if not lex_tokens:
+                raise TokenError(t)
+            t = lex_tokens.pop(0)
+            if not t[TYPE] == RIGHT_PAREN:
+                raise TokenError(t)
+            if not lex_tokens:
+                raise TokenError(t)
+            t = lex_tokens.pop(0)
+            if not t[TYPE] == PERIOD:
+                raise TokenError(t)
+            if lex_tokens:
+                raise TokenError(lex_tokens.pop(0))
+            pass
 
     def __str__(self):
         """
