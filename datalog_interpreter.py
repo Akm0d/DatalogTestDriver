@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
 from ast import literal_eval
-
-from copy import deepcopy
-
-from tokens import TokenError, TYPE, STRING, ID, VALUE
 from collections import OrderedDict
+from copy import deepcopy
+from tokens import TokenError, TYPE, STRING, ID, VALUE
+
 import lexical_analyzer
 import datalog_parser
 import relational_database
@@ -57,7 +56,7 @@ class DatalogInterpreter:
         The result of the evaluation should be a relation. If there are n predicates on the right hand side of a rule,
         then there should be n intermediate relations from each predicate.
         """
-        joined = self.join(rule.head, rule.predicates)
+        joined = self.join(rule)
 
         # DEBUG
         print("RULE: " + str(rule))
@@ -69,7 +68,7 @@ class DatalogInterpreter:
 
         self.union(rule.head, joined)
 
-    def join(self, head, predicates):
+    def join(self, rule):
         """
         if there is a single predicate on the right hand side of the rule,
         use the single intermediate result from Step 1 as the result for Step 2.
@@ -79,17 +78,15 @@ class DatalogInterpreter:
         you should construct a relation: p1 |x| p2 |x| p3.
         :return: A list of relations
         """
-        assert isinstance(head, datalog_parser.Scheme)
-        assert isinstance(predicates, list)
+        assert isinstance(rule, datalog_parser.Rule)
         relations = list()
-        for predicate in predicates:
+        for predicate in rule.predicates:
             relations.extend(self.rdbms.evaluate_query(predicate))
 
         facts = list()
-        attributes = deepcopy(head.idList)
+        attributes = deepcopy(rule.head.idList)
 
-        # TODO Make it return a single relation, not a list of relations, keep only those relations
-        # whose attribute names appear in the head predicate of the new rule
+        # Make a relation with only attributes whose names appear in the head predicate of the rule
         for r in relations:
             assert isinstance(r, relational_database.Relation)
             for t in r.tuples:
@@ -100,12 +97,12 @@ class DatalogInterpreter:
                         if p.attribute[VALUE] == f[VALUE]:
                             attributes[i] = p.value
                         if all(at[TYPE] == STRING for at in attributes):
-                            facts.append(datalog_parser.Fact(name=head.id, attributes=deepcopy(attributes)))
+                            facts.append(datalog_parser.Fact(name=rule.head.id, attributes=deepcopy(attributes)))
                             attributes.clear()
-                            for at in head.idList:
+                            for at in rule.head.idList:
                                 attributes.append(at)
 
-        # TODO if part one then print out this fact
+        # TODO if part one then print out this fact and the rule and such
         print("FACTS")
         for f in facts:
             print(f)
