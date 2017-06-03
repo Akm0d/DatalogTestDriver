@@ -8,7 +8,6 @@ from tokens import VALUE, STRING, TYPE, ID, TokenError
 import lexical_analyzer
 import datalog_parser
 
-
 # An ordered dictionary for storing all the query values
 RelationalDatabase = None
 
@@ -334,7 +333,8 @@ def main(d_file, part=2, debug=False):
     for datalog_query in datalog.queries.queries:
         for r in rdbms.evaluate_query(datalog_query):
             # Each query contains a set of relations
-            RelationalDatabase[datalog_query] = set()
+            if datalog_query not in RelationalDatabase:
+                RelationalDatabase[datalog_query] = set()
             if r.tuples:
                 for t in r.tuples:
                     RelationalDatabase[datalog_query].add(t)
@@ -360,7 +360,8 @@ def main(d_file, part=2, debug=False):
             else:  # It is a string or id
                 if p.string_id[TYPE] == STRING:
                     if one_selected and one_selected[0].name:
-                        one_selected = rdbms.select(relations=one_selected, index=one_i, name=one_query.id, value=p.string_id)
+                        one_selected = rdbms.select(relations=one_selected, index=one_i, name=one_query.id,
+                                                    value=p.string_id)
                 elif p.string_id[TYPE] == ID:
                     one_project_columns.append(one_i)
                     one_new_names.append(p.string_id)
@@ -412,6 +413,7 @@ def main(d_file, part=2, debug=False):
     else:
         result += (str(rdbms))
     return result
+
 
 if __name__ == "__main__":
     """

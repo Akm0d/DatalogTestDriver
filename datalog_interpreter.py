@@ -37,6 +37,7 @@ class DatalogInterpreter:
 
         self.passes = 0
         # TODO if no new relations were added then call this again and again
+        # TODO print out which pass we are on if this is part 1
         # This is the fixed point algorithm
         # While (no new relations):
         #     self.evaluate_rules()
@@ -52,7 +53,8 @@ class DatalogInterpreter:
         """
         for rule in self.rules:
             joined = self.join(rule)
-            self.union(rule.head, joined)
+            if joined.tuples:
+                self.union(rule.head, joined)
 
     def join(self, rule):
         """
@@ -105,9 +107,16 @@ class DatalogInterpreter:
         Add tuples to relation r from the result of the join.
         :param head: A head predicate
         :param joined: Relations
-        :return: A single relation
+        :return: True if the database is now larger, False if not
         """
-        pass
+        if head not in self.relations:
+            self.relations.append(joined)
+            return True
+        else:
+            for rel in self.relations:
+                if rel == head:
+                    assert isinstance(rel, relational_database.Relation)
+                    rel.tuples.union(joined.tuples)
 
 
 def main(d_file, part=2, debug=False):
