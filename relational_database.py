@@ -43,7 +43,6 @@ class Tuple:
     A Tuple is a set of attribute/value pairs.
     """
     pairs = None
-    valid = None
 
     def __init__(self):
         self.pairs = OrderedSet()
@@ -54,10 +53,20 @@ class Tuple:
 
     def union(self, other):
         for pair in other:
-            self.pairs.add(pair)
+            self.pairs.add(Pair(pair.attribute, pair.value))
+
+    def get(self, attribute):
+        """
+        :param attribute:
+        :return: The pair that has the given attribute
+        """
+        for pair in self.pairs:
+            if pair.attribute[VALUE] == attribute[VALUE]:
+                return pair
+        return None
 
     def __bool__(self):
-        for x,y in combinations(self.pairs, 2):
+        for x, y in combinations(self.pairs, 2):
             if x.attribute[VALUE] == y.attribute[VALUE]:
                 return False
         return True

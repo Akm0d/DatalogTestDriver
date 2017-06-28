@@ -70,7 +70,7 @@ class DatalogInterpreter:
         """
         assert isinstance(rule, datalog_parser.Rule)
         tuples = set()
-        print("Evaluating '%s'" % str(rule))
+        # print("Evaluating '%s'" % str(rule))
         for predicate in rule.predicates:
             rels = self.rdbms.evaluate_query(predicate)
             for r in rels:
@@ -78,7 +78,8 @@ class DatalogInterpreter:
                 for x in r.tuples:
                     tuples.add(x)
 
-        print("\n".join([str(x) for x in tuples]))
+        # print("\n".join([str(x) for x in tuples]))
+
         from itertools import combinations
         s_t_combined = set()
         for x in combinations(tuples, 2):
@@ -88,12 +89,15 @@ class DatalogInterpreter:
             if t_combined:
                 s_t_combined.add(t_combined)
 
-        print("\n".join([str(x) for x in s_t_combined]))
+        for t in tuples:
+            s_t_combined.add(t)
+        # print("\n".join([str(x) for x in s_t_combined]))
 
         # TODO Make a relation with only attributes whose names appear in the head predicate of the rule
         relation = relational_database.Relation()
         relation.tuples.clear()
         relation.name = rule.head.id
+        relation.tuples = self.t_reorder_and_select(rule.head.idList, s_t_combined)
 
         # If this is part one then print out info from this intermediary step
         if _part == 1:
@@ -102,6 +106,24 @@ class DatalogInterpreter:
             print(relation)
 
         return relation
+
+    @staticmethod
+    def t_reorder_and_select(schema, tuples):
+        good_tuples = set()
+        # print(schema)
+        # print("\n".join([str(x) for x in tuples]))
+        for t in tuples:
+            new_tuple = relational_database.Tuple()
+            valid = True
+            for i in schema:
+                new_pair = t.get(i)
+                if new_pair:
+                    new_tuple.add(new_pair)
+                else:
+                    valid = False
+            if valid:
+                good_tuples.add(new_tuple)
+        return good_tuples
 
     @staticmethod
     def join_relations(r1, r2):
@@ -132,6 +154,7 @@ class DatalogInterpreter:
         :param joined: Relations
         :return: True if the database is now larger, False if not
         """
+        # TODO this is overwriting good stuff
         if head not in self.relations:
             print("NEW ONE! " + str(joined.name) + "\n" + str(joined))
             self.relations.append(joined)
