@@ -69,66 +69,31 @@ class DatalogInterpreter:
         :return: A list of relations
         """
         assert isinstance(rule, datalog_parser.Rule)
-        relations = list()
+        tuples = set()
+        print("Evaluating '%s'" % str(rule))
         for predicate in rule.predicates:
             rels = self.rdbms.evaluate_query(predicate)
             for r in rels:
                 assert isinstance(r, relational_database.Relation)
-                found = False
-                for i, x in enumerate(relations):
-                    if r.name[VALUE] == x.name[VALUE]:
-                        relations[i].tuples.union(r.tuples)
-                        found = True
-                if not found:
-                    relations.append(r)
+                for x in r.tuples:
+                    tuples.add(x)
 
-        print("STARTING:")
-        for r in relations:
-            assert isinstance(r, relational_database.Relation)
-            print(r.name)
-            print(str(r))
-        print("---")
+        print("\n".join([str(x) for x in tuples]))
+        from itertools import combinations
+        s_t_combined = set()
+        for x in combinations(tuples, 2):
+            t_combined = relational_database.Tuple()
+            for p in x:
+                t_combined.union(p.pairs)
+            if t_combined:
+                s_t_combined.add(t_combined)
 
-        # Make a relation with only attributes whose names appear in the head predicate of the rule
+        print("\n".join([str(x) for x in s_t_combined]))
+
+        # TODO Make a relation with only attributes whose names appear in the head predicate of the rule
         relation = relational_database.Relation()
-        if relations:
-            relation = relations.pop()
-            while relations:
-                r = relations.pop()
-                # Add all of the tuples in this new relation to the old relations
-                print("TWO: %s : %s" % (str(r), str(relation)))
-                r1 = deepcopy(r.tuples)
-                r2 = deepcopy(relation.tuples)
-                relation.tuples = self.join_relations(r1, r2)
-
-        print("ALL TUPLES: " + str(relation))
-        # Tuples are sets, if there are two pairs in a tuple with the same attribute the tuple is invalid
-        good_tuples = set()
-        for t in relation.tuples:
-            valid = True
-            for p in t.pairs:
-                for p2 in t.pairs:
-                    if p.attribute[VALUE] == p2.attribute[VALUE] and p.value[VALUE] != p2.value[VALUE]:
-                        print("Throwing out " + str(t))
-                        valid = False
-
-            print("HEAD: " + str(rule.head))
-            correct = relational_database.Tuple()
-            for at in rule.head.idList:
-                found = False
-                for p in t.pairs:
-                    if p.attribute[VALUE] == at[VALUE]:
-                        found = True
-                        correct.add(p)
-                if not found:
-                    valid = False
-
-            if valid:
-                good_tuples.add(correct)
-
         relation.tuples.clear()
         relation.name = rule.head.id
-        relation.tuples = good_tuples
 
         # If this is part one then print out info from this intermediary step
         if _part == 1:

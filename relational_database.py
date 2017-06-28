@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 from ast import literal_eval
 from collections import OrderedDict
-from itertools import zip_longest
+from itertools import zip_longest, combinations
 from orderedset._orderedset import OrderedSet
 from tokens import VALUE, STRING, TYPE, ID, TokenError
 
@@ -18,7 +18,6 @@ class Pair:
     """
     # An attribute is the name associated with each data value in a tuple entry.
     attribute = None
-    value = None
 
     def __init__(self, v, s):
         self.attribute = v
@@ -44,6 +43,7 @@ class Tuple:
     A Tuple is a set of attribute/value pairs.
     """
     pairs = None
+    valid = None
 
     def __init__(self):
         self.pairs = OrderedSet()
@@ -51,6 +51,16 @@ class Tuple:
     def add(self, pair):
         assert isinstance(pair, Pair)
         self.pairs.add(pair)
+
+    def union(self, other):
+        for pair in other:
+            self.pairs.add(pair)
+
+    def __bool__(self):
+        for x,y in combinations(self.pairs, 2):
+            if x.attribute[VALUE] == y.attribute[VALUE]:
+                return False
+        return True
 
     def __str__(self):
         return ", ".join(str(pair) for pair in self.pairs)
