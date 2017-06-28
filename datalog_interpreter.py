@@ -36,6 +36,8 @@ class DatalogInterpreter:
         assert isinstance(self.database, OrderedDict)
 
         self.passes = 0
+        # if rules:
+        #     self.passes = 1
         # TODO if no new relations were added then call this again and again
         # TODO print out which pass we are on if this is part 1
         # This is the fixed point algorithm
@@ -69,22 +71,35 @@ class DatalogInterpreter:
         assert isinstance(rule, datalog_parser.Rule)
         relations = list()
         for predicate in rule.predicates:
-            relations.extend(self.rdbms.evaluate_query(predicate))
+            rels = self.rdbms.evaluate_query(predicate)
+            for r in rels:
+                assert isinstance(r, relational_database.Relation)
+                found = False
+                for i, x in enumerate(relations):
+                    if r.name[VALUE] == x.name[VALUE]:
+                        relations[i].tuples.union(r.tuples)
+                        found = True
+                if not found:
+                    relations.append(r)
 
         print("STARTING:")
         for r in relations:
             assert isinstance(r, relational_database.Relation)
+            print(r.name)
             print(str(r))
         print("---")
 
         # Make a relation with only attributes whose names appear in the head predicate of the rule
         relation = relational_database.Relation()
         if relations:
-            relation = relations.pop(0)
+            relation = relations.pop()
             while relations:
-                r = relations.pop(0)
+                r = relations.pop()
                 # Add all of the tuples in this new relation to the old relations
-                relation.tuples = self.join_relations(r, relation)
+                print("TWO: %s : %s" % (str(r), str(relation)))
+                r1 = deepcopy(r.tuples)
+                r2 = deepcopy(relation.tuples)
+                relation.tuples = self.join_relations(r1, r2)
 
         print("ALL TUPLES: " + str(relation))
         # Tuples are sets, if there are two pairs in a tuple with the same attribute the tuple is invalid
@@ -125,8 +140,22 @@ class DatalogInterpreter:
 
     @staticmethod
     def join_relations(r1, r2):
-        print("Adding %s to %s" % (str(r1).rstrip("\n"), str(r2)))
+        print("Adding %s to %s" % ("\n".join([str(x) for x in r1]), "\n".join([str(y) for y in r2])))
         tuples = set()
+        for t1 in r1:
+            for t2 in r2:
+                print("concatenating %s with %s" % (str(t1), str(t2)))
+                new_tuple = relational_database.Tuple()
+                for p in t2.pairs:
+                    new_tuple.add(p)
+                for p in t1.pairs:
+                    new_tuple.add(p)
+                if new_tuple.pairs:
+                    tuples.add(new_tuple)
+
+        print("TUPLES ARE NOW:")
+        for t in tuples:
+            print(t)
         return tuples
 
     def union(self, head, joined):
