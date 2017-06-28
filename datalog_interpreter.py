@@ -154,16 +154,14 @@ class DatalogInterpreter:
         :param joined: Relations
         :return: True if the database is now larger, False if not
         """
-        # TODO this is overwriting good stuff
-        if head not in self.relations:
-            print("NEW ONE! " + str(joined.name) + "\n" + str(joined))
+        if head.id[VALUE] not in [x.name[VALUE] for x in self.relations]:
             self.relations.append(joined)
-            return True
         else:
-            for rel in self.relations:
-                if rel == head:
-                    assert isinstance(rel, relational_database.Relation)
-                    rel.tuples.union(joined.tuples)
+            for r in self.relations:
+                if r.name[VALUE] == head.id[VALUE]:
+                    assert isinstance(r, relational_database.Relation)
+                    for t in joined.tuples:
+                        r.tuples.add(t)
 
 
 def main(d_file, part=2, debug=False):
