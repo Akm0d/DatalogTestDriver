@@ -84,12 +84,10 @@ class DatalogInterpreter:
             t_combined = relational_database.Tuple()
             for p in x:
                 t_combined.union(p.pairs)
+            if rule.head.id[VALUE] == "DeaVoo":
+                print("V: " + str(t_combined))
             if t_combined:
                 s_t_combined.add(t_combined)
-
-        for t in tuples:
-            if t:
-                s_t_combined.add(t)
 
         # TODO If the rule predicate defines something twice, handle it or something
         print("combined")
@@ -112,8 +110,9 @@ class DatalogInterpreter:
     @staticmethod
     def t_reorder_and_select(schema, tuples):
         good_tuples = set()
-        # print(schema)
-        # print("\n".join([str(x) for x in tuples]))
+        print(schema)
+        print("\n".join([str(x) for x in tuples]))
+        print("done")
         for t in tuples:
             new_tuple = relational_database.Tuple()
             valid = True
@@ -169,6 +168,7 @@ class DatalogInterpreter:
                         r.tuples.add(t)
                     if size != len(r.tuples):
                         new_values = True
+                    break
         return new_values
 
 
@@ -206,6 +206,8 @@ def main(d_file, part=2, debug=False):
     for datalog_query in datalog.queries.queries:
         database = rdbms.get_database()
         assert isinstance(database, OrderedDict)
+        if datalog_query not in database:
+            database[datalog_query] = set()
         for r in rdbms.evaluate_query(datalog_query):
             database[datalog_query] = set()
             if r.tuples:

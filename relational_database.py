@@ -66,6 +66,8 @@ class Tuple:
         return None
 
     def __bool__(self):
+        if not self.pairs:
+            return False
         for x, y in combinations(self.pairs, 2):
             if x.attribute[VALUE] == y.attribute[VALUE]:
                 return False
