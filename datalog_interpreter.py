@@ -35,12 +35,16 @@ class DatalogInterpreter:
         self.database = rdbms.get_database()
         assert isinstance(self.database, OrderedDict)
 
-        self.passes = 1
+        self.passes = 0
         # if no new relations were added then call this again and again
         # print out which pass we are on if this is part 1
         # This is the fixed point algorithm
-        while self.evaluate_rules():
-            self.passes += 1
+        before = -1
+        after = sum([len(x.tuples) for x in self.relations])
+        while before < after:
+            before = after
+            self.evaluate_rules()
+            after = sum([len(x.tuples) for x in self.relations])
 
     def evaluate_rules(self):
         """
@@ -49,14 +53,13 @@ class DatalogInterpreter:
         Each iteration may change the database by adding at least one new tuple to at least one relation in the database.
         The fixed-point algorithm terminates when an iteration of the rule expression set does not union a new tuple to any relation in the database.
         """
+        self.passes += 1
         if _part == 1:
             print("Pass: " + str(self.passes))
-        status = True
         for rule in self.rules:
             joined = self.join(rule)
             if joined.tuples:
-                status = status and self.union(rule.head, joined)
-        return status
+                self.union(rule.head, joined)
 
     def join(self, rule):
         """
@@ -153,7 +156,6 @@ class DatalogInterpreter:
         :param joined: Relations
         :return: True if the database is now larger, False if not
         """
-        new_values = False
         if head.id[VALUE] not in [x.name[VALUE] for x in self.relations]:
             self.relations.append(joined)
             new_values = True
@@ -161,13 +163,8 @@ class DatalogInterpreter:
             for r in self.relations:
                 if r.name[VALUE] == head.id[VALUE]:
                     assert isinstance(r, relational_database.Relation)
-                    size = len(r.tuples)
                     for t in joined.tuples:
                         r.tuples.add(t)
-                    if size != len(r.tuples):
-                        new_values = True
-                    break
-        return new_values
 
 
 def main(d_file, part=2, debug=False):
