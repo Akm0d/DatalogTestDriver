@@ -41,6 +41,7 @@ class DatalogInterpreter:
         # This is the fixed point algorithm
         before = -1
         after = sum([len(x.tuples) for x in self.relations])
+        # TODO keep going based on whether the queries return any new data
         while before < after:
             before = after
             self.evaluate_rules()
