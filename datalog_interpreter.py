@@ -76,6 +76,7 @@ class DatalogInterpreter:
             for r in rels:
                 assert isinstance(r, relational_database.Relation)
                 for x in r.tuples:
+                    # print("T: " + str(x))
                     tuples.add(x)
 
         from itertools import combinations
@@ -83,15 +84,13 @@ class DatalogInterpreter:
         for x in combinations(tuples, len(rule.predicates)):
             t_combined = relational_database.Tuple()
             for p in x:
+                # print("p: "+ str(p) )
                 t_combined.union(p.pairs)
-            if rule.head.id[VALUE] == "DeaVoo":
-                print("V: " + str(t_combined))
             if t_combined:
                 s_t_combined.add(t_combined)
 
-        # TODO If the rule predicate defines something twice, handle it or something
-        print("combined")
-        print("\n".join([str(x) for x in s_t_combined]))
+        # print("combined")
+        # print("\n".join([str(x) for x in s_t_combined]))
 
         relation = relational_database.Relation()
         relation.tuples.clear()
@@ -110,9 +109,8 @@ class DatalogInterpreter:
     @staticmethod
     def t_reorder_and_select(schema, tuples):
         good_tuples = set()
-        print(schema)
-        print("\n".join([str(x) for x in tuples]))
-        print("done")
+        # print(schema)
+        # print("\n".join([str(x) for x in tuples]))
         for t in tuples:
             new_tuple = relational_database.Tuple()
             valid = True
