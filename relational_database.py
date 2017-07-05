@@ -331,6 +331,26 @@ class RDBMS:
         global RelationalDatabase
         RelationalDatabase = database
 
+    def evaluate_queries(self, queries):
+        for datalog_query in queries:
+            database = self.get_database()
+            assert isinstance(database, OrderedDict)
+            if datalog_query not in database:
+                database[datalog_query] = set()
+            for r in self.evaluate_query(datalog_query):
+                database[datalog_query] = set()
+                if r.tuples:
+                    for t in r.tuples:
+                        database[datalog_query].add(t)
+            self.set_database(database)
+
+        for datalog_query in queries:
+            # Each rule returns a new relation
+            self.evaluate_query(datalog_query)
+
+        # print number of passes through rules for schemes to be populated
+        return str(self)
+
 
 def main(d_file, part=2, debug=False):
     global RelationalDatabase
