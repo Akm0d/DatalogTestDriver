@@ -12,7 +12,7 @@ import datalog_parser
 RelationalDatabase = None
 
 
-class Pair:
+class Pair():
     """
     The format of a pair is v= 's', where v is the variable and 's' is the string value. 
     """
@@ -38,43 +38,38 @@ class Pair:
         return str(self) != str(other)
 
 
-class Tuple:
+class Tuple(OrderedSet):
     """
     A Tuple is a set of attribute/value pairs.
     """
-    pairs = None
 
     def __init__(self):
-        self.pairs = OrderedSet()
-
-    def add(self, pair):
-        assert isinstance(pair, Pair)
-        self.pairs.add(pair)
+        super().__init__()
 
     def union(self, other):
         for pair in other:
-            self.pairs.add(Pair(pair.attribute, pair.value))
+            self.add(Pair(pair.attribute, pair.value))
 
     def get(self, attribute):
         """
         :param attribute:
         :return: The pair that has the given attribute
         """
-        for pair in self.pairs:
+        for pair in self:
             if pair.attribute[VALUE] == attribute[VALUE]:
                 return pair
         return None
 
     def __bool__(self):
-        if not self.pairs:
+        if not len(self):
             return False
-        for x, y in combinations(self.pairs, 2):
+        for x, y in combinations(self, 2):
             if x.attribute[VALUE] == y.attribute[VALUE]:
                 return False
         return True
 
     def __str__(self):
-        return ", ".join(str(pair) for pair in self.pairs)
+        return ", ".join(str(pair) for pair in self)
 
     def __hash__(self):
         return hash(str(self))
@@ -218,7 +213,7 @@ class RDBMS:
             if relation.name[VALUE] == name[VALUE]:
                 for t in relation.tuples:
                     assert isinstance(t, Tuple)
-                    p = t.pairs[index]
+                    p = t[index]
                     assert isinstance(p, Pair)
                     if p.value[VALUE] == value[VALUE]:
                         tuples.add(t)
@@ -244,7 +239,7 @@ class RDBMS:
                     assert isinstance(t, Tuple)
                     new_t = Tuple()
                     i = 0
-                    for p in t.pairs:
+                    for p in t:
                         if i in columns:
                             new_t.add(p)
                         i += 1
@@ -273,17 +268,17 @@ class RDBMS:
                     assert isinstance(t, Tuple)
                     new_t = Tuple()
                     # Iterate over the pairs and new names
-                    for p, n in zip_longest(t.pairs, new_names, fillvalue=None):
+                    for p, n in zip_longest(t, new_names, fillvalue=None):
                         if not p:
                             p = Pair(None, None)
                         new_t.add(Pair(n, p.value))
 
                     # If pairs in the tuple have the same ID but not the same value then the tuple is invalid
                     valid = True
-                    for p in new_t.pairs:
+                    for p in new_t:
                         assert isinstance(p, Pair)
                         # Iterate over the same list twice and make sure all pairs with the same ID have same value
-                        for o in new_t.pairs:
+                        for o in new_t:
                             assert isinstance(o, Pair)
                             if p.attribute == o.attribute and not (p.value == o.value):
                                 valid = False
@@ -318,7 +313,7 @@ class RDBMS:
             else:  # The set isn't empty
                 result += "Yes(" + str(len(tuples)) + ")"
                 assert isinstance(tuples, set)
-                if next(iter(tuples)).pairs:
+                if next(iter(tuples)):
                     result += "\n"
                 for t in sorted(tuples):
                     result += "  " + str(t) + "\n"
