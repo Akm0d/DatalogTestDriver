@@ -70,7 +70,7 @@ class Token:
         """
         Choose the token that best matches the input using a certain priority
         :param s_input: 
-        :param line_number: 
+        :param line_number:
         """
         self.value = s_input
         if self.TYPE[EOF].match(s_input):

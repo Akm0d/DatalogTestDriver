@@ -12,21 +12,24 @@ import datalog_parser
 RelationalDatabase = None
 
 
-class Pair():
+class Pair(tuple):
     """
     The format of a pair is v= 's', where v is the variable and 's' is the string value. 
     """
-    # An attribute is the name associated with each data value in a tuple entry.
-    attribute = None
 
-    def __init__(self, v, s):
-        self.attribute = v
-        self.value = s
+    def __new__(cls, v="", s=""):
+        return tuple.__new__(cls, (v, s))
+
+    @property
+    def attribute(self):
+        return self[0]
+
+    @property
+    def value(self):
+        return self[1]
 
     def __str__(self):
-        value = self.value[VALUE] if self.value else "NULL"
-        attribute = self.attribute[VALUE] if self.attribute else "NULL"
-        return "%s=%s" % (attribute, value)
+        return "%s=%s" % (self.attribute[VALUE], self.value[VALUE])
 
     def __hash__(self):
         return hash(str(self))

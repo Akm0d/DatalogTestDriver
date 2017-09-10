@@ -47,6 +47,7 @@ class DatalogInterpreter:
         self.passes += 1
         if _part == 1:
             print("Pass: " + str(self.passes))
+        # TODO can I evaluate each rule in it's own thread and get the same results?
         for rule in self.rules:
             joined = self.join(rule)
             if joined.tuples:
@@ -79,7 +80,7 @@ class DatalogInterpreter:
             t_combined = relational_database.Tuple()
             for p in x:
                 # print("p: "+ str(p) )
-                t_combined.union(p.pairs)
+                t_combined.union(p)
             if t_combined:
                 s_t_combined.add(t_combined)
 
@@ -117,6 +118,7 @@ class DatalogInterpreter:
             if valid:
                 good_tuples.add(new_tuple)
         return good_tuples
+
 
     @staticmethod
     def join_relations(r1, r2):
