@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-from tokens import Token
+from tokens import Token, TokenType
 
 
 def scan(datalog_file):
@@ -16,17 +16,17 @@ def scan(datalog_file):
             file_string = file_string + line
 
         while file_string:
-            token = Token(file_string)
+            token = Token(s_input=file_string, line_number=line_number)
             file_string = file_string[len(token.value):]
-            if token.type == 'INVALID':
-                tokens.append(('UNDEFINED', token.value[0], line_number))
+            if token.type == TokenType.INVALID:
+                tokens.append(Token(t_type=TokenType.UNDEFINED, value=token.value[0], line_number=line_number))
                 file_string = token.value[1:]
             else:
-                if token.type != 'WHITESPACE':
-                    tokens.append((token.type, token.value, line_number))
+                if token.type != TokenType.WHITESPACE:
+                    tokens.append(token)
                 # Increment line number after adding tokens
                 line_number += token.value.count('\n')
-        tokens.append(('EOF', "", str(line_number)))
+        tokens.append(Token(t_type=TokenType.EOF, value="", line_number=line_number))
     return tokens
 
 

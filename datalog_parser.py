@@ -1,52 +1,49 @@
 #!/usr/bin/env python3
 from ast import literal_eval
 
-from tokens import COMMA, PERIOD, Q_MARK, LEFT_PAREN, RIGHT_PAREN, COLON, COLON_DASH, MULTIPLY, Token
-from tokens import ADD, SCHEMES, FACTS, RULES, QUERIES, ID, STRING, COMMENT, WHITESPACE, EOF
-from tokens import TokenError, TYPE, VALUE
+from tokens import Token, TokenError, TokenType
 import lexical_analyzer
 
 
 class Scheme:
-    id = None
-    idList = None
+    # id
+    # idList
 
     def __init__(self, lex_tokens):
         self.idList = list()
         t = lex_tokens.pop(0)
-        if not t[TYPE] == ID:
+        if not t.type == TokenType.ID:
             raise TokenError(t)
         self.id = t
         t = lex_tokens.pop(0)
-        if not t[TYPE] == LEFT_PAREN:
+        if not t.type == TokenType.LEFT_PAREN:
             raise TokenError(t)
         # There must be at least one ID inside the parenthesis
         t = lex_tokens.pop(0)
-        if not t[TYPE] == ID:
+        if not t.type == TokenType.ID:
             raise TokenError(t)
         self.idList.append(t)
         while len(lex_tokens) > 1:
             t = lex_tokens.pop(0)
-            if not t[TYPE] == COMMA:
+            if not t.type == TokenType.COMMA:
                 raise TokenError(t)
             t = lex_tokens.pop(0)
-            if not t[TYPE] == ID:
+            if not t.type == TokenType.ID:
                 raise TokenError(t)
             self.idList.append(t)
         if not lex_tokens:
             raise TokenError(t)
         t = lex_tokens.pop(0)
-        if not t[TYPE] == RIGHT_PAREN:
+        if not t.type == TokenType.RIGHT_PAREN:
             raise TokenError(t)
-        pass
 
     def __str__(self):
         """
         :return: A string representation of this class
         """
-        result = "%s(" % self.id[VALUE]
+        result = "%s(" % self.id.value
         for t in self.idList:
-            result += t[VALUE] + ","
+            result += t.value + ","
 
         # Remove extra comma
         result = result[:-1]
@@ -61,11 +58,11 @@ class Schemes:
         self.schemes = list()
         # SCHEMES
         t = lex_tokens.pop(0)
-        if not t[TYPE] == SCHEMES:
+        if not t.type == TokenType.SCHEMES:
             raise TokenError(t)
         # COLON
         t = lex_tokens.pop(0)
-        if not t[TYPE] == COLON:
+        if not t.type == TokenType.COLON:
             raise TokenError(t)
         # SCHEMELIST
         t_tokens = list()
@@ -73,7 +70,7 @@ class Schemes:
             t = lex_tokens.pop(0)
             t_tokens.append(t)
             # Once we reach a right parenthesis it is a new scheme
-            if t[TYPE] == RIGHT_PAREN:
+            if t.type == TokenType.RIGHT_PAREN:
                 self.schemes.append(Scheme(t_tokens))
                 t_tokens.clear()
 
@@ -84,7 +81,7 @@ class Schemes:
             t_tokens.append(t)
             Scheme(t_tokens)
 
-        if not t[TYPE] == FACTS:
+        if not t.type == TokenType.FACTS:
             raise TokenError(t)
 
     def __str__(self):
@@ -119,39 +116,39 @@ class Fact:
         else:
             self.stringList = list()
             t = lex_tokens.pop(0)
-            if not t[TYPE] == ID:
+            if not t.type == TokenType.ID:
                 raise TokenError(t)
             self.id = t
             t = lex_tokens.pop(0)
-            if not t[TYPE] == LEFT_PAREN:
+            if not t.type == TokenType.LEFT_PAREN:
                 raise TokenError(t)
             # There must be at least one ID inside the parenthesis
             t = lex_tokens.pop(0)
-            if not t[TYPE] == STRING:
+            if not t.type == TokenType.STRING:
                 raise TokenError(t)
-            domain.add(t[VALUE])
+            domain.add(t.value)
             self.stringList.append(t)
-            while len(lex_tokens) > 2 and (t[TYPE] in [COMMA, STRING]):
+            while len(lex_tokens) > 2 and (t.type in [TokenType.COMMA, TokenType.STRING]):
                 t = lex_tokens.pop(0)
-                if t[TYPE] == RIGHT_PAREN:
+                if t.type == TokenType.RIGHT_PAREN:
                     # The loop is ending pre-maturely, but an error will be thrown
                     break
-                if not t[TYPE] == COMMA:
+                if not t.type == TokenType.COMMA:
                     raise TokenError(t)
                 t = lex_tokens.pop(0)
-                if not t[TYPE] == STRING:
+                if not t.type == TokenType.STRING:
                     raise TokenError(t)
-                domain.add(t[VALUE])
+                domain.add(t.value)
                 self.stringList.append(t)
             if not lex_tokens:
                 raise TokenError(t)
             t = lex_tokens.pop(0)
-            if not t[TYPE] == RIGHT_PAREN:
+            if not t.type == TokenType.RIGHT_PAREN:
                 raise TokenError(t)
             if not lex_tokens:
                 raise TokenError(t)
             t = lex_tokens.pop(0)
-            if not t[TYPE] == PERIOD:
+            if not t.type == TokenType.PERIOD:
                 raise TokenError(t)
             if lex_tokens:
                 raise TokenError(lex_tokens.pop(0))
@@ -161,9 +158,9 @@ class Fact:
         """
         :return: A string representation of this class
         """
-        result = "%s(" % self.id[VALUE]
+        result = "%s(" % self.id.value
         for t in self.stringList:
-            result += t[VALUE] + ","
+            result += t.value + ","
 
         # Remove extra comma
         result = result[:-1]
@@ -180,7 +177,7 @@ class Facts:
         self.facts = list()
         # Validate the syntax of the Scheme
         t = lex_tokens.pop(0)
-        if not t[TYPE] == COLON:
+        if not t.type == TokenType.COLON:
             raise TokenError(t)
 
         t_tokens = list()
@@ -188,7 +185,7 @@ class Facts:
             t = lex_tokens.pop(0)
             t_tokens.append(t)
             # Once we reach a period it is a new fact
-            if t[TYPE] == PERIOD:
+            if t.type == TokenType.PERIOD:
                 self.facts.append(Fact(t_tokens))
                 t_tokens.clear()
 
@@ -198,7 +195,7 @@ class Facts:
             t_tokens.append(t)
             Fact(t_tokens)
 
-        if not t[TYPE] == RULES:
+        if not t.type == TokenType.RULES:
             raise TokenError(t)
 
     def __str__(self):
@@ -235,12 +232,12 @@ class Expression:
     def __init__(self, lex_tokens):
         # Get Param 1
         t = lex_tokens.pop(0)
-        if not t[TYPE] in [STRING, ID, LEFT_PAREN]:
+        if not t.type in [TokenType.STRING, TokenType.ID, TokenType.LEFT_PAREN]:
             raise TokenError(t)
-        if t[TYPE] in [STRING, ID]:
+        if t.type in [TokenType.STRING, TokenType.ID]:
             self.param_1 = Parameter(list([t]))
         # If it is a left parenthesis, then grab tokens until we are palindrome and pass to parameter
-        elif t[TYPE] == LEFT_PAREN:
+        elif t.type == TokenType.LEFT_PAREN:
             t_tokens = list([])
             palindrome = 1
             t_tokens.append(t)
@@ -248,9 +245,9 @@ class Expression:
             while palindrome > 0 and lex_tokens:
                 t = lex_tokens.pop(0)
                 t_tokens.append(t)
-                if t[TYPE] == RIGHT_PAREN:
+                if t.type == TokenType.RIGHT_PAREN:
                     palindrome -= 1
-                elif t[TYPE] == LEFT_PAREN:
+                elif t.type == TokenType.LEFT_PAREN:
                     palindrome += 1
             self.param_1 = Parameter(t_tokens)
 
@@ -258,7 +255,7 @@ class Expression:
         if not lex_tokens:
             raise TokenError(t)
         t = lex_tokens.pop(0)
-        if not t[TYPE] in [MULTIPLY, ADD]:
+        if not t.type in [TokenType.MULTIPLY, TokenType.ADD]:
             raise TokenError(t)
         self.operator = t
 
@@ -266,12 +263,12 @@ class Expression:
         if not lex_tokens:
             raise TokenError(t)
         t = lex_tokens.pop(0)
-        if not t[TYPE] in [STRING, ID, LEFT_PAREN]:
+        if not t.type in [TokenType.STRING, TokenType.ID, TokenType.LEFT_PAREN]:
             raise TokenError(t)
-        if t[TYPE] in [STRING, ID]:
+        if t.type in [TokenType.STRING, TokenType.ID]:
             self.param_2 = Parameter(list([t]))
         # If it is a left parenthesis, then grab tokens until we are palindrome and pass to parameter
-        elif t[TYPE] == LEFT_PAREN:
+        elif t.type == TokenType.LEFT_PAREN:
             t_tokens = list([])
             palindrome = 1
             t_tokens.append(t)
@@ -279,14 +276,14 @@ class Expression:
             while palindrome > 0 and lex_tokens:
                 t = lex_tokens.pop(0)
                 t_tokens.append(t)
-                if t[TYPE] == RIGHT_PAREN:
+                if t.type == TokenType.RIGHT_PAREN:
                     palindrome -= 1
-                elif t[TYPE] == LEFT_PAREN:
+                elif t.type == TokenType.LEFT_PAREN:
                     palindrome += 1
             self.param_2 = Parameter(t_tokens)
 
     def __str__(self):
-        return "(%s%s%s)" % (str(self.param_1), str(self.operator[VALUE]), str(self.param_2))
+        return "(%s%s%s)" % (str(self.param_1), str(self.operator.value), str(self.param_2))
 
 
 class Parameter:
@@ -297,7 +294,7 @@ class Parameter:
         t = lex_tokens.pop(0)
         # If there was only one token, it is a string or an id
         if not lex_tokens:
-            if not t[TYPE] in [ID, STRING]:
+            if not t.type in [TokenType.ID, TokenType.STRING]:
                 raise TokenError(t)
             self.string_id = t
         else:
@@ -305,8 +302,8 @@ class Parameter:
 
     def __str__(self):
         if self.string_id:
-            assert isinstance(self.string_id, tuple)
-            return self.string_id[VALUE]
+            assert isinstance(self.string_id, Token)
+            return self.string_id.value
         else:
             return str(self.expression)
 
@@ -318,34 +315,34 @@ class Predicate:
     def __init__(self, lex_tokens):
         self.parameterList = list([])
         t = lex_tokens.pop(0)
-        if not t[TYPE] == ID:
+        if not t.type == TokenType.ID:
             raise TokenError(t)
         self.id = t
 
         if not lex_tokens:
             raise TokenError(t)
         t = lex_tokens.pop(0)
-        if not t[TYPE] == LEFT_PAREN:
+        if not t.type == TokenType.LEFT_PAREN:
             raise TokenError(t)
 
         # Check if there is a parameter
         t = lex_tokens.pop(0)
-        if not t[TYPE] in [STRING, ID, LEFT_PAREN]:
+        if not t.type in [TokenType.STRING, TokenType.ID, TokenType.LEFT_PAREN]:
             raise TokenError(t)
 
-        if t[TYPE] in [STRING, ID]:
+        if t.type in [TokenType.STRING, TokenType.ID]:
             self.parameterList.append(Parameter(list([t])))
         # If it is a left parenthesis, then grab tokens until we are palindrome and pass to parameter
-        elif t[TYPE] == LEFT_PAREN:
+        elif t.type == TokenType.LEFT_PAREN:
             t_tokens = list([])
             palindrome = 1
             t_tokens.append(t)
             # Grab tokens until palindrome is zero
             while palindrome > 0 and lex_tokens:
                 t = lex_tokens.pop(0)
-                if t[TYPE] == RIGHT_PAREN:
+                if t.type == TokenType.RIGHT_PAREN:
                     palindrome -= 1
-                elif t[TYPE] == LEFT_PAREN:
+                elif t.type == TokenType.LEFT_PAREN:
                     palindrome += 1
                 if palindrome != 0: t_tokens.append(t)
             self.parameterList.append(Parameter(t_tokens))
@@ -354,18 +351,18 @@ class Predicate:
         while len(lex_tokens) > 1:
             # Check for comma
             t = lex_tokens.pop(0)
-            if not t[TYPE] == COMMA:
+            if not t.type == TokenType.COMMA:
                 raise TokenError(t)
 
             # Check for another parameter
             t = lex_tokens.pop(0)
-            if not t[TYPE] in [STRING, ID, LEFT_PAREN]:
+            if not t.type in [TokenType.STRING, TokenType.ID, TokenType.LEFT_PAREN]:
                 raise TokenError(t)
 
-            if t[TYPE] in [STRING, ID]:
+            if t.type in [TokenType.STRING, TokenType.ID]:
                 self.parameterList.append(Parameter(list([t])))
             # If it is a left parenthesis, then grab tokens until we are palindrome and pass to parameter
-            elif t[TYPE] == LEFT_PAREN:
+            elif t.type == TokenType.LEFT_PAREN:
                 t_tokens = list([])
                 palindrome = 1
                 t_tokens.append(t)
@@ -373,9 +370,9 @@ class Predicate:
                 while palindrome > 0 and lex_tokens > 1:
                     t = lex_tokens.pop(0)
                     t_tokens.append(t)
-                    if t[TYPE] == RIGHT_PAREN:
+                    if t.type == TokenType.RIGHT_PAREN:
                         palindrome -= 1
-                    elif t[TYPE] == LEFT_PAREN:
+                    elif t.type == TokenType.LEFT_PAREN:
                         palindrome += 1
                 self.parameterList.append(Parameter(t_tokens))
                 t_tokens.clear()
@@ -383,7 +380,7 @@ class Predicate:
         if not lex_tokens:
             raise TokenError(t)
         t = lex_tokens.pop(0)
-        if not t[TYPE] == RIGHT_PAREN:
+        if not t.type == TokenType.RIGHT_PAREN:
             raise TokenError(t)
 
         if lex_tokens:
@@ -393,7 +390,7 @@ class Predicate:
         """
         :return: A string representation of this class
         """
-        result = "%s(" % self.id[VALUE]
+        result = "%s(" % self.id.value
         for parameter in self.parameterList:
             result += str(parameter) + ","
 
@@ -420,11 +417,11 @@ class Rule:
         while len(lex_tokens) > 1:
             t = lex_tokens.pop(0)
             t_tokens.append(t)
-            if t[TYPE] == LEFT_PAREN:
+            if t.type == TokenType.LEFT_PAREN:
                 palindrome += 1
 
             # Once we balance the right-parenthesis it is a new predicate
-            if t[TYPE] == RIGHT_PAREN:
+            if t.type == TokenType.RIGHT_PAREN:
                 palindrome -= 1
                 if palindrome < 0:
                     raise TokenError(t)
@@ -435,7 +432,7 @@ class Rule:
                         if not lex_tokens:
                             raise TokenError(t)
                         t = lex_tokens.pop(0)
-                        if not t[TYPE] == COLON_DASH:
+                        if not t.type == TokenType.COLON_DASH:
                             raise TokenError(t)
                     else:
                         new_item = Predicate(t_tokens)
@@ -446,14 +443,14 @@ class Rule:
                             self.parent_error = True
                         else:
                             t = lex_tokens.pop(0)
-                            if not t[TYPE] == COMMA and len(lex_tokens) > 1:
+                            if not t.type == TokenType.COMMA and len(lex_tokens) > 1:
                                 raise TokenError(t)
                     t_tokens.clear()
                 else:
                     # We haven't balanced parenthesis yet
                     pass
 
-        if not t[TYPE] == PERIOD:
+        if not t.type == TokenType.PERIOD:
             raise TokenError(t)
 
         if t_tokens or palindrome:
@@ -481,7 +478,7 @@ class Rules:
         self.rules = list()
         # Validate the syntax of the Scheme
         t = lex_tokens.pop(0)
-        if not t[TYPE] == COLON:
+        if not t.type == TokenType.COLON:
             raise TokenError(t)
 
         t_tokens = list()
@@ -489,7 +486,7 @@ class Rules:
             t = lex_tokens.pop(0)
             t_tokens.append(t)
             # Once we reach a period it is a new rule
-            if t[TYPE] == PERIOD:
+            if t.type == TokenType.PERIOD:
                 self.rules.append(Rule(t_tokens))
                 t_tokens.clear()
 
@@ -499,7 +496,7 @@ class Rules:
             t_tokens.append(t)
             Rule(t_tokens)
 
-        if not t[TYPE] == QUERIES:
+        if not t.type == TokenType.QUERIES:
             raise TokenError(t)
 
     def __str__(self):
@@ -521,16 +518,16 @@ class Queries:
         self.queries = list()
         # Validate the syntax of the Scheme
         t = lex_tokens.pop(0)
-        if not t[TYPE] == COLON:
+        if not t.type == TokenType.COLON:
             raise TokenError(t)
 
         t_tokens = list()
         while len(lex_tokens) > 1:
             t = lex_tokens.pop(0)
             # Once we reach a question mark it is a new query
-            if t[TYPE] == Q_MARK:
+            if t.type == TokenType.Q_MARK:
                 last = t_tokens.pop()
-                if not last[TYPE] == RIGHT_PAREN:
+                if not last.type == TokenType.RIGHT_PAREN:
                     raise TokenError(t)
                 t_tokens.append(last)
                 self.queries.append(Predicate(t_tokens))
@@ -538,7 +535,7 @@ class Queries:
             else:
                 t_tokens.append(t)
 
-        if not t[TYPE] == Q_MARK:
+        if not t.type == TokenType.Q_MARK:
             t = lex_tokens.pop(0)
             raise TokenError(t)
 
@@ -549,7 +546,7 @@ class Queries:
             t_tokens.append(t)
             Predicate(t_tokens)
 
-        if not t[TYPE] == EOF:
+        if not t.type == TokenType.EOF:
             raise TokenError(t)
 
     def __str__(self):
@@ -572,37 +569,37 @@ class DatalogProgram:
 
     def __init__(self, lex_tokens):
         # Remove all comments from tokens
-        ignore_types = [WHITESPACE, COMMENT]
-        lex_tokens = [t for t in lex_tokens if not t[TYPE] in ignore_types]
+        ignore_types = [TokenType.WHITESPACE, TokenType.COMMENT]
+        lex_tokens = [t for t in lex_tokens if not t.type in ignore_types]
         t_tokens = list()
         iteration = None
         for t in lex_tokens:
             t_tokens.append(t)
-            if t[TYPE] == SCHEMES and not iteration:
-                iteration = SCHEMES
+            if t.type == TokenType.SCHEMES and not iteration:
+                iteration = TokenType.SCHEMES
             # If iteration hasn't been defined and the first token wasn't a scheme we need to stop
             elif not iteration:
                 raise TokenError(t)
-            elif t[TYPE] == FACTS and iteration == SCHEMES:
+            elif t.type == TokenType.FACTS and iteration == TokenType.SCHEMES:
                 # Everything from the beginning of file to FACTS belongs to schemes
                 self.schemes = Schemes(t_tokens)
                 # There must be at least one scheme
                 if not self.schemes.schemes:
                     raise TokenError(t)
                 t_tokens.clear()
-                iteration = FACTS
-            elif t[TYPE] == RULES and iteration == FACTS:
+                iteration = TokenType.FACTS
+            elif t.type == TokenType.RULES and iteration == TokenType.FACTS:
                 # Everything form FACTS to RULES belongs to facts
                 self.facts = Facts(t_tokens)
                 t_tokens.clear()
-                iteration = RULES
-            elif t[TYPE] == QUERIES and iteration == RULES:
+                iteration = TokenType.RULES
+            elif t.type == TokenType.QUERIES and iteration == TokenType.RULES:
                 # Everything from RULES to QUERIES belongs to rules
                 self.rules = Rules(t_tokens)
                 # Make sure it ended correctly
                 t_tokens.clear()
-                iteration = QUERIES
-            elif t[TYPE] == EOF and iteration == QUERIES:
+                iteration = TokenType.QUERIES
+            elif t.type == TokenType.EOF and iteration == TokenType.QUERIES:
                 # Everything else belongs to queries
                 self.queries = Queries(t_tokens)
                 # There must be at least one query
@@ -615,13 +612,13 @@ class DatalogProgram:
         # If There are left over tokens, then hand them off to the class of the current iteration so it can give the
         # proper error
         if t_tokens:
-            if iteration == SCHEMES:
+            if iteration == TokenType.SCHEMES:
                 Schemes(t_tokens)
-            elif iteration == FACTS:
+            elif iteration == TokenType.FACTS:
                 Facts(t_tokens)
-            elif iteration == RULES:
+            elif iteration == TokenType.RULES:
                 Rules(t_tokens)
-            elif iteration == QUERIES:
+            elif iteration == TokenType.QUERIES:
                 Queries(t_tokens)
             else:
                 raise TokenError(t_tokens.pop(0))

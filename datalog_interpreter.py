@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 from ast import literal_eval
 from collections import OrderedDict
-from copy import deepcopy
-from tokens import TokenError, TYPE, STRING, ID, VALUE
+from tokens import TokenError
 
 import lexical_analyzer
 import datalog_parser
@@ -149,11 +148,11 @@ class DatalogInterpreter:
         :param joined: Relations
         :return: True if the database is now larger, False if not
         """
-        if head.id[VALUE] not in [x.name[VALUE] for x in self.relations]:
+        if head.id.value not in [x.name.value for x in self.relations]:
             self.relations.append(joined)
         else:
             for r in self.relations:
-                if r.name[VALUE] == head.id[VALUE]:
+                if r.name.value == head.id.value:
                     assert isinstance(r, relational_database.Relation)
                     for t in joined.tuples:
                         r.tuples.add(t)

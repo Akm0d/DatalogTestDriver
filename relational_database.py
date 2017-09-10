@@ -3,7 +3,7 @@ from ast import literal_eval
 from collections import OrderedDict
 from itertools import zip_longest, combinations
 from orderedset._orderedset import OrderedSet
-from tokens import VALUE, STRING, TYPE, ID, TokenError
+from tokens import TokenType, TokenError
 
 import lexical_analyzer
 import datalog_parser
@@ -29,7 +29,7 @@ class Pair(tuple):
         return self[1]
 
     def __str__(self):
-        return "%s=%s" % (self.attribute[VALUE], self.value[VALUE])
+        return "%s=%s" % (self.attribute.value, self.value.value)
 
     def __hash__(self):
         return hash(str(self))
@@ -59,7 +59,7 @@ class Tuple(OrderedSet):
         :return: The pair that has the given attribute
         """
         for pair in self:
-            if pair.attribute[VALUE] == attribute[VALUE]:
+            if pair.attribute.value == attribute.value:
                 return pair
         return None
 
@@ -67,7 +67,7 @@ class Tuple(OrderedSet):
         if not len(self):
             return False
         for x, y in combinations(self, 2):
-            if x.attribute[VALUE] == y.attribute[VALUE]:
+            if x.attribute.value == y.attribute.value:
                 return False
         return True
 
@@ -117,7 +117,7 @@ class Relation:
             assert isinstance(facts, list)
             self.tuples = set()
             for fact in facts:
-                if fact.id[VALUE] == scheme.id[VALUE]:
+                if fact.id.value == scheme.id.value:
                     # Create a new tuple
                     new_tuple = Tuple()
 
@@ -189,10 +189,10 @@ class RDBMS:
             if p.expression:
                 print("I can't evaluate expressions yet")
             else:  # It is a string or id
-                if p.string_id[TYPE] == STRING:
+                if p.string_id.type == TokenType.STRING:
                     if selected and selected[0].name:
                         selected = self.select(relations=selected, index=i, name=query.id, value=p.string_id)
-                elif p.string_id[TYPE] == ID:
+                elif p.string_id.type == TokenType.ID:
                     project_columns.append(i)
                     new_names.append(p.string_id)
             i += 1
@@ -213,12 +213,12 @@ class RDBMS:
         for relation in relations:
             tuples = set()
             assert isinstance(relation, Relation)
-            if relation.name[VALUE] == name[VALUE]:
+            if relation.name.value == name.value:
                 for t in relation.tuples:
                     assert isinstance(t, Tuple)
                     p = t[index]
                     assert isinstance(p, Pair)
-                    if p.value[VALUE] == value[VALUE]:
+                    if p.value.value == value.value:
                         tuples.add(t)
             if tuples:
                 result.append(Relation(tuples=tuples, name=name))
@@ -237,7 +237,7 @@ class RDBMS:
         for relation in relations:
             tuples = set()
             assert isinstance(relation, Relation)
-            if relation.name[VALUE] == name[VALUE]:
+            if relation.name.value == name.value:
                 for t in relation.tuples:
                     assert isinstance(t, Tuple)
                     new_t = Tuple()
@@ -266,7 +266,7 @@ class RDBMS:
         for relation in relations:
             tuples = set()
             assert isinstance(relation, Relation)
-            if relation.name[VALUE] == name[VALUE]:
+            if relation.name.value == name.value:
                 for t in relation.tuples:
                     assert isinstance(t, Tuple)
                     new_t = Tuple()
@@ -401,11 +401,11 @@ def main(d_file, part=2, debug=False):
             if p.expression:
                 result += "I can't evaluate expressions yet\n"
             else:  # It is a string or id
-                if p.string_id[TYPE] == STRING:
+                if p.string_id.type == TokenType.STRING:
                     if one_selected and one_selected[0].name:
                         one_selected = rdbms.select(relations=one_selected, index=one_i, name=one_query.id,
                                                     value=p.string_id)
-                elif p.string_id[TYPE] == ID:
+                elif p.string_id.type == TokenType.ID:
                     one_project_columns.append(one_i)
                     one_new_names.append(p.string_id)
             one_i += 1

@@ -1,145 +1,126 @@
 #!/usr/bin/env python3
 import re
-
-# For accessing a token tuple
-TYPE        = 0
-VALUE       = 1
-LINE        = 2
-
-# Token strings
-COMMA       = 'COMMA'
-PERIOD      = 'PERIOD'
-Q_MARK      = 'Q_MARK'
-LEFT_PAREN  = 'LEFT_PAREN'
-RIGHT_PAREN = 'RIGHT_PAREN'
-COLON       = 'COLON'
-COLON_DASH  = 'COLON_DASH'
-MULTIPLY    = 'MULTIPLY'
-ADD         = 'ADD'
-SCHEMES     = 'SCHEMES'
-FACTS       = 'FACTS'
-RULES       = 'RULES'
-QUERIES     = 'QUERIES'
-ID          = 'ID'
-STRING      = 'STRING'
-COMMENT     = 'COMMENT'
-WHITESPACE  = 'WHITESPACE'
-MULTILINE   = 'MULTILINE'
-INVALID     = 'INVLAID'
-UNDEFINED   = 'UNDEFINED'
-EOF         = 'EOF'
+from enum import Enum
 
 
 class TokenError(Exception):
-    def __init__(self, token):
-        assert isinstance(token, tuple)
-        # print("Failure!")
-        # print('  (%s,"%s",%s)' % token)
+    """Token Error occurred"""
+
+
+class TokenType(Enum):
+    # Associate each token with a regular expression
+    COMMA = re.compile('^(,)')
+    PERIOD = re.compile('^(\.)')
+    Q_MARK = re.compile('^(\?)')
+    LEFT_PAREN = re.compile('^(\()')
+    RIGHT_PAREN = re.compile('^(\))')
+    COLON = re.compile('^(:)[^-]?')
+    COLON_DASH = re.compile('^(:-)')
+    MULTIPLY = re.compile('^(\*)')
+    ADD = re.compile('^(\+)')
+    SCHEMES = re.compile('^(Schemes)(?:[^a-zA-z\d]|$)')
+    FACTS = re.compile('^(Facts)(?:[^a-zA-z\d]|$)')
+    RULES = re.compile('^(Rules)(?:[^a-zA-z\d]|$)')
+    QUERIES = re.compile('^(Queries)(?:[^a-zA-z\d]|$)')
+    ID = re.compile('^([a-zA-Z][a-zA-Z0-9]*)')
+    STRING = re.compile("^(\'(?:\'\'|[^\'])+\'|\'\')", re.MULTILINE)
+    COMMENT = re.compile('((?:^#[^|][^\n]*)|(?:^#\|(?:.|\n)*?\|#))', re.MULTILINE)
+    WHITESPACE = re.compile('^(\s+)', re.MULTILINE)
+    UNDEFINED = re.compile('((?:^#\|(?:.|\n)*?\Z)|(?:^\'(?:\'\'|[^\'])+\Z))', re.MULTILINE)
+    INVALID = re.compile('')
+    # This is a temporary token to make parsing easier
+    EOF = re.compile('\Z')
+
+    def match(self, string):
+        return self.value.match(string)
+
+    def __str__(self):
+        return self.name
 
 
 class Token:
-
-    # Associate each token with a regular expression
-    TYPE = {
-        COMMA: re.compile('^(,)'),
-        PERIOD: re.compile('^(\.)'),
-        Q_MARK: re.compile('^(\?)'),
-        LEFT_PAREN: re.compile('^(\()'),
-        RIGHT_PAREN: re.compile('^(\))'),
-        COLON: re.compile('^(:)[^-]?'),
-        COLON_DASH: re.compile('^(:-)'),
-        MULTIPLY: re.compile('^(\*)'),
-        ADD: re.compile('^(\+)'),
-        SCHEMES: re.compile('^(Schemes)(?:[^a-zA-z\d]|$)'),
-        FACTS: re.compile('^(Facts)(?:[^a-zA-z\d]|$)'),
-        RULES: re.compile('^(Rules)(?:[^a-zA-z\d]|$)'),
-        QUERIES: re.compile('^(Queries)(?:[^a-zA-z\d]|$)'),
-        ID: re.compile('^([a-zA-Z][a-zA-Z0-9]*)'),
-        STRING: re.compile("^(\'(?:\'\'|[^\'])+\'|\'\')", re.MULTILINE),
-        COMMENT: re.compile('((?:^#[^|][^\n]*)|(?:^#\|(?:.|\n)*?\|#))', re.MULTILINE),
-        WHITESPACE: re.compile('^(\s+)', re.MULTILINE),
-        UNDEFINED: re.compile('((?:^#\|(?:.|\n)*?\Z)|(?:^\'(?:\'\'|[^\'])+\Z))', re.MULTILINE),
-        # This is a temporary token to make parsing easier
-        EOF: re.compile('\Z')
-    }
-    type = 'UNDEFINED'
-    value = None
-    line_number = None
-
-    def __init__(self, s_input):
+    def __init__(self, line_number, s_input="", value=None, t_type=None):
         """
         Choose the token that best matches the input using a certain priority
         :param s_input: 
-        :param line_number:
         """
-        self.value = s_input
-        if self.TYPE[EOF].match(s_input):
-            self.type = EOF
-        elif self.TYPE[COMMENT].match(s_input):
-            self.type = COMMENT
-            self.value = self.TYPE[COMMENT].match(s_input).group(1)
-        elif self.TYPE[UNDEFINED].match(s_input):
-            self.type = UNDEFINED
-            self.value = self.TYPE[UNDEFINED].match(s_input).group(1)
-        elif self.TYPE[STRING].match(s_input):
-            self.type = STRING
-            self.value = self.TYPE[STRING].match(s_input).group(1)
-        elif self.TYPE[WHITESPACE].match(s_input):
-            self.type = WHITESPACE
-            self.value = self.TYPE[WHITESPACE].match(s_input).group(1)
-        elif self.TYPE[SCHEMES].match(s_input):
-            self.type = SCHEMES
+        if value is not None and t_type is not None:
+            self.value = value
+            self.type = t_type
+            return
+        self.line_number = line_number
+        if TokenType.EOF.match(s_input):
+            self.type = TokenType.EOF
+            self.value = ""
+        elif TokenType.COMMENT.match(s_input):
+            self.type = TokenType.COMMENT
+            self.value = TokenType.COMMENT.match(s_input).group(1)
+        elif TokenType.UNDEFINED.match(s_input):
+            self.type = TokenType.UNDEFINED
+            self.value = TokenType.UNDEFINED.match(s_input).group(1)
+        elif TokenType.STRING.match(s_input):
+            self.type = TokenType.STRING
+            self.value = TokenType.STRING.match(s_input).group(1)
+        elif TokenType.WHITESPACE.match(s_input):
+            self.type = TokenType.WHITESPACE
+            self.value = TokenType.WHITESPACE.match(s_input).group(1)
+        elif TokenType.SCHEMES.match(s_input):
+            self.type = TokenType.SCHEMES
             self.value = 'Schemes'
-        elif self.TYPE[FACTS].match(s_input):
-            self.type = FACTS
+        elif TokenType.FACTS.match(s_input):
+            self.type = TokenType.FACTS
             self.value = 'Facts'
-        elif self.TYPE[QUERIES].match(s_input):
-            self.type = QUERIES
+        elif TokenType.QUERIES.match(s_input):
+            self.type = TokenType.QUERIES
             self.value = 'Queries'
-        elif self.TYPE[RULES].match(s_input):
-            self.type = RULES
+        elif TokenType.RULES.match(s_input):
+            self.type = TokenType.RULES
             self.value = 'Rules'
-        elif self.TYPE[ID].match(s_input):
-            self.type = ID
-            self.value = self.TYPE[ID].match(s_input).group(1)
-        elif self.TYPE[COLON_DASH].match(s_input):
-            self.type = COLON_DASH
+        elif TokenType.ID.match(s_input):
+            self.type = TokenType.ID
+            self.value = TokenType.ID.match(s_input).group(1)
+        elif TokenType.COLON_DASH.match(s_input):
+            self.type = TokenType.COLON_DASH
             self.value = ':-'
-        elif self.TYPE[COLON].match(s_input):
-            self.type = COLON
+        elif TokenType.COLON.match(s_input):
+            self.type = TokenType.COLON
             self.value = ':'
-        elif self.TYPE[COMMA].match(s_input):
-            self.type = COMMA
+        elif TokenType.COMMA.match(s_input):
+            self.type = TokenType.COMMA
             self.value = ','
-        elif self.TYPE[PERIOD].match(s_input):
-            self.type = PERIOD
+        elif TokenType.PERIOD.match(s_input):
+            self.type = TokenType.PERIOD
             self.value = '.'
-        elif self.TYPE[Q_MARK].match(s_input):
-            self.type = Q_MARK
+        elif TokenType.Q_MARK.match(s_input):
+            self.type = TokenType.Q_MARK
             self.value = '?'
-        elif self.TYPE[LEFT_PAREN].match(s_input):
-            self.type = LEFT_PAREN
+        elif TokenType.LEFT_PAREN.match(s_input):
+            self.type = TokenType.LEFT_PAREN
             self.value = '('
-        elif self.TYPE[RIGHT_PAREN].match(s_input):
-            self.type = RIGHT_PAREN
+        elif TokenType.RIGHT_PAREN.match(s_input):
+            self.type = TokenType.RIGHT_PAREN
             self.value = ')'
-        elif self.TYPE[ADD].match(s_input):
-            self.type = ADD
+        elif TokenType.ADD.match(s_input):
+            self.type = TokenType.ADD
             self.value = '+'
-        elif self.TYPE['MULTIPLY'].match(s_input):
-            self.type = 'MULTIPLY'
+        elif TokenType.MULTIPLY.match(s_input):
+            self.type = TokenType.MULTIPLY
             self.value = '*'
         else:
-            self.type = 'INVALID'
-        pass
+            self.type = TokenType.INVALID
+            self.value = s_input[0]
+
+    def __str__(self):
+        return '({},"{}",{})'.format(self.type, self.value, self.line_number)
 
     def __hash__(self):
         # This is so that we can have sets of tokens
-        hash(str(self.value) + str(self.type))
+        return hash(self.value)
 
 
 if __name__ == "__main__":
     from argparse import ArgumentParser
+
     arg = ArgumentParser(description="Pass in strings on the command line to test their interpretation")
     arg.add_argument("tokens", nargs='+')
     arg.add_argument('-d', '--debug', action='store_true', default=False)
@@ -150,10 +131,9 @@ if __name__ == "__main__":
     if debug: print("Parsing tokens: %s" % str(tokens))
 
     line = 0
-    for token in tokens:
-        full_token = Token(token, line)
-        print("\nValue: %s" % full_token.value)
-        print("Type: %s" % full_token.type)
-        print("Line: %s" % str(full_token.line_number))
+    for s in tokens:
+        token = Token(line_number=line, s_input=s)
+        print("\nValue: %s" % token.value)
+        print("Type: %s" % token.type)
+        print("Line: %s" % str(token.line_number))
         line += 1
-    pass
