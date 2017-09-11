@@ -15,28 +15,28 @@ def scan(datalog_file, ignore_whitespace=True):
     tokens = list()
 
     with open(datalog_file) as datalog_file_stream:
-        line_number = 1
         file_string = "".join([line for line in datalog_file_stream])
 
-        while file_string:
-            token = Token(s_input=file_string, line_number=line_number)
-            file_string = file_string[len(token.value):]
-            if token.type == TokenType.INVALID:
-                logger.debug('Token was invalid %s' % token.value.replace('\n', '\\n'))
-                tokens.append(Token(t_type=TokenType.UNDEFINED, value=token.value[0], line_number=line_number))
-                file_string = token.value[1:]
-            elif ignore_whitespace and token.type == TokenType.WHITESPACE:
-                logger.debug('Ignoring whitespace "%s"' % token.value.replace('\n', '\\n'))
-            else:
-                logger.debug('Adding Token %s' % str(token).replace('\n', '\\n'))
-                tokens.append(token)
+    line_number = 1
+    while file_string:
+        token = Token(s_input=file_string, line_number=line_number)
+        file_string = file_string[len(token.value):]
+        if token.type == TokenType.INVALID:
+            logger.debug('Token was invalid %s' % token.value.replace('\n', '\\n'))
+            tokens.append(Token(t_type=TokenType.UNDEFINED, value=token.value[0], line_number=line_number))
+            file_string = token.value[1:]
+        elif ignore_whitespace and token.type == TokenType.WHITESPACE:
+            logger.debug('Ignoring whitespace "%s"' % token.value.replace('\n', '\\n'))
+        else:
+            logger.debug('Adding Token %s' % str(token).replace('\n', '\\n'))
+            tokens.append(token)
 
-            # Increment line number after adding tokens
-            token_lines = token.value.count('\n')
-            line_number += token_lines
-            logger.log(logging.DEBUG - 5, "Added {} Lines to Line counter.  Current line is: {}".format(token_lines, line_number))
-        tokens.append(Token(t_type=TokenType.EOF, value="", line_number=line_number))
-        logger.debug("Adding EOF Token at line {}".format(line_number))
+        # Increment line number after adding tokens
+        token_lines = token.value.count('\n')
+        line_number += token_lines
+        logger.log(logging.DEBUG - 5, "Added {} Lines to Line counter.  Current line is: {}".format(token_lines, line_number))
+    tokens.append(Token(t_type=TokenType.EOF, value="", line_number=line_number))
+    logger.debug("Adding EOF Token at line {}".format(line_number))
     return tokens
 
 
