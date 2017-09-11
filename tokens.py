@@ -44,12 +44,11 @@ class Token:
         Choose the token that best matches the input using a certain priority
         :param s_input: 
         """
+        self.line_number = line_number
         if value is not None and t_type is not None:
             self.value = value
             self.type = t_type
-            return
-        self.line_number = line_number
-        if TokenType.EOF.match(s_input):
+        elif TokenType.EOF.match(s_input):
             self.type = TokenType.EOF
             self.value = ""
         elif TokenType.COMMENT.match(s_input):
