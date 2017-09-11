@@ -1,6 +1,10 @@
 #!/usr/bin/env python3
 import re
+import logging
+
 from enum import Enum
+
+logger = logging.getLogger(__name__)
 
 
 class TokenError(Exception):
@@ -32,14 +36,16 @@ class TokenType(Enum):
     EOF = re.compile('\Z')
 
     def match(self, string):
-        return self.value.match(string)
+        match = self.value.match(string)
+        logger.debug("'{}' {} {}".format(string, "matched" if match else "did not match", self.name))
+        return match
 
     def __str__(self):
         return self.name
 
 
 class Token:
-    def __init__(self, line_number, s_input="", value=None, t_type=None):
+    def __init__(self, line_number: int, s_input: str = "", value: str = None, t_type: TokenType = None):
         """
         Choose the token that best matches the input using a certain priority
         :param s_input: 
@@ -108,6 +114,7 @@ class Token:
         else:
             self.type = TokenType.INVALID
             self.value = s_input[0]
+        logger.debug("Created token: {}".format(self).replace('\n', '\\n'))
 
     def __str__(self):
         return '({},"{}",{})'.format(self.type, self.value, self.line_number)
@@ -122,12 +129,12 @@ if __name__ == "__main__":
 
     arg = ArgumentParser(description="Pass in strings on the command line to test their interpretation")
     arg.add_argument("tokens", nargs='+')
-    arg.add_argument('-d', '--debug', action='store_true', default=False)
+    arg.add_argument('-d', '--debug', default=logging.NOTSET)
     args = arg.parse_args()
 
-    debug = args.debug
+    logging.basicConfig(level=logging.ERROR)
+    logger.setLevel(int(args.debug))
     tokens = args.tokens
-    if debug: print("Parsing tokens: %s" % str(tokens))
 
     line = 0
     for s in tokens:
