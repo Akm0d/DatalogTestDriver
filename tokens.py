@@ -129,7 +129,7 @@ if __name__ == "__main__":
 
     arg = ArgumentParser(description="Pass in strings on the command line to test their interpretation")
     arg.add_argument("tokens", nargs='+')
-    arg.add_argument('-d', '--debug', default=logging.NOTSET)
+    arg.add_argument('-d', '--debug', help="The logging debug level to use", default=logging.NOTSET, metavar='LEVEL')
     args = arg.parse_args()
 
     logging.basicConfig(level=logging.ERROR)

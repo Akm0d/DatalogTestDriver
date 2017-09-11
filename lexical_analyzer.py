@@ -47,7 +47,7 @@ if __name__ == "__main__":
     from argparse import ArgumentParser
 
     args = ArgumentParser(description="Run the lexical analyzer, this will produce output for lab 1")
-    args.add_argument('-d', '--debug', default=logging.NOTSET)
+    args.add_argument('-d', '--debug', help="The logging debug level to use", default=logging.NOTSET, metavar='LEVEL')
     args.add_argument('file', help='datalog file to lexically analyze')
     arg = args.parse_args()
 
