@@ -84,7 +84,12 @@ class Schemes:
         return "Schemes({}):\n{}\n".format(len(self.schemes), "\n".join("  " + str(s) for s in self.schemes))
 
 
-domain = set()
+class Domain(set):
+    def __str__(self):
+        return "Domain({}):{}{}".format(
+            len(self),
+            "\n" if self else "",
+            "\n".join("  " + f for f in sorted(self)))
 
 
 class Fact:
@@ -92,6 +97,8 @@ class Fact:
     id:
     stringList: a list of String tokens
     """
+    # will this be shared amongst all instances of this class?
+    domain = Domain()
 
     def __init__(self, lex_tokens=None, name=None, attributes=None):
         if name and attributes:
@@ -112,7 +119,7 @@ class Fact:
             t = lex_tokens.pop(0)
             if not t.type == TokenType.STRING:
                 raise TokenError(t)
-            domain.add(t.value)
+            self.domain.add(t.value)
             self.stringList.append(t)
             while len(lex_tokens) > 2 and (t.type in [TokenType.COMMA, TokenType.STRING]):
                 t = lex_tokens.pop(0)
@@ -124,7 +131,7 @@ class Fact:
                 t = lex_tokens.pop(0)
                 if not t.type == TokenType.STRING:
                     raise TokenError(t)
-                domain.add(t.value)
+                self.domain.add(t.value)
                 self.stringList.append(t)
             if not lex_tokens:
                 raise TokenError(t)
@@ -180,13 +187,6 @@ class Facts:
             "\n" if self.facts else "",
             "\n".join("  " + str(fact) for fact in self.facts)
         )
-
-    @staticmethod
-    def print_domain():
-        return "Domain({}):{}{}".format(
-            len(domain),
-            "\n" if domain else "",
-            "\n".join("  " + f for f in sorted(domain)))
 
 
 class Expression:
@@ -557,7 +557,7 @@ class DatalogProgram:
             self.facts,
             self.rules,
             self.queries,
-            self.facts.print_domain()
+            self.facts.facts[0].domain if self.facts.facts else Domain()
         )
 
 
