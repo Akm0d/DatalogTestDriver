@@ -137,9 +137,8 @@ if __name__ == "__main__":
     tokens = args.tokens
 
     line = 0
-    for s in tokens:
+    for line, s in enumerate(tokens):
         token = Token(line_number=line, s_input=s)
         print("\nValue: %s" % token.value)
         print("Type: %s" % token.type)
         print("Line: %s" % str(token.line_number))
-        line += 1
