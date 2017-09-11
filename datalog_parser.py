@@ -190,10 +190,6 @@ class Facts:
 
 
 class Expression:
-    param_1 = None
-    operator = None
-    param_2 = None
-
     def __init__(self, lex_tokens):
         # Get Param 1
         t = lex_tokens.pop(0)
@@ -252,9 +248,6 @@ class Expression:
 
 
 class Parameter:
-    string_id = None
-    expression = None
-
     def __init__(self, lex_tokens):
         t = lex_tokens.pop(0)
         # If there was only one token, it is a string or an id
@@ -270,9 +263,6 @@ class Parameter:
 
 
 class Predicate:
-    id = None
-    parameterList = None
-
     def __init__(self, lex_tokens):
         self.parameterList = list([])
         t = lex_tokens.pop(0)
@@ -362,9 +352,6 @@ class Predicate:
 
 
 class Rule:
-    head = None
-    predicates = None
-
     def __init__(self, lex_tokens):
         t_tokens = list()
         palindrome = 0
@@ -416,8 +403,6 @@ class Rule:
 
 
 class Rules:
-    rules = None
-
     def __init__(self, lex_tokens):
         self.rules = list()
         # Validate the syntax of the Scheme
@@ -448,8 +433,6 @@ class Rules:
 
 
 class Queries:
-    queries = None
-
     def __init__(self, lex_tokens):
         self.queries = list()
         # Validate the syntax of the Scheme
@@ -490,11 +473,6 @@ class Queries:
 
 
 class DatalogProgram:
-    schemes = None
-    facts = None
-    rules = None
-    queries = None
-
     def __init__(self, lex_tokens):
         # Remove all comments from tokens
         t_tokens = list()
