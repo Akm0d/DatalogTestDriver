@@ -6,6 +6,95 @@ from tokens import TokenError, TokenType
 
 logger = logging.getLogger(__name__)
 
+recent_token = None
+
+
+class Parser:
+    # All classes will read from this list of shared tokens until they are gone
+    unused_tokens = list()
+
+    # Share the most recently parsed token amongst all instances of this class
+
+    def __init__(self, grammar: list = None, tokens: list = None, root: bool = False):
+        """
+        :param grammar: A list of tokens in the order they should be expected.
+        If the token is a list, then allow zero or more of the tokens in the list.
+        If the token is a class, then return an instance of that class and continue parsing the remaining tokens
+        :param tokens: Only the base class should add tokens to the list of unused_tokens with this parameter.
+        unused_tokens are shared amongst all instances of the Parser class and its children
+        :param root: If This instance is the base, then any leftover tokens will be treated as an error
+
+        """
+        self.grammar = grammar if grammar is not None else self.grammar
+        if tokens is not None:
+            self.unused_tokens.extend(tokens)
+        self.objects = self.parse_unused_tokens()
+
+        if root and self.unused_tokens:
+            raise TokenError(self.get_token())
+
+    def parse_unused_tokens(self, lazy: bool = False):
+        """
+        :param lazy: Don't raise any errors or remove from the list if the match fails
+        :return: The list of objects that matched the grammar
+        The list will contain instances of Token and Parser
+        """
+        global recent_token
+        objects = list()
+        for g in self.grammar:
+            if isinstance(g, TokenType):
+                t = self.get_token()
+                if not t.type == g:
+                    raise TokenError(t)
+                objects.append(t)
+                recent_token = t
+            elif isinstance(g, list):
+                # keep matching in the list until something doesn't match
+                # TODO If this is recursive then you can have lists of lists, then again,
+                # that might not be necessary because you should just use a child Parser to define a list within a list
+                objects.append(self.parse_unused_tokens(lazy=True))
+            elif isinstance(g, type):
+                parser = g()
+                assert isinstance(parser, Parser)
+                objects.append(parser)
+            else:
+                raise ValueError("Unrecognized type in grammar: %s" % g.__class__)
+
+        return objects
+
+    def get_token(self):
+        """
+        :return: The top token from the list
+        """
+        global recent_token
+        if self.unused_tokens:
+            return self.unused_tokens.pop(0)
+        else:
+            # If there are no more tokens then raise an error on the last token seen
+            raise TokenError(recent_token)
+
+
+class Child(Parser):
+    grammar = [TokenType.ID, TokenType.COMMA, TokenType.ID]
+
+    def __init__(self):
+        super().__init__()
+        # I know that these will have matched because  otherwise we would already have a token error
+        self.ID = self.objects[0]
+        self.other_thing = self.objects[2]
+
+
+scheme = Parser(
+    [TokenType.ID, TokenType.LEFT_PAREN, Child, TokenType.RIGHT_PAREN]
+    , lexical_analyzer.scan('parser_test.txt')
+)
+
+print(scheme.objects)
+id = Parser([TokenType.ID])
+eof = Parser([TokenType.EOF])
+
+exit()
+
 
 class Scheme:
     """
