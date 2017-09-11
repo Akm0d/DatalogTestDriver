@@ -2,7 +2,7 @@
 import lexical_analyzer
 import logging
 
-from tokens import TokenError, TokenType
+from tokens import TokenError, TokenType, Token
 
 logger = logging.getLogger(__name__)
 
@@ -33,26 +33,40 @@ class Parser:
         if root and self.unused_tokens:
             raise TokenError(self.get_token())
 
-    def parse_unused_tokens(self, lazy: bool = False):
+    def parse_unused_tokens(self, grammar: list = None, lazy: bool = False):
         """
+        :param grammar: The grammar to use, if none, then it will default to the class grammar
         :param lazy: Don't raise any errors or remove from the list if the match fails
         :return: The list of objects that matched the grammar
         The list will contain instances of Token and Parser
         """
         global recent_token
+        if grammar is None:
+            grammar = self.grammar
         objects = list()
-        for g in self.grammar:
+        for g in grammar:
             if isinstance(g, TokenType):
                 t = self.get_token()
-                if not t.type == g:
-                    raise TokenError(t)
                 objects.append(t)
+                if not t.type == g:
+                    if lazy:
+                        logger.debug("Putting back tokens %s" % " ".join([x.type.name for x in objects]))
+                        for o in objects:
+                            if isinstance(o, Token):
+                                self.unused_tokens.insert(0, o)
+                            elif isinstance(o, Parser):
+                                for T in o.objects:
+                                    self.unused_tokens.insert(0, T)
+                        return None
+                    else:
+                        raise TokenError(t)
                 recent_token = t
             elif isinstance(g, list):
                 # keep matching in the list until something doesn't match
-                # TODO If this is recursive then you can have lists of lists, then again,
-                # that might not be necessary because you should just use a child Parser to define a list within a list
-                objects.append(self.parse_unused_tokens(lazy=True))
+                inner_list = self.parse_unused_tokens(lazy=True, grammar=g)
+                while inner_list is not None:
+                    objects.extend(inner_list)
+                    inner_list = self.parse_unused_tokens(lazy=True, grammar=g)
             elif isinstance(g, type):
                 parser = g()
                 assert isinstance(parser, Parser)
@@ -75,17 +89,16 @@ class Parser:
 
 
 class Child(Parser):
-    grammar = [TokenType.ID, TokenType.COMMA, TokenType.ID]
+    grammar = [TokenType.ID]
 
     def __init__(self):
         super().__init__()
         # I know that these will have matched because  otherwise we would already have a token error
         self.ID = self.objects[0]
-        self.other_thing = self.objects[2]
 
 
 scheme = Parser(
-    [TokenType.ID, TokenType.LEFT_PAREN, Child, TokenType.RIGHT_PAREN]
+    [TokenType.ID, TokenType.LEFT_PAREN, Child, [TokenType.ID, Child], TokenType.COMMA, TokenType.RIGHT_PAREN]
     , lexical_analyzer.scan('parser_test.txt')
 )
 
