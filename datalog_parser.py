@@ -1,13 +1,17 @@
 #!/usr/bin/env python3
-from ast import literal_eval
-
-from tokens import Token, TokenError, TokenType
 import lexical_analyzer
+import logging
+
+from tokens import TokenError, TokenType
+
+logger = logging.getLogger(__name__)
 
 
 class Scheme:
-    # id
-    # idList
+    """
+    id: The main ID Token
+    idList: A list of ID tokens
+    """
 
     def __init__(self, lex_tokens):
         self.idList = list()
@@ -38,21 +42,13 @@ class Scheme:
             raise TokenError(t)
 
     def __str__(self):
-        """
-        :return: A string representation of this class
-        """
-        result = "%s(" % self.id.value
-        for t in self.idList:
-            result += t.value + ","
-
-        # Remove extra comma
-        result = result[:-1]
-
-        return result + ")"
+        return "{}({})".format(self.id.value, ",".join(t.value for t in self.idList))
 
 
 class Schemes:
-    schemes = None
+    """
+    schemes: a list of Scheme tokens
+    """
 
     def __init__(self, lex_tokens):
         self.schemes = list()
@@ -74,7 +70,7 @@ class Schemes:
                 self.schemes.append(Scheme(t_tokens))
                 t_tokens.clear()
 
-        # If ther are tokens left over then make a scheme out of them
+        # If there are tokens left over then make a scheme out of them
         t = lex_tokens.pop(0)
 
         if t_tokens:
@@ -85,27 +81,17 @@ class Schemes:
             raise TokenError(t)
 
     def __str__(self):
-        """
-        :return: A string representation of this class
-        """
-        result = "Schemes(%s):\n" % str(len(self.schemes))
-        for scheme in self.schemes:
-            result += "  " + str(scheme) + "\n"
-        result += "\n"
-        # Remove trailing new line
-        result = result[:-1]
-        return result
+        return "Schemes({}):\n{}\n".format(len(self.schemes), "\n".join("  " + str(s) for s in self.schemes))
 
 
-# This will eventually become a set
-domain = None
+domain = set()
 
 
 class Fact:
-    id = None
-    stringList = None
-
-    # This will be shared across every instance of the Fact class
+    """
+    id:
+    stringList: a list of String tokens
+    """
 
     def __init__(self, lex_tokens=None, name=None, attributes=None):
         if name and attributes:
@@ -155,25 +141,15 @@ class Fact:
             pass
 
     def __str__(self):
-        """
-        :return: A string representation of this class
-        """
-        result = "%s(" % self.id.value
-        for t in self.stringList:
-            result += t.value + ","
-
-        # Remove extra comma
-        result = result[:-1]
-
-        return result + ")."
+        return "{}({}).".format(self.id.value, ",".join(t.value for t in self.stringList))
 
 
 class Facts:
-    facts = None
+    """
+    facts
+    """
 
     def __init__(self, lex_tokens):
-        global domain
-        domain = set()
         self.facts = list()
         # Validate the syntax of the Scheme
         t = lex_tokens.pop(0)
@@ -199,29 +175,18 @@ class Facts:
             raise TokenError(t)
 
     def __str__(self):
-        """
-        :return: A string representation of this class
-        """
-        result = "Facts(%s):\n" % str(len(self.facts))
-        for fact in self.facts:
-            result += "  " + str(fact) + "\n"
-        # Remove trailing new line
-        result = result[:-1]
-        return result
+        return "Facts({}):{}{}".format(
+            len(self.facts),
+            "\n" if self.facts else "",
+            "\n".join("  " + str(fact) for fact in self.facts)
+        )
 
-    def print_domain(self):
-        """
-        :return A string representation of the domain of all Fact objects
-        """
-        if self.facts:
-            result = "Domain(%s):\n" % str(len(domain))
-            for item in sorted(domain):
-                result += "  " + item + "\n"
-            # Remove trailing new line
-            result = result.strip()
-            return result
-        else:
-            return None
+    @staticmethod
+    def print_domain():
+        return "Domain({}):{}{}".format(
+            len(domain),
+            "\n" if domain else "",
+            "\n".join("  " + f for f in sorted(domain)))
 
 
 class Expression:
@@ -283,7 +248,7 @@ class Expression:
             self.param_2 = Parameter(t_tokens)
 
     def __str__(self):
-        return "(%s%s%s)" % (str(self.param_1), str(self.operator.value), str(self.param_2))
+        return "({}{}{})".format(str(self.param_1), self.operator.value, str(self.param_2))
 
 
 class Parameter:
@@ -301,11 +266,7 @@ class Parameter:
             self.expression = Expression(lex_tokens)
 
     def __str__(self):
-        if self.string_id:
-            assert isinstance(self.string_id, Token)
-            return self.string_id.value
-        else:
-            return str(self.expression)
+        return self.string_id.value if self.string_id else str(self.expression)
 
 
 class Predicate:
@@ -386,25 +347,18 @@ class Predicate:
         if lex_tokens:
             raise TokenError(lex_tokens.pop(0))
 
+        # Only compute this once to save time
+        self.hash = hash(str(self))
+
     def __str__(self):
-        """
-        :return: A string representation of this class
-        """
-        result = "%s(" % self.id.value
-        for parameter in self.parameterList:
-            result += str(parameter) + ","
-
-        # Remove extra comma
-        result = result[:-1]
-
-        return result + ")"
+        return "{}({})".format(self.id.value, ",".join(str(p) for p in self.parameterList))
 
     def __hash__(self):
         """
         This is necessary if we want to use queries as a key in lab 3
         :return: The hashed form of the string representation of this class
         """
-        return hash(str(self))
+        return self.hash
 
 
 class Rule:
@@ -458,17 +412,7 @@ class Rule:
         pass
 
     def __str__(self):
-        """
-        :return: A string representation of this class
-        """
-        result = str(self.head) + " :- "
-        for predicate in self.predicates:
-            result += str(predicate) + ","
-
-        # Remove extra comma
-        result = result[:-1]
-
-        return result + "."
+        return "{}:- {}".format(str(self.head), ",".join(str(p) for p in self.predicates))
 
 
 class Rules:
@@ -500,15 +444,7 @@ class Rules:
             raise TokenError(t)
 
     def __str__(self):
-        """
-        :return: A string representation of this class
-        """
-        result = "Rules(%s):\n" % str(len(self.rules))
-        for rule in self.rules:
-            result += "  " + str(rule) + "\n"
-        # Remove trailing new line
-        result = result[:-1]
-        return result
+        return "Rules({}):\n{}".format(len(self.rules), "\n".join("  " + str(r) for r in self.rules))
 
 
 class Queries:
@@ -550,15 +486,7 @@ class Queries:
             raise TokenError(t)
 
     def __str__(self):
-        """
-        :return: A string representation of this class
-        """
-        result = "Queries(%s):\n" % str(len(self.queries))
-        for query in self.queries:
-            result += "  " + str(query) + "?\n"
-        # Remove trailing new line
-        result = result[:-1]
-        return result
+        return "Queries({}):\n{}".format(len(self.queries), "\n".join("  " + str(q) + "?" for q in self.queries))
 
 
 class DatalogProgram:
@@ -624,42 +552,38 @@ class DatalogProgram:
                 raise TokenError(t_tokens.pop(0))
 
     def __str__(self):
-        """
-        :return: A string representation of this class
-        """
-        return '%s%s\n%s\n%s\n%s' % (
-            str(self.schemes),
-            str(self.facts),
-            str(self.rules),
-            str(self.queries),
-            str(self.facts.print_domain() if self.facts.facts else "Domain(0):")
+        return '{}{}\n{}\n{}\n{}\n'.format(
+            self.schemes,
+            self.facts,
+            self.rules,
+            self.queries,
+            self.facts.print_domain()
         )
 
 
-def main(d_file, part=2, debug=False):
-    result = ""
+def main(d_file, part: int = 2, debug: bool = False):
+    result = "Success!\n"
+
     if not (1 <= part <= 2):
         raise ValueError("Part must be either 1 or 2")
 
-    if debug: print("Parsing '%s'" % d_file)
+    logger.debug("Parsing '%s'" % d_file)
 
     tokens = lexical_analyzer.scan(d_file)
 
     if debug:
         # Print out traces on token errors
         datalog = DatalogProgram(tokens)
-        result += "Success!\n"
         if part == 2:
-            result += str(datalog) + "\n"
+            result += str(datalog)
     else:
         # Ignore traces on token errors
         try:
             datalog = DatalogProgram(tokens)
-            result += "Success!\n"
             if part == 2:
-                result += str(datalog) + "\n"
+                result += str(datalog)
         except TokenError as t:
-            return 'Failure!\n  (%s,"%s",%s)' % tuple(literal_eval(str(t)))
+            return 'Failure!\n  %s' % str(t)
     return result
 
 
@@ -669,10 +593,13 @@ if __name__ == "__main__":
     """
     from argparse import ArgumentParser
 
-    args = ArgumentParser(description="Run the datalog parser, this will produce output for lab 2")
-    args.add_argument('-d', '--debug', action='store_true', default=False)
-    args.add_argument('-p', '--part', help='A 1 or a 2.  Defaults to 2', default=2)
-    args.add_argument('file', help='datalog file to parse')
-    arg = args.parse_args()
+    arg = ArgumentParser(description="Run the datalog parser, this will produce output for lab 2")
+    arg.add_argument('-d', '--debug', help="The logging debug level to use", default=logging.NOTSET, metavar='LEVEL')
+    arg.add_argument('-p', '--part', help='A 1 or a 2.  Defaults to 2', default=2)
+    arg.add_argument('file', help='datalog file to parse')
+    args = arg.parse_args()
 
-    str(main(arg.file, part=int(arg.part), debug=arg.debug))
+    logging.basicConfig(level=logging.ERROR)
+    logger.setLevel(int(args.debug))
+
+    print(str(main(args.file, part=int(args.part), debug=True)))
