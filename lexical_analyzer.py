@@ -25,7 +25,7 @@ def scan(datalog_file, ignore_whitespace=True):
             logger.debug('Token was invalid %s' % token.value.replace('\n', '\\n'))
             tokens.append(Token(t_type=TokenType.UNDEFINED, value=token.value[0], line_number=line_number))
             file_string = token.value[1:]
-        elif ignore_whitespace and token.type == TokenType.WHITESPACE:
+        elif ignore_whitespace and (token.type == TokenType.WHITESPACE or token.type == TokenType.COMMENT):
             logger.debug('Ignoring whitespace "%s"' % token.value.replace('\n', '\\n'))
         else:
             logger.debug('Adding Token %s' % str(token).replace('\n', '\\n'))

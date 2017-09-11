@@ -497,8 +497,6 @@ class DatalogProgram:
 
     def __init__(self, lex_tokens):
         # Remove all comments from tokens
-        ignore_types = [TokenType.WHITESPACE, TokenType.COMMENT]
-        lex_tokens = [t for t in lex_tokens if not t.type in ignore_types]
         t_tokens = list()
         iteration = None
         for t in lex_tokens:
