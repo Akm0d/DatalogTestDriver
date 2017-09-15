@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 from argparse import ArgumentParser
+from Cython.Build import cythonize
 from difflib import unified_diff
 from lexical_analyzer import scan as lexical_scan
 from lizard import analyze_file, FunctionInfo
@@ -9,9 +10,9 @@ from subprocess import TimeoutExpired, check_output, check_call, CalledProcessEr
 from sys import argv
 from termcolor import cprint
 
-import datalog_parser
-import relational_database
-import datalog_interpreter
+#import datalog_parser
+#import relational_database
+#import datalog_interpreter
 
 # This is the cyclomatic complexity threshhold allowed for each function
 COMPLEXITY_THRESHHOLD = 8
@@ -19,7 +20,7 @@ COMPLEXITY_THRESHHOLD = 8
 # If there are no arguments, then print the help text
 if len(argv) == 1:
     argv.append("--help")
-
+    
 args = ArgumentParser(description="Test your binary against a python datalog parser")
 
 args.add_argument('-b', '--binary', help="Your binary file", default=None)
@@ -39,6 +40,9 @@ binary = arg.binary
 part = int(arg.part)
 code_directory = arg.compile
 
+
+sources = [os_path.join(code_directory, x) for x in listdir(arg.compile) if x.endswith('.cpp') or x.endswith('.h')]
+
 if not (1 <= lab <= 5):
     raise ValueError("Lab number must be an integer from 1 to 6")
 
@@ -55,9 +59,7 @@ if code_directory:
         print("Unable to compile %s, make sure you are using a unix based operating system" % binary)
         pass
     else:
-        # Compile using g++
-        check_call("g++ -std=c++14 -o %s -g -Wall %s" % (binary, os_path.join(code_directory, "*.cpp")), shell=True)
-        pass
+        check_call("g++ -std=c++11 -o %s -g -Wall %s" % (binary, " ".join(sources)), shell=True)
 
 tests_total = 0
 tests_passed = 0
@@ -90,9 +92,9 @@ for test in test_files:
         expected = ''
         # Compute the correct output from the python script
         if lab == 1:
-            lex = lexical_scan(test)
+            lex = lexical_scan(test, ignore_comments=False)
             for line in lex:
-                expected = expected + '(%s,"%s",%s)' % line + "\n"
+                expected = expected + str(line) + "\n"
             expected = expected + ("Total Tokens = %s\n" % len(lex))
         elif lab == 2:
             expected = datalog_parser.main(test, part=part, debug=False)

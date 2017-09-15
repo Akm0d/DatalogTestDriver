@@ -6,8 +6,9 @@ from tokens import Token, TokenType
 logger = logging.getLogger("Lexical Analyzer")
 
 
-def scan(datalog_file, ignore_whitespace=True):
+def scan(datalog_file: str, ignore_whitespace: bool =True, ignore_comments: bool=True):
     """
+    :param ignore_comments: 
     :param ignore_whitespace:
     :param datalog_file: The example datalog file being parsed
     :return: a list of tokens
@@ -24,9 +25,11 @@ def scan(datalog_file, ignore_whitespace=True):
         if token.type == TokenType.INVALID:
             logger.debug('Token was invalid %s' % token.value.replace('\n', '\\n'))
             tokens.append(Token(t_type=TokenType.UNDEFINED, value=token.value[0], line_number=line_number))
-            file_string = token.value[1:]
-        elif ignore_whitespace and (token.type == TokenType.WHITESPACE or token.type == TokenType.COMMENT):
+            # file_string = token.value[1:]
+        elif ignore_whitespace and token.type == TokenType.WHITESPACE:
             logger.debug('Ignoring whitespace "%s"' % token.value.replace('\n', '\\n'))
+        elif ignore_comments and token.type == TokenType.COMMENT:
+            logger.debug('Ignoring Comment "%s"' % token.value.replace('\n', '\\n'))
         else:
             logger.debug('Adding Token %s' % str(token).replace('\n', '\\n'))
             tokens.append(token)
@@ -56,7 +59,7 @@ if __name__ == "__main__":
     logger.setLevel(int(arg.debug))
     d_file = arg.file
 
-    all_tokens = scan(d_file, ignore_whitespace=True)
+    all_tokens = scan(d_file, ignore_whitespace=True, ignore_comments=False)
     for single_token in all_tokens:
         print(single_token)
 
