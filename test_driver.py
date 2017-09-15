@@ -91,6 +91,7 @@ for test in test_files:
     if not timeout:
         expected = ''
         # Compute the correct output from the python script
+        # TODO save the correct output to a pickle file to lower my runtime?
         if lab == 1:
             lex = lexical_scan(test, ignore_comments=False)
             for line in lex:
@@ -169,9 +170,9 @@ for test in test_files:
 complex_functions = list()
 simple = True
 if code_directory:
-    for file in listdir(code_directory):
+    for file in sources:
         if file.endswith('.cpp'):
-            cc = analyze_file(os_path.join(code_directory, file))
+            cc = analyze_file(file)
             for func in cc.function_list:
                 assert isinstance(func, FunctionInfo)
                 if func.cyclomatic_complexity > COMPLEXITY_THRESHHOLD:
@@ -200,5 +201,7 @@ if binary:
     if tests_passed == tests_total and simple:
         cprint("All tests passed", 'green')
     else:
-        cprint("Passed: %s" % str(tests_passed), 'green')
-        cprint("Failed: %s" % str((tests_total - tests_passed) + len(complex_functions)), 'red')
+        cprint("Passed: {}".format(tests_passed), 'green' if tests_passed else 'red')
+        tests_failed = tests_total - tests_passed
+        cprint("Failed: {}".format(tests_failed), 'red' if tests_failed else 'green')
+        cprint('Complex Functions: {}'.format(len(complex_functions)), 'red' if complex_functions else 'green')
