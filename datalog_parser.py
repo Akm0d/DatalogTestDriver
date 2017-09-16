@@ -129,23 +129,21 @@ class Scheme(Parser):
         super().__init__(lazy=lazy)
         
         try:
-            self.id = self.objects.pop(0)
-            self.objects.pop(0)  # Left PAREN
-            self.idList = [self.objects.pop(0)]
+            self.id = self.objects[0]
+            self.idList = [self.objects[2]]
         except IndexError:
             self.id = None
-        
-        while self.objects:
-            o = self.objects.pop(0)
+            self.idList = None
+
+        for o in self.objects[3:]:
             if isinstance(o, list):
                 self.idList.extend([t for t in o if t.type == TokenType.ID])
-        self.objects.clear()
 
     def __str__(self):
         return "{}({})".format(self.id.value, ",".join(t.value for t in self.idList))
     
     def __bool__(self):
-        return False if self.id is None else True
+        return False if (self.id is None or self.idList is None) else True
 
 
 class Schemes(Parser):
@@ -162,15 +160,9 @@ class Schemes(Parser):
     def __init__(self, lazy=False):
         super().__init__(lazy=lazy)
 
-        self.schemes = [self.objects[0]]
-
-        while self.objects:
-            o = self.objects.pop(0)
-            if isinstance(o, list):
-                self.schemes.extend([t for t in o if isinstance(t, Scheme)])
+        self.schemes = [self.objects[0]] + self.objects[1]
 
         self.objects.clear()
-        # print(self)
 
     def __str__(self):
         return "Schemes({}):\n{}\n".format(len(self.schemes), "\n".join("  " + str(s) for s in self.schemes))
@@ -181,7 +173,7 @@ class Domain(set):
         return "Domain({}):{}{}".format(
             len(self),
             "\n" if self else "",
-            "\n".join("  " + f for f in sorted(self)))
+            "\n".join("  " + f.value for f in sorted(self)))
 
 
 class Fact(Parser):
@@ -203,41 +195,51 @@ class Fact(Parser):
     # will this be shared amongst all instances of this class?
     domain = Domain()
 
-    def __init__(self, name=None, attributes=None):
+    def __init__(self, name: tuple = None, attributes: list = None, lazy: bool = False):
         if name and attributes:
-            assert isinstance(name, tuple)
             self.id = name
-            assert isinstance(attributes, list)
             self.stringList = attributes
         else:
-            super().__init__()
-            self.id = self.objects.pop(0)
-            self.objects.pop(0)  # Left Paren
-            self.stringList = [self.objects.pop(0)]
-            while self.objects:
-                o = self.objects.pop(0)
+            super().__init__(lazy=lazy)
+            try:
+                self.id = self.objects[0]
+                self.stringList = [self.objects[2]]
+            except IndexError:
+                self.id = None
+                self.stringList = None
+
+            for o in self.objects[3:]:
                 if isinstance(o, list):
-                    self.stringList.extend([t for t in o if t.type == TokenType.ID])
+                    self.stringList.extend([t for t in o if t.type == TokenType.STRING])
 
             self.objects.clear()
 
         # Add facts to the domain
-        for t in self.stringList:
-            if t.type == TokenType.ID:
-                self.domain.add(t)
+        if self.stringList is not None:
+            for t in self.stringList:
+                if t.type == TokenType.STRING:
+                    self.domain.add(t)
 
     def __str__(self):
         return "{}({}).".format(self.id.value, ",".join(t.value for t in self.stringList))
+
+    def __bool__(self):
+        return False if (self.id is None or self.stringList is None) else True
 
 
 class Facts(Parser):
     """
     facts
     """
-    grammar = [[Fact, [Fact]]]
+    grammar = [
+        Fact,
+        [
+            Fact
+        ]
+    ]
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, lazy: bool = True):
+        super().__init__(lazy=lazy)
         self.facts = [self.objects[0]] + self.objects[1]
 
     def __str__(self):
@@ -341,7 +343,7 @@ class Queries(Parser):
 class DatalogProgram(Parser):
     grammar = [
         TokenType.SCHEMES, TokenType.COLON, Schemes,
-        # TokenType.FACTS, TokenType.COLON, Facts,
+        TokenType.FACTS, TokenType.COLON, Facts,
         # TokenType.RULES, TokenType.COLON, Rules,
         # TokenType.QUERIES, TokenType.COLON, Queries,
         # TokenType.EOF
@@ -351,17 +353,17 @@ class DatalogProgram(Parser):
         # super().__init__(tokens=lex_tokens, root=True)
         super().__init__(tokens=lex_tokens)
         self.schemes = self.objects[2]
-        # self.facts = self.objects[5]
+        self.facts = self.objects[5]
         # self.rules = self.objects[8]
         # self.queries = self.objects[11]
 
     def __str__(self):
-        return str(self.schemes)
         return '{}{}\n{}\n{}\n{}\n'.format(
             self.schemes,
             self.facts,
-            self.rules,
-            self.queries,
+            "","",
+            #self.rules,
+            #self.queries,
             self.facts.facts[0].domain if self.facts.facts else Domain()
         )
 

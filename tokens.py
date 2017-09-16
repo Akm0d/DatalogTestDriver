@@ -122,6 +122,12 @@ class Token:
     def __hash__(self):
         # This is so that we can have sets of tokens
         return hash(self.value)
+    
+    def __lt__(self, other):
+        return self.value < other.value
+    
+    def __gt__(self, other):
+        return self.value > other.value
 
 
 if __name__ == "__main__":

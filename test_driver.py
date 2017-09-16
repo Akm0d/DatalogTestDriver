@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 from argparse import ArgumentParser
-from Cython.Build import cythonize
 from difflib import unified_diff
 from lexical_analyzer import scan as lexical_scan
 from lizard import analyze_file, FunctionInfo
