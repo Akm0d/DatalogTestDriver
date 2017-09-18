@@ -60,6 +60,7 @@ if code_directory:
     else:
         check_call("g++ -std=c++11 -o %s -g -Wall %s" % (binary, " ".join(sources)), shell=True)
 
+
 tests_total = 0
 tests_passed = 0
 for test in test_files:

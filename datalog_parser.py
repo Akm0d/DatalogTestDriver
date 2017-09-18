@@ -2,6 +2,7 @@
 import lexical_analyzer
 import logging
 
+from helpers import ColorDiff
 from tokens import TokenError, TokenType, Token
 
 logger = logging.getLogger(__name__)
@@ -25,7 +26,7 @@ class Parser:
         :param root: If This instance is the base, then any leftover tokens will be treated as an error
 
         """
-        logger.debug("Matching to class '{}'".format(self.__class__.__name__))
+        logger.debug("Matching {}to class '{}'".format("lazily " if lazy else "",self.__class__.__name__))
         self.grammar = grammar if grammar is not None else self.grammar
         if tokens is not None:
             self.unused_tokens.extend(tokens)
@@ -50,8 +51,8 @@ class Parser:
                 t = self.get_token()
                 objects.append(t)
                 if not t.type == g:
+                    logger.debug("Token '{}' did not match '{}'".format(objects[0].type, g))
                     if lazy:
-                        logger.debug("Token '{}' did not match '{}'".format(objects[0].type, g))
                         self.put_back_tokens(objects)
                         return []
                     else:
@@ -83,18 +84,23 @@ class Parser:
                         self.put_back_tokens(objects)
                         return []
                     else:
+                        print(self.__class__.__name__)
                         raise TokenError(recent_token)
             else:
                 raise ValueError("Unrecognized type in grammar: %s" % g.__class__)
         return objects
 
     def put_back_tokens(self, objects):
+        before = "\n".join([str(i) for i in self.unused_tokens])
         for o in reversed(objects):
             if isinstance(o, Token):
                 self.unused_tokens.insert(0, o)
             elif isinstance(o, Parser):
                 for T in reversed(o.objects):
                     self.unused_tokens.insert(0, T)
+        after = "\n".join([str(i) for i in self.unused_tokens])
+        if before != after:
+            logger.debug("Put back Token: " + ColorDiff(before, after))
 
     def get_token(self):
         """
@@ -210,6 +216,7 @@ class Facts(Parser):
             self.facts = [self.objects[0]] + self.objects[1]
         except IndexError:
             self.facts = None
+            return
 
         logger.debug("Created {}: {}".format(self.__class__.__name__, str(self)))
 
@@ -221,7 +228,7 @@ class Facts(Parser):
         )
 
     def __bool__(self):
-        return False if self.facts is None else True
+        return False if (self.facts is None) else True
 
 
 class Expression(Parser):
@@ -380,8 +387,7 @@ class DatalogProgram(Parser):
     grammar = []
 
     def __init__(self, lex_tokens: list):
-        # super().__init__(tokens=lex_tokens, root=True)
-        super().__init__(tokens=lex_tokens)
+        super().__init__(tokens=lex_tokens, root=True)
         self.schemes = self.objects[2]
         self.facts = self.objects[5]
         self.rules = self.objects[8]
