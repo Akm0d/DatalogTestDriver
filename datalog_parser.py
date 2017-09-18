@@ -25,6 +25,7 @@ class Parser:
         :param root: If This instance is the base, then any leftover tokens will be treated as an error
 
         """
+        logger.debug("Matching to class '{}'".format(self.__class__.__name__))
         self.grammar = grammar if grammar is not None else self.grammar
         if tokens is not None:
             self.unused_tokens.extend(tokens)
@@ -296,8 +297,8 @@ class Predicate(Parser):
             return
 
         for o in self.objects[3:]:
-            if isinstance(o, Parameter):
-                self.parameterList.append(o)
+            if isinstance(o, list):
+                self.parameterList.append(o[1])
         self.hash = hash(str(self))
 
         logger.debug("Created {}: {}".format(self.__class__.__name__, str(self)))
