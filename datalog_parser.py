@@ -50,10 +50,12 @@ class Parser:
                 objects.append(t)
                 if not t.type == g:
                     if lazy:
+                        logger.debug("Token '{}' did not match '{}'".format(objects[0].type, g))
                         self.put_back_tokens(objects)
                         return []
                     else:
                         raise TokenError(t)
+                logger.debug("Matched {}".format(g))
                 recent_token = t
             elif isinstance(g, list):
                 # keep matching in the list until something doesn't match
@@ -72,22 +74,20 @@ class Parser:
                         break
 
             elif isinstance(g, type):
-                # print("TYPE: " + g.__name__)
                 parser = g(lazy=lazy)
                 assert isinstance(parser, Parser)
-                if parser:
-                    objects.append(parser)
-                elif lazy:
-                    self.put_back_tokens(objects)
-                    return []
-                else:
-                    raise TokenError(recent_token)
+                objects.append(parser)
+                if not parser:
+                    if lazy:
+                        self.put_back_tokens(objects)
+                        return []
+                    else:
+                        raise TokenError(recent_token)
             else:
                 raise ValueError("Unrecognized type in grammar: %s" % g.__class__)
         return objects
 
     def put_back_tokens(self, objects):
-        logger.debug("Putting back tokens %s" % " ".join([str(x) for x in objects]))
         for o in reversed(objects):
             if isinstance(o, Token):
                 self.unused_tokens.insert(0, o)
@@ -125,6 +125,8 @@ class Scheme(Parser):
             if isinstance(o, list):
                 self.idList.extend([t for t in o if t.type == TokenType.ID])
 
+        logger.debug("Created {}: {}".format(self.__class__.__name__, str(self)))
+
     def __str__(self):
         return "{}({})".format(self.id.value, ",".join(t.value for t in self.idList))
 
@@ -141,6 +143,8 @@ class Schemes(Parser):
         except IndexError:
             self.schemes = None
             return
+
+        logger.debug("Created {}: {}".format(self.__class__.__name__, str(self)))
 
     def __str__(self):
         return "Schemes({}):\n{}\n".format(len(self.schemes), "\n".join("  " + str(s) for s in self.schemes))
@@ -181,6 +185,8 @@ class Fact(Parser):
                 if isinstance(o, list):
                     self.stringList.extend([t for t in o if t.type == TokenType.STRING])
 
+        logger.debug("Created {}: {}".format(self.__class__.__name__, str(self)))
+
         # Add facts to the domain
         if self.stringList is not None:
             for t in self.stringList:
@@ -199,7 +205,12 @@ class Facts(Parser):
 
     def __init__(self, lazy: bool = True):
         super().__init__(lazy=lazy)
-        self.facts = [self.objects[0]] + self.objects[1]
+        try:
+            self.facts = [self.objects[0]] + self.objects[1]
+        except IndexError:
+            self.facts = None
+
+        logger.debug("Created {}: {}".format(self.__class__.__name__, str(self)))
 
     def __str__(self):
         return "Facts({}):{}{}".format(
@@ -207,6 +218,9 @@ class Facts(Parser):
             "\n" if self.facts else "",
             "\n".join("  " + str(fact) for fact in self.facts)
         )
+
+    def __bool__(self):
+        return False if self.facts is None else True
 
 
 class Expression(Parser):
@@ -224,6 +238,8 @@ class Expression(Parser):
             self.operator = None
             self.param_2 = None
             return
+
+        logger.debug("Created {}: {}".format(self.__class__.__name__, str(self)))
 
     def __str__(self):
         return "({}{}{})".format(str(self.param_1), self.operator.value, str(self.param_2))
@@ -249,6 +265,8 @@ class Parameter(Parser):
             self.string_id = None
             self.expression = None
             return
+
+        logger.debug("Created {}: {}".format(self.__class__.__name__, str(self)))
 
     def __str__(self):
         if self.string_id is not None:
@@ -282,6 +300,8 @@ class Predicate(Parser):
                 self.parameterList.append(o)
         self.hash = hash(str(self))
 
+        logger.debug("Created {}: {}".format(self.__class__.__name__, str(self)))
+
     def __str__(self):
         return "{}({})".format(self.id.value, ",".join(str(p) for p in self.parameterList))
 
@@ -313,7 +333,7 @@ class Rule(Parser):
             if isinstance(o, Predicate):
                 self.predicates.append(o)
 
-        print(self)
+        logger.debug("Created {}: {}".format(self.__class__.__name__, str(self)))
 
     def __str__(self):
         return "{}:- {}".format(str(self.head), ",".join(str(p) for p in self.predicates))
@@ -333,6 +353,8 @@ class Rules(Parser):
             self.rules = None
             return
 
+        logger.debug("Created {}: {}".format(self.__class__.__name__, str(self)))
+
     def __str__(self):
         return "Rules({}):\n{}".format(len(self.rules), "\n".join("  " + str(r) for r in self.rules))
 
@@ -346,6 +368,8 @@ class Queries(Parser):
     def __init__(self):
         super().__init__()
         self.queries = [self.objects[0]] + [o for o in self.objects[2] if isinstance(o, Predicate)]
+
+        logger.debug("Created {}: {}".format(self.__class__.__name__, str(self)))
 
     def __str__(self):
         return "Queries({}):\n{}".format(len(self.queries), "\n".join("  " + str(q) + "?" for q in self.queries))

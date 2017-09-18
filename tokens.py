@@ -129,6 +129,9 @@ class Token:
     def __gt__(self, other):
         return self.value > other.value
 
+    def __name__(self):
+        return self.type
+
 
 if __name__ == "__main__":
     from argparse import ArgumentParser
