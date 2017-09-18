@@ -26,7 +26,7 @@ class Parser:
         :param root: If This instance is the base, then any leftover tokens will be treated as an error
 
         """
-        logger.debug("Matching {}to class '{}'".format("lazily " if lazy else "",self.__class__.__name__))
+        logger.debug("Matching {}to class '{}'".format("lazily " if lazy else "", self.__class__.__name__))
         self.grammar = grammar if grammar is not None else self.grammar
         if tokens is not None:
             self.unused_tokens.extend(tokens)
@@ -48,7 +48,9 @@ class Parser:
         objects = list()
         for g in grammar:
             if isinstance(g, TokenType):
-                t = self.get_token()
+                t = self.get_token(lazy=lazy)
+                if t is None:
+                    return []
                 objects.append(t)
                 if not t.type == g:
                     logger.debug("Token '{}' did not match '{}'".format(objects[0].type, g))
@@ -79,11 +81,12 @@ class Parser:
                 assert isinstance(parser, Parser)
                 objects.append(parser)
                 if not parser:
+                    logger.debug("{} creation failed at {}".format(self.__class__.__name__, g.__name__))
                     if lazy:
+                        logger.debug("Returning {} tokens".format(g.__name__))
                         self.put_back_tokens(objects)
                         return []
                     else:
-                        logger.debug("{} creation failed at {}".format(self.__class__.__name__, g.__name__))
                         raise TokenError(recent_token)
             else:
                 raise ValueError("Unrecognized type in grammar: %s" % g.__class__)
@@ -101,14 +104,16 @@ class Parser:
         if before != after:
             logger.debug("Put back Token: " + ColorDiff(before, after))
 
-    def get_token(self):
+    def get_token(self, lazy: bool = False):
         """
         :return: The top token from the list
         """
         global recent_token
-        recent_token = self.unused_tokens.pop(0)
         if self.unused_tokens:
+            recent_token = self.unused_tokens.pop(0)
             return recent_token
+        elif lazy:
+            return None
         else:
             # If there are no more tokens then raise an error on the last token seen
             raise TokenError(recent_token)
@@ -375,12 +380,19 @@ class Queries(Parser):
 
     def __init__(self, lazy: bool = False):
         super().__init__(lazy=lazy)
-        self.queries = [self.objects[0]] + [o for o in self.objects[2] if isinstance(o, Predicate)]
+        try:
+            self.queries = [self.objects[0]] + [o for o in self.objects[2] if isinstance(o, Predicate)]
+        except IndexError:
+            self.queries = None
+            return
 
         logger.debug("Created {}: {}".format(self.__class__.__name__, str(self)))
 
     def __str__(self):
         return "Queries({}):\n{}".format(len(self.queries), "\n".join("  " + str(q) + "?" for q in self.queries))
+
+    def __bool__(self):
+        return False if self.queries is None else True
 
 
 class DatalogProgram(Parser):
