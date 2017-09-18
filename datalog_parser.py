@@ -58,7 +58,6 @@ class Parser:
                     else:
                         raise TokenError(t)
                 logger.debug("Matched {}".format(g))
-                recent_token = t
             elif isinstance(g, list):
                 # keep matching in the list until something doesn't match
                 # print("GO:" + " ".join([str(x.__class__) for x in g]))
@@ -84,7 +83,7 @@ class Parser:
                         self.put_back_tokens(objects)
                         return []
                     else:
-                        print(self.__class__.__name__)
+                        logger.debug("{} creation failed at {}".format(self.__class__.__name__, g.__name__))
                         raise TokenError(recent_token)
             else:
                 raise ValueError("Unrecognized type in grammar: %s" % g.__class__)
@@ -107,8 +106,9 @@ class Parser:
         :return: The top token from the list
         """
         global recent_token
+        recent_token = self.unused_tokens.pop(0)
         if self.unused_tokens:
-            return self.unused_tokens.pop(0)
+            return recent_token
         else:
             # If there are no more tokens then raise an error on the last token seen
             raise TokenError(recent_token)
@@ -356,7 +356,7 @@ class Rules(Parser):
     def __init__(self, lazy: bool = False):
         super().__init__(lazy=lazy)
         try:
-            self.rules = [self.objects[0]] + self.objects[1]
+            self.rules = self.objects[0]
         except IndexError:
             self.rules = None
             return
@@ -373,8 +373,8 @@ class Rules(Parser):
 class Queries(Parser):
     grammar = []
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, lazy: bool = False):
+        super().__init__(lazy=lazy)
         self.queries = [self.objects[0]] + [o for o in self.objects[2] if isinstance(o, Predicate)]
 
         logger.debug("Created {}: {}".format(self.__class__.__name__, str(self)))
@@ -449,7 +449,6 @@ Fact.grammar = [
 ]
 
 Rules.grammar = [
-    Rule,
     [
         Rule
     ]
