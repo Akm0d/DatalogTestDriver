@@ -61,15 +61,24 @@ class Parser:
                         raise TokenError(t)
                 logger.debug("Matched {}".format(g))
             elif isinstance(g, list):
+                logger.debug("Matching items in list for {}".format(self.__class__.__name__))
                 # keep matching in the list until something doesn't match
-                # print("GO:" + " ".join([str(x.__class__) for x in g]))
                 inner_list = self._parse_unused_tokens(lazy=True, grammar=g)
+                if not all(inner_list):
+                    return []
                 while inner_list:
-                    # print([str(x) for x in inner_list])
+                    logger.debug("Checking for zero or more of {}".format([
+                        x.name if isinstance(x, TokenType) else x.__name__ for x in g
+                    ]))
+                    before = [str(x) for x in inner_list]
                     objects.append(inner_list)
                     inner_list = self._parse_unused_tokens(lazy=True, grammar=g)
-                    # print([str(x) for x in inner_list])
+                    after = [str(x) for x in inner_list]
+                    logger.debug("Inner list change: {}".format(ColorDiff(after, before)))
+                    if not all(inner_list):
+                        return []
             elif isinstance(g, set):
+                logger.debug("Matching items in set for {}".format(self.__class__.__name__))
                 for s in g:
                     set_match = self._parse_unused_tokens(lazy=True, grammar=[s])
                     if set_match:
@@ -102,7 +111,7 @@ class Parser:
                     self.unused_tokens.insert(0, T)
         after = "\n".join([str(i) for i in self.unused_tokens])
         if before != after:
-            logger.debug("Put back Token: " + ColorDiff(before, after))
+            logger.debug("Put back Token: " + ColorDiff(after, before))
 
     def get_token(self, lazy: bool = False):
         """
@@ -359,7 +368,8 @@ class Rules(Parser):
     grammar = []
 
     def __init__(self, lazy: bool = False):
-        super().__init__(lazy=lazy)
+        # Rule creation is always lazy because there can be 0
+        super().__init__(lazy=True)
         try:
             self.rules = self.objects[0]
         except IndexError:
@@ -381,11 +391,12 @@ class Queries(Parser):
     def __init__(self, lazy: bool = False):
         super().__init__(lazy=lazy)
         try:
-            self.queries = [self.objects[0]] + [o for o in self.objects[2] if isinstance(o, Predicate)]
+            self.queries = [self.objects[0]]
         except IndexError:
             self.queries = None
             return
-
+        if len (self.objects) > 2:
+            self.queries += [o for o in self.objects[2] if isinstance(o, Predicate)]
         logger.debug("Created {}: {}".format(self.__class__.__name__, str(self)))
 
     def __str__(self):
