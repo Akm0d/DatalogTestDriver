@@ -9,7 +9,7 @@ from subprocess import TimeoutExpired, check_output, check_call, CalledProcessEr
 from sys import argv
 from termcolor import cprint
 
-#import datalog_parser
+import datalog_parser
 #import relational_database
 #import datalog_interpreter
 

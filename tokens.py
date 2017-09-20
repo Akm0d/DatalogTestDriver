@@ -132,6 +132,9 @@ class Token:
     def __name__(self):
         return self.type
 
+    def __eq__(self, other):
+        return (self.type == other.type) and (self.value == other.value)
+
 
 if __name__ == "__main__":
     from argparse import ArgumentParser

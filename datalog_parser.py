@@ -227,7 +227,7 @@ class Facts(Parser):
     def __init__(self, lazy: bool = True):
         super().__init__(lazy=lazy)
         try:
-            self.facts = [self.objects[0]] + self.objects[1]
+            self.facts = [f[0] for f in self.objects]
         except IndexError:
             self.facts = None
             return
@@ -351,14 +351,15 @@ class Rule(Parser):
             self.predicates = None
             return
 
-        for o in self.objects[3:]:
-            if isinstance(o, Predicate):
-                self.predicates.append(o)
+        if len(self.objects) > 2:
+            for o in self.objects[3]:
+                if isinstance(o, Predicate):
+                    self.predicates.append(o)
 
         logger.debug("Created {}: {}".format(self.__class__.__name__, str(self)))
 
     def __str__(self):
-        return "{}:- {}".format(str(self.head), ",".join(str(p) for p in self.predicates))
+        return "{} :- {}.".format(str(self.head), ",".join(str(p) for p in self.predicates))
 
     def __bool__(self):
         return False if (self.head is None or self.predicates is None) else True
@@ -392,11 +393,11 @@ class Queries(Parser):
         super().__init__(lazy=lazy)
         try:
             self.queries = [self.objects[0]]
+            if len (self.objects) > 2:
+                self.queries += [o for o in self.objects[2] if isinstance(o, Predicate)]
         except IndexError:
             self.queries = None
             return
-        if len (self.objects) > 2:
-            self.queries += [o for o in self.objects[2] if isinstance(o, Predicate)]
         logger.debug("Created {}: {}".format(self.__class__.__name__, str(self)))
 
     def __str__(self):
@@ -417,7 +418,7 @@ class DatalogProgram(Parser):
         self.queries = self.objects[11]
 
     def __str__(self):
-        return '{}{}\n{}\n{}\n{}\n'.format(
+        return '{}{}\n{}\n{}\n{}'.format(
             self.schemes,
             self.facts,
             self.rules,
@@ -453,7 +454,6 @@ Scheme.grammar = [
 ]
 
 Facts.grammar = [
-    Fact,
     [
         Fact
     ]
