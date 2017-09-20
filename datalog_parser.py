@@ -29,6 +29,8 @@ class Parser:
         logger.debug("Matching {}to class '{}'".format("lazily " if lazy else "", self.__class__.__name__))
         self.grammar = grammar if grammar is not None else self.grammar
         if tokens is not None:
+            if root:
+                self.unused_tokens.clear()
             self.unused_tokens.extend(tokens)
         self.objects = self._parse_unused_tokens(lazy=lazy)
 
@@ -53,7 +55,7 @@ class Parser:
                     return []
                 objects.append(t)
                 if not t.type == g:
-                    logger.debug("Token '{}' did not match '{}'".format(objects[0].type, g))
+                    logger.debug("Token '{}' did not match '{}'".format(recent_token.type, g))
                     if lazy:
                         self.put_back_tokens(objects)
                         return []
@@ -120,6 +122,7 @@ class Parser:
         global recent_token
         if self.unused_tokens:
             recent_token = self.unused_tokens.pop(0)
+            assert isinstance(recent_token, Token)
             return recent_token
         elif lazy:
             return None
@@ -351,7 +354,7 @@ class Rule(Parser):
             self.predicates = None
             return
 
-        if len(self.objects) > 2:
+        if len(self.objects) > 2 and isinstance(self.objects[3], list):
             for o in self.objects[3]:
                 if isinstance(o, Predicate):
                     self.predicates.append(o)
@@ -370,20 +373,21 @@ class Rules(Parser):
 
     def __init__(self, lazy: bool = False):
         # Rule creation is always lazy because there can be 0
-        super().__init__(lazy=True)
+        super().__init__(lazy=lazy)
         try:
-            self.rules = self.objects[0]
+            self.rules = [o[0] for o in self.objects]
         except IndexError:
-            self.rules = None
-            return
+            self.rules = []
 
         logger.debug("Created {}: {}".format(self.__class__.__name__, str(self)))
 
     def __str__(self):
-        return "Rules({}):\n{}".format(len(self.rules), "\n".join("  " + str(r) for r in self.rules))
+        return "Rules({}):{}{}".format(
+            len(self.rules), '\n' if self.rules else '', "\n".join("  " + str(r) for r in self.rules)
+        )
 
     def __bool__(self):
-        return False if (self.rules is None) else True
+        return True
 
 
 class Queries(Parser):
@@ -393,7 +397,7 @@ class Queries(Parser):
         super().__init__(lazy=lazy)
         try:
             self.queries = [self.objects[0]]
-            if len (self.objects) > 2:
+            if len(self.objects) > 2:
                 self.queries += [o for o in self.objects[2] if isinstance(o, Predicate)]
         except IndexError:
             self.queries = None
@@ -411,6 +415,8 @@ class DatalogProgram(Parser):
     grammar = []
 
     def __init__(self, lex_tokens: list):
+        # Clear the domain from a previous run
+        Fact(lazy=True).domain.clear()
         super().__init__(tokens=lex_tokens, root=True)
         self.schemes = self.objects[2]
         self.facts = self.objects[5]
