@@ -60,7 +60,7 @@ class Parser:
                         self.put_back_tokens(objects)
                         return []
                     else:
-                        raise TokenError(t)
+                        raise TokenError(recent_token)
                 logger.debug("Matched {}".format(g))
             elif isinstance(g, list):
                 logger.debug("Matching items in list for {}".format(self.__class__.__name__))
@@ -109,8 +109,7 @@ class Parser:
             if isinstance(o, Token):
                 self.unused_tokens.insert(0, o)
             elif isinstance(o, Parser):
-                for T in reversed(o.objects):
-                    self.unused_tokens.insert(0, T)
+                self.put_back_tokens(o.objects)
         after = "\n".join([str(i) for i in self.unused_tokens])
         if before != after:
             logger.debug("Put back Token: " + ColorDiff(after, before))
@@ -188,10 +187,8 @@ class Domain(set):
 class Fact(Parser):
     grammar = []
 
-    # This is a shared class variable.  All facts will have this same domain
-    domain = Domain()
-
     def __init__(self, name: tuple = None, attributes: list = None, lazy: bool = False):
+        self.domain = Domain()
         if name and attributes:
             self.id = name
             self.stringList = attributes
@@ -416,12 +413,14 @@ class DatalogProgram(Parser):
 
     def __init__(self, lex_tokens: list):
         # Clear the domain from a previous run
-        Fact(lazy=True).domain.clear()
         super().__init__(tokens=lex_tokens, root=True)
         self.schemes = self.objects[2]
         self.facts = self.objects[5]
         self.rules = self.objects[8]
         self.queries = self.objects[11]
+        self.domain = Domain()
+        for fact in self.facts.facts:
+            self.domain |= fact.domain
 
     def __str__(self):
         return '{}{}\n{}\n{}\n{}'.format(
@@ -429,7 +428,7 @@ class DatalogProgram(Parser):
             self.facts,
             self.rules,
             self.queries,
-            self.facts.facts[0].domain if self.facts.facts else Domain()
+            self.domain
         )
 
 
