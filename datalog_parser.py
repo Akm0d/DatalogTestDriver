@@ -204,9 +204,10 @@ class Fact(Parser):
                 self.stringList = None
                 return
 
-            for o in self.objects[3:]:
-                if isinstance(o, list):
-                    self.stringList.extend([t for t in o if t.type == TokenType.STRING])
+            if self.stringList is not None:
+                for o in self.objects[3:]:
+                    if isinstance(o, list):
+                        self.stringList.extend([t for t in o if t.type == TokenType.STRING])
 
         logger.debug("Created {}: {}".format(self.__class__.__name__, str(self)))
 
@@ -348,15 +349,11 @@ class Rule(Parser):
         try:
             self.head = self.objects[0]
             self.predicates = [self.objects[2]]
+            self.predicates += [o[1] for o in self.objects[3:] if isinstance(o, list)]
         except IndexError:
             self.head = None
             self.predicates = None
             return
-
-        if len(self.objects) > 2 and isinstance(self.objects[3], list):
-            for o in self.objects[3]:
-                if isinstance(o, Predicate):
-                    self.predicates.append(o)
 
         logger.debug("Created {}: {}".format(self.__class__.__name__, str(self)))
 
