@@ -162,10 +162,13 @@ class Schemes(Parser):
         super().__init__(lazy=lazy)
 
         try:
-            self.schemes = [self.objects[0]] + self.objects[1]
+            self.schemes = [self.objects[0]]
         except IndexError:
             self.schemes = None
             return
+
+        if len(self.objects) > 1:
+            self.schemes += self.objects[1]
 
         logger.debug("Created {}: {}".format(self.__class__.__name__, str(self)))
 
