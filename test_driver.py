@@ -10,7 +10,7 @@ from sys import argv
 from termcolor import cprint
 
 import datalog_parser
-#import relational_database
+import relational_database
 #import datalog_interpreter
 
 # This is the cyclomatic complexity threshhold allowed for each function
@@ -204,4 +204,5 @@ if binary:
         cprint("Passed: {}".format(tests_passed), 'green' if tests_passed else 'red')
         tests_failed = tests_total - tests_passed
         cprint("Failed: {}".format(tests_failed), 'red' if tests_failed else 'green')
-        cprint('Complex Functions: {}'.format(len(complex_functions)), 'red' if complex_functions else 'green')
+        if code_directory:
+            cprint('Complex Functions: {}'.format(len(complex_functions)), 'red' if complex_functions else 'green')

@@ -3,13 +3,10 @@ from ast import literal_eval
 from collections import OrderedDict
 from itertools import zip_longest, combinations
 from orderedset._orderedset import OrderedSet
-from tokens import TokenType, TokenError
+from tokens import TokenType, TokenError, Token
 
 import lexical_analyzer
 import datalog_parser
-
-# An ordered dictionary for storing all the query values
-RelationalDatabase = None
 
 
 class Pair(tuple):
@@ -17,7 +14,8 @@ class Pair(tuple):
     The format of a pair is v= 's', where v is the variable and 's' is the string value. 
     """
 
-    def __new__(cls, v="", s=""):
+    def __new__(cls, v: Token = None, s: Token = None):
+        cls.hash_value = hash(v.value if v else '' + s.value if v else '')
         return tuple.__new__(cls, (v, s))
 
     @property
@@ -29,10 +27,12 @@ class Pair(tuple):
         return self[1]
 
     def __str__(self):
-        return "%s=%s" % (self.attribute.value, self.value.value)
+        return "{}={}".format(
+            self.attribute.value if self.attribute else None, self.value.value if self.value else None
+        )
 
     def __hash__(self):
-        return hash(str(self))
+        return self.hash_value
 
     def __eq__(self, other):
         return str(self) == str(other)
@@ -103,18 +103,15 @@ class Relation:
     The attribute list of the scheme defines the schema of the relation. 
     Each relation has a name, a schema, and a set of tuples. A schema is a set of attributes. 
     """
-    name = None
-    # A schema is a set of attributes.
-    schema = None
-    # A tuple is a set of attribute/value pairs.
-    tuples = None
 
     def __init__(self, scheme=None, facts=None, tuples=None, name=None, schema=None):
         if scheme and facts:
             assert isinstance(scheme, datalog_parser.Scheme)
             self.name = scheme.id
+            # A schema is a set of attributes.
             self.schema = set(scheme.idList)
             assert isinstance(facts, list)
+            # A tuple is a set of attribute/value pairs.
             self.tuples = set()
             for fact in facts:
                 if fact.id.value == scheme.id.value:
@@ -160,15 +157,12 @@ class RDBMS:
     A relational database management system (RDBMS) maintains data sets called relations.
     This builds a relational database system from a Datalog file, and then answers queries using relational algebra. 
     """
-    # A query mapped to a set of relations
-    # This will be shared amongst all instances of this class
-    relations = None
-    datalog = None
 
-    def __init__(self, datalog_program):
-        global RelationalDatabase
-        if not RelationalDatabase:
-            RelationalDatabase = OrderedDict()
+    def __init__(self, datalog_program, rdbms: OrderedDict = None):
+        if rdbms is None:
+            self.rdbms = OrderedDict()
+        else:
+            self.rdbms = rdbms
         self.relations = list()
         assert isinstance(datalog_program, datalog_parser.DatalogProgram)
         self.datalog = datalog_program
@@ -203,12 +197,11 @@ class RDBMS:
         return renamed
 
     @staticmethod
-    def select(relations, name, index, value):
+    def select(relations: list, name: Token, index: int, value: Token):
         """
         Always do select first, it doesn't mutilate the tuples
         Return all rows that match a certain condition from the table
         """
-        assert isinstance(relations, list)
         result = list()
         for relation in relations:
             tuples = set()
@@ -291,13 +284,6 @@ class RDBMS:
                 result.append(Relation(tuples=tuples, name=name))
         return result
 
-    @staticmethod
-    def get_database():
-        global RelationalDatabase
-        if not RelationalDatabase:
-            RelationalDatabase = OrderedDict()
-        return RelationalDatabase
-
     def __str__(self):
         """
         For each query, print the query and a space. 
@@ -307,9 +293,9 @@ class RDBMS:
         one per line and indented by two spaces, according to the following directions.
         """
         result = ""
-        for query in RelationalDatabase.keys():
+        for query in self.rdbms.keys():
             result += str(query) + "? "
-            tuples = RelationalDatabase[query]
+            tuples = self.rdbms[query]
 
             if not tuples:  # The set is empty
                 result += "No\n"
@@ -324,14 +310,9 @@ class RDBMS:
                 result = result.rstrip(' \t\n\r') + "\n"
         return result
 
-    @staticmethod
-    def set_database(database):
-        global RelationalDatabase
-        RelationalDatabase = database
-
     def evaluate_queries(self, queries):
         for datalog_query in queries:
-            database = self.get_database()
+            database = self.rdbms
             assert isinstance(database, OrderedDict)
             if datalog_query not in database:
                 database[datalog_query] = set()
@@ -340,7 +321,7 @@ class RDBMS:
                 if r.tuples:
                     for t in r.tuples:
                         database[datalog_query].add(t)
-            self.set_database(database)
+            self.rdbms = database
 
         for datalog_query in queries:
             # Each rule returns a new relation
@@ -351,9 +332,6 @@ class RDBMS:
 
 
 def main(d_file, part=2, debug=False):
-    global RelationalDatabase
-    if not RelationalDatabase:
-        RelationalDatabase = OrderedDict()
     result = ""
     if not (1 <= part <= 2):
         raise ValueError("Part must be either 1 or 2")
@@ -369,9 +347,10 @@ def main(d_file, part=2, debug=False):
         try:
             datalog = datalog_parser.DatalogProgram(tokens)
         except TokenError as t:
-            return 'Failure!\n  (%s,"%s",%s)' % tuple(literal_eval(str(t)))
+            return 'Failure!\n  {}'.format(t)
 
-    rdbms = RDBMS(datalog)
+    RelationalDatabase = OrderedDict()
+    rdbms = RDBMS(datalog, rdbms=RelationalDatabase)
 
     for datalog_query in datalog.queries.queries:
         for r in rdbms.evaluate_query(datalog_query):
