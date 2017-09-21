@@ -163,12 +163,11 @@ class Schemes(Parser):
 
         try:
             self.schemes = [self.objects[0]]
+            for o in self.objects[1:]:
+                self.schemes += o
         except IndexError:
             self.schemes = None
             return
-
-        if len(self.objects) > 1:
-            self.schemes += self.objects[1]
 
         logger.debug("Created {}: {}".format(self.__class__.__name__, str(self)))
 
@@ -397,8 +396,7 @@ class Queries(Parser):
         super().__init__(lazy=lazy)
         try:
             self.queries = [self.objects[0]]
-            if len(self.objects) > 2:
-                self.queries += [o for o in self.objects[2] if isinstance(o, Predicate)]
+            self.queries += [o[0] for o in self.objects[2:]]
         except IndexError:
             self.queries = None
             return
