@@ -176,7 +176,9 @@ class RDBMS:
 
     def evaluate_query(self, query: datalog_parser.Query):
         # select, project, then rename
+        logger.debug("Evaluating query: {}?".format(query))
         selected = self.relations
+        logger.debug("Relations:\n{}".format(selected[0]))
         project_columns = list()
         new_names = list()
         i = 0
@@ -184,19 +186,34 @@ class RDBMS:
         for p in query.parameterList:
             assert isinstance(p, datalog_parser.Parameter)
             if p.expression:
-                print("I can't evaluate expressions yet")
+                logger.warning("Expressions cannot be handled yet")
             else:  # It is a string or id
                 if p.string_id.type == TokenType.STRING:
+                    logger.debug("Selecting {} in column {}".format(p.string_id.value, i))
                     if selected and selected[0].name:
                         selected = self.select(relations=selected, index=i, name=query.id, value=p.string_id)
+                        if selected and selected[0].name:
+                            logger.debug("Selected:\n{}".format(selected[0]))
                 elif p.string_id.type == TokenType.ID:
                     project_columns.append(i)
                     new_names.append(p.string_id)
             i += 1
 
         # Make sure relations were found before iterating over them
+        if not (selected and selected[0].name):
+            logger.debug("No relations after selecting")
         projected = self.project(selected, query.id, project_columns)
+        if projected and projected[0].name:
+            logger.debug("Projected: {}\n{}".format(
+                ",".join([str(i) for i in project_columns]), projected[0])
+            )
+        else:
+            logger.debug("No relations after projecting")
         renamed = self.rename(projected, query.id, new_names)
+        if renamed and renamed[0].name:
+            logger.debug("Renamed:\n{}".format(renamed[0]))
+        else:
+            logger.debug("No relations after renaming")
         return renamed
 
     @staticmethod
@@ -318,8 +335,8 @@ class RDBMS:
             assert isinstance(database, OrderedDict)
             if datalog_query not in database:
                 database[datalog_query] = set()
+
             for r in self.evaluate_query(datalog_query):
-                database[datalog_query] = set()
                 if r.tuples:
                     for t in r.tuples:
                         database[datalog_query].add(t)
@@ -355,10 +372,8 @@ def main(d_file: str, part: int = 2, debug: bool = False):
     rdbms = RDBMS(datalog, rdbms=relations)
 
     for datalog_query in datalog.queries.queries:
+        relations[datalog_query] = set()
         for r in rdbms.evaluate_query(datalog_query):
-            # Each query contains a set of relations
-            if datalog_query not in relations:
-                relations[datalog_query] = set()
             if r.tuples:
                 for t in r.tuples:
                     relations[datalog_query].add(t)
