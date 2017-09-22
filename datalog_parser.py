@@ -386,6 +386,9 @@ class Rules(Parser):
         return True
 
 
+Query = Predicate
+
+
 class Queries(Parser):
     grammar = []
 
@@ -492,10 +495,10 @@ Rule.grammar = [
 ]
 
 Queries.grammar = [
-    Predicate,
+    Query,
     TokenType.Q_MARK,
     [
-        Predicate,
+        Query,
         TokenType.Q_MARK
     ]
 ]
@@ -531,7 +534,7 @@ Expression.grammar = [
 ]
 
 
-def main(d_file, part: int = 2, debug: bool = False):
+def main(d_file: str, part: int = 2, debug: bool = False):
     result = "Success!\n"
 
     if not (1 <= part <= 2):

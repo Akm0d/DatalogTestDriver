@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
-from ast import literal_eval
 from collections import OrderedDict
 from itertools import zip_longest, combinations
 from orderedset._orderedset import OrderedSet
 from tokens import TokenType, TokenError, Token
 
+import logging
 import lexical_analyzer
 import datalog_parser
+
+logger = logging.getLogger(__name__)
 
 
 class Pair(tuple):
@@ -48,12 +50,14 @@ class Tuple(OrderedSet):
 
     def __init__(self):
         super().__init__()
+        self.hash_value = hash(str(self))
 
     def union(self, other):
         for pair in other:
             self.add(Pair(pair.attribute, pair.value))
+        self.hash_value = hash(str(self))
 
-    def get(self, attribute):
+    def get(self, attribute: Token):
         """
         :param attribute:
         :return: The pair that has the given attribute
@@ -75,7 +79,7 @@ class Tuple(OrderedSet):
         return ", ".join(str(pair) for pair in self)
 
     def __hash__(self):
-        return hash(str(self))
+        return self.hash_value
 
     def __eq__(self, other):
         return str(self) == str(other)
@@ -104,16 +108,16 @@ class Relation:
     Each relation has a name, a schema, and a set of tuples. A schema is a set of attributes. 
     """
 
-    def __init__(self, scheme=None, facts=None, tuples=None, name=None, schema=None):
+    def __init__(self,
+                 scheme: datalog_parser.Scheme = None, facts: datalog_parser.Facts = None, tuples: set = None,
+                 name: Token = None, schema: set = None):
         if scheme and facts:
-            assert isinstance(scheme, datalog_parser.Scheme)
             self.name = scheme.id
             # A schema is a set of attributes.
             self.schema = set(scheme.idList)
-            assert isinstance(facts, list)
             # A tuple is a set of attribute/value pairs.
             self.tuples = set()
-            for fact in facts:
+            for fact in facts.facts:
                 if fact.id.value == scheme.id.value:
                     # Create a new tuple
                     new_tuple = Tuple()
@@ -132,7 +136,7 @@ class Relation:
         else:
             self.tuples = set()
             self.schema = set()
-            self.name = ("", "", "")
+            self.name = Token(0)
 
     def __str__(self):
         """
@@ -158,7 +162,7 @@ class RDBMS:
     This builds a relational database system from a Datalog file, and then answers queries using relational algebra. 
     """
 
-    def __init__(self, datalog_program, rdbms: OrderedDict = None):
+    def __init__(self, datalog_program: datalog_parser.DatalogProgram, rdbms: OrderedDict = None):
         if rdbms is None:
             self.rdbms = OrderedDict()
         else:
@@ -167,11 +171,10 @@ class RDBMS:
         assert isinstance(datalog_program, datalog_parser.DatalogProgram)
         self.datalog = datalog_program
         for datalog_scheme in self.datalog.schemes.schemes:
-            self.relations.append(Relation(scheme=datalog_scheme, facts=self.datalog.facts.facts))
+            self.relations.append(Relation(scheme=datalog_scheme, facts=self.datalog.facts))
             pass
 
-    def evaluate_query(self, query):
-        assert isinstance(query, datalog_parser.Predicate)
+    def evaluate_query(self, query: datalog_parser.Query):
         # select, project, then rename
         selected = self.relations
         project_columns = list()
@@ -218,7 +221,7 @@ class RDBMS:
         return result
 
     @staticmethod
-    def project(relations, name, columns):
+    def project(relations: list, name: Token, columns: list):
         """
         :param relations: 
         :param name: The table/scheme id
@@ -245,7 +248,7 @@ class RDBMS:
         return result
 
     @staticmethod
-    def rename(relations, name, new_names):
+    def rename(relations: list, name: Token, new_names: list):
         """
         Always rename all columns at the same time, that way if A,B is being renamed to B,A you don't end up with B,B
         Return a table with the specified columns renamed
@@ -254,7 +257,6 @@ class RDBMS:
         :param new_names: a list of IDs that will be the new names for the all columns
         :return: A relation with columns renamed to the new_names
         """
-        assert isinstance(relations, list)
         result = list()
         for relation in relations:
             tuples = set()
@@ -310,8 +312,8 @@ class RDBMS:
                 result = result.rstrip(' \t\n\r') + "\n"
         return result
 
-    def evaluate_queries(self, queries):
-        for datalog_query in queries:
+    def evaluate_queries(self, queries: datalog_parser.Queries):
+        for datalog_query in queries.queries:
             database = self.rdbms
             assert isinstance(database, OrderedDict)
             if datalog_query not in database:
@@ -323,7 +325,7 @@ class RDBMS:
                         database[datalog_query].add(t)
             self.rdbms = database
 
-        for datalog_query in queries:
+        for datalog_query in queries.queries:
             # Each rule returns a new relation
             self.evaluate_query(datalog_query)
 
@@ -331,12 +333,12 @@ class RDBMS:
         return str(self)
 
 
-def main(d_file, part=2, debug=False):
+def main(d_file: str, part: int = 2, debug: bool = False):
     result = ""
     if not (1 <= part <= 2):
         raise ValueError("Part must be either 1 or 2")
 
-    if debug: result += ("Parsing '%s'" % d_file)
+    logger.debug("Parsing '%s'" % d_file)
 
     # Create class objects
     tokens = lexical_analyzer.scan(d_file)
@@ -349,25 +351,25 @@ def main(d_file, part=2, debug=False):
         except TokenError as t:
             return 'Failure!\n  {}'.format(t)
 
-    RelationalDatabase = OrderedDict()
-    rdbms = RDBMS(datalog, rdbms=RelationalDatabase)
+    relations = OrderedDict()
+    rdbms = RDBMS(datalog, rdbms=relations)
 
     for datalog_query in datalog.queries.queries:
         for r in rdbms.evaluate_query(datalog_query):
             # Each query contains a set of relations
-            if datalog_query not in RelationalDatabase:
-                RelationalDatabase[datalog_query] = set()
+            if datalog_query not in relations:
+                relations[datalog_query] = set()
             if r.tuples:
                 for t in r.tuples:
-                    RelationalDatabase[datalog_query].add(t)
+                    relations[datalog_query].add(t)
 
     if part == 1:
         # This is the same thing that comes from evaluate queries, but we are going to stop at each point and print
         one_query = datalog.queries.queries[0]
         assert isinstance(one_query, datalog_parser.Predicate)
         # Each query contains a set of relations
-        RelationalDatabase[one_query] = set()
-        relation = RelationalDatabase[one_query]
+        relations[one_query] = set()
+        relation = relations[one_query]
         assert isinstance(relation, set)
         # select, project, then rename
         one_selected = rdbms.relations
@@ -446,10 +448,13 @@ if __name__ == "__main__":
     """
     from argparse import ArgumentParser
 
-    args = ArgumentParser(description="Run the datalog parser, this will produce output for lab 2")
-    args.add_argument('-d', '--debug', action='store_true', default=False)
-    args.add_argument('-p', '--part', help='A 1 or a 2.  Defaults to 2', default=2)
-    args.add_argument('file', help='datalog file to parse')
-    arg = args.parse_args()
+    arg = ArgumentParser(description="Run the datalog parser, this will produce output for lab 2")
+    arg.add_argument('-d', '--debug', help="The logging debug level to use", default=logging.NOTSET, metavar='LEVEL')
+    arg.add_argument('-p', '--part', help='A 1 or a 2.  Defaults to 2', default=2)
+    arg.add_argument('file', help='datalog file to parse')
+    args = arg.parse_args()
 
-    print(main(arg.file, part=int(arg.part), debug=arg.debug))
+    logging.basicConfig(level=logging.ERROR)
+    logger.setLevel(int(args.debug))
+
+    print(main(args.file, part=int(args.part), debug=True))
