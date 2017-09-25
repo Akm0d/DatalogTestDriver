@@ -152,6 +152,7 @@ class Relation:
         return result
 
     def __hash__(self):
+        # TODO simplifiy this
         return hash(str(self))
 
 
@@ -163,16 +164,13 @@ class RDBMS:
     """
 
     def __init__(self, datalog_program: datalog_parser.DatalogProgram, rdbms: OrderedDict = None):
+        self.rdbms = rdbms
         if rdbms is None:
             self.rdbms = OrderedDict()
-        else:
-            self.rdbms = rdbms
         self.relations = list()
-        assert isinstance(datalog_program, datalog_parser.DatalogProgram)
         self.datalog = datalog_program
         for datalog_scheme in self.datalog.schemes.schemes:
             self.relations.append(Relation(scheme=datalog_scheme, facts=self.datalog.facts))
-            pass
 
     def evaluate_query(self, query: datalog_parser.Query):
         # select, project, then rename
