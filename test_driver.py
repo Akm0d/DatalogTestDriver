@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 from argparse import ArgumentParser
+from collections import OrderedDict
 from difflib import unified_diff
-from lexical_analyzer import scan as lexical_scan
 from lizard import analyze_file, FunctionInfo
 from os import path as os_path, name as os_name, listdir
 from re import compile as re_compile, MULTILINE
@@ -9,17 +9,20 @@ from subprocess import TimeoutExpired, check_output, check_call, CalledProcessEr
 from sys import argv
 from termcolor import cprint
 
-import datalog_parser
-import relational_database
-#import datalog_interpreter
+from lexical_analyzer import scan as lexical_scan
+from datalog_parser import DatalogProgram
+from relational_database import RDBMS
+# import datalog_interpreter
 
 # This is the cyclomatic complexity threshhold allowed for each function
+from tokens import TokenError
+
 COMPLEXITY_THRESHHOLD = 8
 
 # If there are no arguments, then print the help text
 if len(argv) == 1:
     argv.append("--help")
-    
+
 args = ArgumentParser(description="Test your binary against a python datalog parser")
 
 args.add_argument('-b', '--binary', help="Your binary file", default=None)
@@ -38,7 +41,6 @@ test_files = arg.test_files
 binary = arg.binary
 part = int(arg.part)
 code_directory = arg.compile
-
 
 sources = [os_path.join(code_directory, x) for x in listdir(arg.compile) if x.endswith('.cpp') or x.endswith('.h')]
 
@@ -59,7 +61,6 @@ if code_directory:
         pass
     else:
         check_call("g++ -std=c++11 -o %s -g -Wall %s" % (binary, " ".join(sources)), shell=True)
-
 
 tests_total = 0
 tests_passed = 0
@@ -93,14 +94,42 @@ for test in test_files:
         # Compute the correct output from the python script
         # TODO save the correct output to a pickle file to lower my runtime?
         if lab == 1:
-            lex = lexical_scan(test, ignore_comments=False)
+            lex = lexical_scan(test, ignore_comments=False, ignore_whitespace=False)
             for line in lex:
                 expected = expected + str(line) + "\n"
             expected = expected + ("Total Tokens = %s\n" % len(lex))
         elif lab == 2:
-            expected = datalog_parser.main(test, part=part, debug=False)
+            expected = "Success!\n"
+
+            tokens = lexical_scan(test, ignore_comments=True, ignore_whitespace=True)
+
+            # Ignore traces on token errors
+            try:
+                datalog = DatalogProgram(tokens)
+                if part == 2:
+                    expected += str(datalog)
+            except TokenError as t:
+                expected = 'Failure!\n  {}'.format(t)
         elif lab == 3:
-            expected = relational_database.main(test, part=part, debug=False)
+            # Create class objects
+            tokens = lexical_scan(test)
+
+            try:
+                datalog = DatalogProgram(tokens)
+                relations = OrderedDict()
+                rdbms = RDBMS(datalog, rdbms=relations)
+
+                for datalog_query in datalog.queries.queries:
+                    relations[datalog_query] = set()
+                    for r in rdbms.evaluate_query(datalog_query):
+                        if r.tuples:
+                            for t in r.tuples:
+                                relations[datalog_query].add(t)
+
+                expected = str(rdbms)
+            except TokenError as t:
+                expected = 'Failure!\n  {}'.format(t)
+
         elif lab == 4:
             expected = datalog_interpreter.main(test, part=part, debug=False)
         elif lab == 5:

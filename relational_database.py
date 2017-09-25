@@ -350,110 +350,6 @@ class RDBMS:
         return str(self)
 
 
-def main(d_file: str, part: int = 2, debug: bool = False):
-    result = ""
-    if not (1 <= part <= 2):
-        raise ValueError("Part must be either 1 or 2")
-
-    logger.debug("Parsing '%s'" % d_file)
-
-    # Create class objects
-    tokens = lexical_analyzer.scan(d_file)
-
-    if debug:
-        datalog = datalog_parser.DatalogProgram(tokens)
-    else:
-        try:
-            datalog = datalog_parser.DatalogProgram(tokens)
-        except TokenError as t:
-            return 'Failure!\n  {}'.format(t)
-
-    relations = OrderedDict()
-    rdbms = RDBMS(datalog, rdbms=relations)
-
-    for datalog_query in datalog.queries.queries:
-        relations[datalog_query] = set()
-        for r in rdbms.evaluate_query(datalog_query):
-            if r.tuples:
-                for t in r.tuples:
-                    relations[datalog_query].add(t)
-
-    if part == 1:
-        # This is the same thing that comes from evaluate queries, but we are going to stop at each point and print
-        one_query = datalog.queries.queries[0]
-        assert isinstance(one_query, datalog_parser.Predicate)
-        # Each query contains a set of relations
-        relations[one_query] = set()
-        relation = relations[one_query]
-        assert isinstance(relation, set)
-        # select, project, then rename
-        one_selected = rdbms.relations
-        one_project_columns = list()
-        one_new_names = list()
-        one_i = 0
-        # Perform the select operation
-        for p in one_query.parameterList:
-            assert isinstance(p, datalog_parser.Parameter)
-            if p.expression:
-                result += "I can't evaluate expressions yet\n"
-            else:  # It is a string or id
-                if p.string_id.type == TokenType.STRING:
-                    if one_selected and one_selected[0].name:
-                        one_selected = rdbms.select(relations=one_selected, index=one_i, name=one_query.id,
-                                                    value=p.string_id)
-                elif p.string_id.type == TokenType.ID:
-                    one_project_columns.append(one_i)
-                    one_new_names.append(p.string_id)
-            one_i += 1
-
-        # Print original database
-        result += (str(one_query) + "? ")
-        if rdbms.relations:
-            result += ("Yes(" + str(len(rdbms.relations[0].tuples)) + ")\n")
-            for r in sorted(rdbms.relations[0].tuples):
-                result += ("  " + str(r)) + "\n"
-        else:
-            result += "No"
-
-        # Print after select
-        result += "AFTER SELECT\n"
-        result += (str(one_query) + "? ")
-        if one_selected:
-            result += ("Yes(" + str(len(one_selected[0].tuples)) + ")\n")
-            for r in sorted(one_selected[0].tuples):
-                result += ("  " + str(r)) + "\n"
-        else:
-            result += "No"
-
-        # Print after project
-        result += "AFTER PROJECT\n"
-        result += (str(one_query) + "? ")
-        one_projected = rdbms.project(one_selected, one_query.id, one_project_columns)
-        if one_projected:
-            result += ("Yes(" + str(len(one_projected[0].tuples)) + ")\n")
-            for r in sorted(one_projected[0].tuples):
-                result += ("  " + str(r)) + "\n"
-        else:
-            result += "No"
-
-        # Print after rename
-        result += "AFTER RENAME\n"
-        result += (str(one_query) + "? ")
-        one_renamed = rdbms.rename(one_projected, one_query.id, one_new_names)
-        one_renamed = rdbms.project(one_renamed, one_query.id, one_project_columns)
-        if one_renamed:
-            result += ("Yes(" + str(len(one_renamed[0].tuples)) + ")\n")
-            for r in sorted(one_renamed[0].tuples):
-                result += ("  " + str(r)) + "\n"
-        else:
-            result += "No"
-        result.rstrip("\n")
-
-    else:
-        result += (str(rdbms))
-    return result
-
-
 if __name__ == "__main__":
     """
     For part 1, this will perform single select, project, and rename operations for the file provided.  
@@ -472,4 +368,27 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.ERROR)
     logger.setLevel(int(args.debug))
 
-    print(main(args.file, part=int(args.part), debug=True))
+    logger.debug("Parsing '%s'" % args.file)
+
+    # Create class objects
+    tokens = lexical_analyzer.scan(args.file)
+
+    if args.debug:
+        datalog = datalog_parser.DatalogProgram(tokens)
+    else:
+        try:
+            datalog = datalog_parser.DatalogProgram(tokens)
+        except TokenError as t:
+            print('Failure!\n  {}'.format(t))
+
+    relations = OrderedDict()
+    rdbms = RDBMS(datalog, rdbms=relations)
+
+    for datalog_query in datalog.queries.queries:
+        relations[datalog_query] = set()
+        for r in rdbms.evaluate_query(datalog_query):
+            if r.tuples:
+                for t in r.tuples:
+                    relations[datalog_query].add(t)
+
+    print(str(rdbms))

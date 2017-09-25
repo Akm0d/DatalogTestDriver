@@ -534,32 +534,6 @@ Expression.grammar = [
 ]
 
 
-def main(d_file: str, part: int = 2, debug: bool = False):
-    result = "Success!\n"
-
-    if not (1 <= part <= 2):
-        raise ValueError("Part must be either 1 or 2")
-
-    logger.debug("Parsing '%s'" % d_file)
-
-    tokens = lexical_analyzer.scan(d_file)
-
-    if debug:
-        # Print out traces on token errors
-        datalog = DatalogProgram(tokens)
-        if part == 2:
-            result += str(datalog)
-    else:
-        # Ignore traces on token errors
-        try:
-            datalog = DatalogProgram(tokens)
-            if part == 2:
-                result += str(datalog)
-        except TokenError as t:
-            return 'Failure!\n  %s' % str(t)
-    return result
-
-
 if __name__ == "__main__":
     """
     Run the datalog parser by itself and produce the proper output
@@ -568,11 +542,26 @@ if __name__ == "__main__":
 
     arg = ArgumentParser(description="Run the datalog parser, this will produce output for lab 2")
     arg.add_argument('-d', '--debug', help="The logging debug level to use", default=logging.NOTSET, metavar='LEVEL')
-    arg.add_argument('-p', '--part', help='A 1 or a 2.  Defaults to 2', default=2)
     arg.add_argument('file', help='datalog file to parse')
     args = arg.parse_args()
 
     logging.basicConfig(level=logging.ERROR)
     logger.setLevel(int(args.debug))
 
-    print(str(main(args.file, part=int(args.part), debug=True)))
+    result = "Success!\n"
+
+    logger.debug("Parsing '%s'" % args.file)
+
+    tokens = lexical_analyzer.scan(args.file)
+
+    if args.debug:
+        # Print out traces on token errors
+        datalog = DatalogProgram(tokens)
+        result += str(datalog)
+    else:
+        # Ignore traces on token errors
+        try:
+            datalog = DatalogProgram(tokens)
+            result += str(datalog)
+        except TokenError as t:
+            print('Failure!\n  {}'.format(t))
