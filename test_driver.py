@@ -94,7 +94,7 @@ for test in test_files:
         # Compute the correct output from the python script
         # TODO save the correct output to a pickle file to lower my runtime?
         if lab == 1:
-            lex = lexical_scan(test, ignore_comments=False, ignore_whitespace=False)
+            lex = lexical_scan(test, ignore_comments=False, ignore_whitespace=True)
             for line in lex:
                 expected = expected + str(line) + "\n"
             expected = expected + ("Total Tokens = %s\n" % len(lex))
