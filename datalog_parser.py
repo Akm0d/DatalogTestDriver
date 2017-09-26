@@ -304,6 +304,9 @@ class Parameter(Parser):
     def __bool__(self):
         return False if (self.string_id is None and self.expression is None) else True
 
+    def __gt__(self, other):
+        return str(self) > str(other)
+
 
 headPredicate = Scheme
 

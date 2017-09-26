@@ -8,6 +8,7 @@ import logging
 import lexical_analyzer
 
 logger = logging.getLogger(__name__)
+SINGLE_MATCH = 1
 
 
 class RDBMS:
@@ -40,9 +41,9 @@ class RDBMS:
 
         return Relation(result)
 
-    def evaluate_query(self, query: datalog_parser.Query) -> Relation:
+    def evaluate_query(self, query: datalog_parser.Query) -> Relation or int:
         logger.debug("Evaluating query: {}?".format(query))
-        logger.debug("Relation:\n{}".format(self.print_relation(self.relations[query.id])[1]))
+        logger.debug("Relation:\n{}".format(self.print_relation(self.relations[query.id])))
 
         keep_columns = list()
 
@@ -60,16 +61,19 @@ class RDBMS:
             elif p.string_id.type is TokenType.ID and i < max_keep:
                 keep_columns.append(i)
 
-        logger.debug("Selected:\n{}".format(self.print_relation(selected)[1]))
+        logger.debug("Selected:\n{}".format(self.print_relation(selected)))
+        if len(selected) == 1 and not keep_columns:
+            logger.debug("Returning Single Match")
+            return SINGLE_MATCH
 
         # PROJECT
         projected = selected.iloc[:, keep_columns]
-        logger.debug("Projected:\n{}".format(self.print_relation(projected)[1]))
+        logger.debug("Projected:\n{}".format(self.print_relation(projected)))
 
         # RENAME
         renamed = projected
         renamed.columns = [x for x in query.parameterList[:max_keep] if x.string_id and x.string_id.type is TokenType.ID]
-        logger.debug("Renamed:\n{}".format(self.print_relation(renamed)[1]))
+        logger.debug("Renamed:\n{}".format(self.print_relation(renamed)))
 
         # COMBINE
         # Make sure columns with the same name have the same values in each row
@@ -79,12 +83,14 @@ class RDBMS:
             dropna(how='all', axis=1). \
             dropna(how='any'). \
             reset_index(drop=True)
-        logger.debug("Joined:\n{}".format(self.print_relation(joined)[1]))
+        logger.debug("Joined:\n{}".format(self.print_relation(joined)))
         return joined
 
     @staticmethod
     def print_relation(relation: Relation) -> (int, str):
         rows = set()
+        if not relation.empty:
+            relation.drop_duplicates(inplace=True)
         for _, row in relation.iterrows():
             pairs = list()
             for index, item in row.iteritems():
@@ -94,7 +100,7 @@ class RDBMS:
                     index = index.string_id
                 pairs.append("{}={}".format(index.value, item.value))
             rows.add(", ".join(pairs))
-        return len(rows), "  " + "\n  ".join(sorted(rows))
+        return "  " + "\n  ".join(sorted(rows))
 
     def __str__(self) -> str:
         """
@@ -108,11 +114,13 @@ class RDBMS:
         for query in self.rdbms.keys():
             result += str(query) + "? "
 
-            if self.rdbms[query] is None or self.rdbms[query].empty:
+            if self.rdbms[query] is SINGLE_MATCH:
+                result += "Yes(1)\n"
+            elif self.rdbms[query] is None or self.rdbms[query].empty:
                 result += "No\n"
             else:
-                length, relation = self.print_relation(self.rdbms[query])
-                result += "Yes({})\n{}\n".format(length, relation)
+                self.rdbms[query].drop_duplicates(inplace=True)
+                result += "Yes({})\n{}\n".format(len(self.rdbms[query]), self.print_relation(self.rdbms[query]))
         return result
 
 
