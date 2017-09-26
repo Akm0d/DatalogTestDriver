@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 from collections import OrderedDict
 from pandas import DataFrame as Relation
-from tokens import TokenType, TokenError
+from tokens import TokenType, TokenError, Token
 
 import datalog_parser
 import logging
@@ -24,8 +24,7 @@ class RDBMS:
         for scheme in datalog_program.schemes.schemes:
             facts = [fact for fact in datalog_program.facts.facts if fact.id == scheme.id]
             self.relations[scheme.id] = (Relation(
-                # Chop off the tail end of facts that have more data than the schema asks for
-                data=[fact.stringList[:len(scheme.idList)] for fact in facts], columns=scheme.idList)
+                data=[fact.stringList for fact in facts])
             )
 
     @staticmethod
@@ -106,7 +105,9 @@ class RDBMS:
                     index = index[1].string_id
                 if isinstance(index, datalog_parser.Parameter):
                     index = index.string_id
-                pairs.append("{}={}".format(index.value, item.value))
+                pairs.append("{}={}".format(
+                    index.value if isinstance(index, Token) else None, item.value if isinstance(item, Token) else None)
+                )
             rows.add(", ".join(pairs))
         return "  " + "\n  ".join(sorted(rows))
 
