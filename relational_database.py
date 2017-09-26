@@ -49,13 +49,15 @@ class RDBMS:
         # SELECT
         # If a parameter is a string, then select the rows that match that string in the right columns
         selected = self.relations[query.id]
+        max_keep = len(next(selected.iterrows()))
+        logger.debug("Each row has {} items".format(max_keep))
         for i, p in enumerate(query.parameterList):
             if p.expression:
                 logger.warning("I don't know how to handle expressions yet")
             elif p.string_id.type is TokenType.STRING:
                 # Only keep rows that match
                 selected = selected.loc[selected.ix[:, i] == p.string_id]
-            elif p.string_id.type is TokenType.ID:
+            elif p.string_id.type is TokenType.ID and i < max_keep:
                 keep_columns.append(i)
 
         logger.debug("Selected:\n{}".format(self.print_relation(selected)))
@@ -66,7 +68,7 @@ class RDBMS:
 
         # RENAME
         renamed = projected
-        renamed.columns = [x for x in query.parameterList if x.string_id and x.string_id.type is TokenType.ID]
+        renamed.columns = [x for x in query.parameterList[:max_keep] if x.string_id and x.string_id.type is TokenType.ID]
         logger.debug("Renamed:\n{}".format(self.print_relation(renamed)))
 
         # COMBINE

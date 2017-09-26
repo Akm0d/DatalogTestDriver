@@ -16,33 +16,39 @@ from relational_database import RDBMS
 
 # This is the cyclomatic complexity threshhold allowed for each function
 from tokens import TokenError
+import logging
 
+logger = logging.getLogger(__name__)
 COMPLEXITY_THRESHHOLD = 8
 
 # If there are no arguments, then print the help text
 if len(argv) == 1:
     argv.append("--help")
 
-args = ArgumentParser(description="Test your binary against a python datalog parser")
+arg = ArgumentParser(description="Test your binary against a python datalog parser")
 
-args.add_argument('-b', '--binary', help="Your binary file", default=None)
-args.add_argument('-c', '--compile', help="The directory where your main.cpp can be found. "
+arg.add_argument('-b', '--binary', help="Your binary file", default=None)
+arg.add_argument('-c', '--compile', help="The directory where your main.cpp can be found. "
                                           "Supplying this argument also allows your code to be analyzed for "
                                           "cyclomatic complexity",
                   default=None
                   )
-args.add_argument('-l', '--lab', help="The lab number you are testing. Default is 5", default=5)
-args.add_argument('-p', '--part', help="The lab part you are testing. Default is 2", default=2)
-args.add_argument("test_files", nargs="+", help="The files that will be used in this test")
-arg = args.parse_args()
+arg.add_argument('-d', '--debug', help="The logging debug level to use", default=logging.NOTSET, metavar='LEVEL')
+arg.add_argument('-l', '--lab', help="The lab number you are testing. Default is 5", default=5)
+arg.add_argument('-p', '--part', help="The lab part you are testing. Default is 2", default=2)
+arg.add_argument("test_files", nargs="+", help="The files that will be used in this test")
+args = arg.parse_args()
 
-lab = int(arg.lab)
-test_files = arg.test_files
-binary = arg.binary
-part = int(arg.part)
-code_directory = arg.compile
+logging.basicConfig(level=logging.ERROR)
+logger.setLevel(int(args.debug))
 
-sources = [os_path.join(code_directory, x) for x in listdir(arg.compile) if x.endswith('.cpp') or x.endswith('.h')]
+lab = int(args.lab)
+test_files = args.test_files
+binary = args.binary
+part = int(args.part)
+code_directory = args.compile
+
+sources = [os_path.join(code_directory, x) for x in listdir(args.compile) if x.endswith('.cpp') or x.endswith('.h')]
 
 if not (1 <= lab <= 5):
     raise ValueError("Lab number must be an integer from 1 to 6")
