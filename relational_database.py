@@ -49,9 +49,10 @@ class RDBMS:
 
         # SELECT
         # If a parameter is a string, then select the rows that match that string in the right columns
-        selected = self.relations[query.id]
-        max_keep = len(next(selected.iterrows()))
-        logger.debug("Each row has {} items".format(max_keep))
+        selected = self.relations[query.id].drop_duplicates()
+        logger.debug("Shape: {}".format(selected.shape))
+        max_keep = selected.shape[1]
+
         for i, p in enumerate(query.parameterList):
             if p.expression:
                 logger.warning("I don't know how to handle expressions yet")
@@ -61,17 +62,24 @@ class RDBMS:
             elif p.string_id.type is TokenType.ID and i < max_keep:
                 keep_columns.append(i)
 
+        if not selected.empty:
+            selected = selected.drop_duplicates()
+
         logger.debug("Selected:\n{}".format(self.print_relation(selected)))
-        if len(selected) == 1 and not keep_columns:
+        if selected.shape[0] == 1 and not keep_columns:
             logger.debug("Returning Single Match")
             return SINGLE_MATCH
 
         # PROJECT
+        logger.debug("Keeping columns {}".format(", ".join([str(i) for i in keep_columns])))
         projected = selected.iloc[:, keep_columns]
         logger.debug("Projected:\n{}".format(self.print_relation(projected)))
 
         # RENAME
-        renamed = projected
+        if projected.empty:
+            renamed = projected
+        else:
+            renamed = projected.drop_duplicates()
         renamed.columns = [x for x in query.parameterList[:max_keep] if x.string_id and x.string_id.type is TokenType.ID]
         logger.debug("Renamed:\n{}".format(self.print_relation(renamed)))
 
@@ -90,7 +98,7 @@ class RDBMS:
     def print_relation(relation: Relation) -> (int, str):
         rows = set()
         if not relation.empty:
-            relation.drop_duplicates(inplace=True)
+            relation = relation.drop_duplicates()
         for _, row in relation.iterrows():
             pairs = list()
             for index, item in row.iteritems():
