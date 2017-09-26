@@ -116,15 +116,12 @@ for test in test_files:
 
             try:
                 datalog = DatalogProgram(tokens)
-                relations = OrderedDict()
-                rdbms = RDBMS(datalog, rdbms=relations)
+                assert isinstance(datalog, DatalogProgram)
+
+                rdbms = RDBMS(datalog)
 
                 for datalog_query in datalog.queries.queries:
-                    relations[datalog_query] = set()
-                    for r in rdbms.evaluate_query(datalog_query):
-                        if r.tuples:
-                            for t in r.tuples:
-                                relations[datalog_query].add(t)
+                    rdbms.rdbms[datalog_query] = rdbms.evaluate_query(datalog_query)
 
                 expected = str(rdbms)
             except TokenError as t:

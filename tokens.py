@@ -35,12 +35,12 @@ class TokenType(Enum):
     # This is a temporary token to make parsing easier
     EOF = re.compile('\Z')
 
-    def match(self, string):
+    def match(self, string) -> bool:
         match = self.value.match(string)
         logger.debug("'{}' {} {}".format(string, "matched" if match else "did not match", self.name))
         return match
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.name
 
 
@@ -116,26 +116,26 @@ class Token:
             self.value = s_input[0]
         logger.debug("Created token: {}".format(self).replace('\n', '\\n'))
 
-    def __str__(self):
+    def __str__(self) -> str:
         return '({},"{}",{})'.format(self.type, self.value, self.line_number)
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         # This is so that we can have sets of tokens
         return hash(self.value)
     
-    def __lt__(self, other):
+    def __lt__(self, other) -> bool:
         return self.value < other.value
     
-    def __gt__(self, other):
+    def __gt__(self, other) -> bool:
         return self.value > other.value
 
-    def __name__(self):
+    def __name__(self) -> bool:
         return self.type
 
-    def __eq__(self, other):
+    def __eq__(self, other) -> bool:
         return (self.type == other.type) and (self.value == other.value)
 
-    def __bool__(self):
+    def __bool__(self) -> bool:
         return True if self.value  else False
 
 

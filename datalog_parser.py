@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+from typing import List
+
 import lexical_analyzer
 import logging
 
@@ -37,7 +39,7 @@ class Parser:
         if root and self.unused_tokens:
             raise TokenError(self.get_token())
 
-    def _parse_unused_tokens(self, grammar: list = None, lazy: bool = False):
+    def _parse_unused_tokens(self, grammar: list = None, lazy: bool = False) -> List[Token]:
         """
         :param grammar: The grammar to use, if none, then it will default to the class grammar
         :param lazy: Don't raise any errors or remove from the list if the match fails
@@ -114,7 +116,7 @@ class Parser:
         if before != after:
             logger.debug("Put back Token: " + ColorDiff(after, before))
 
-    def get_token(self, lazy: bool = False):
+    def get_token(self, lazy: bool = False) -> Token:
         """
         :return: The top token from the list
         """

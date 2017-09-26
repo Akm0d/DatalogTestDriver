@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 import logging
-
 from tokens import Token, TokenType
+from typing import List
 
 logger = logging.getLogger("Lexical Analyzer")
 
 
-def scan(datalog_file: str, ignore_whitespace: bool =True, ignore_comments: bool=True):
+def scan(datalog_file: str, ignore_whitespace: bool =True, ignore_comments: bool=True) -> List[Token]:
     """
     :param ignore_comments: 
     :param ignore_whitespace:
