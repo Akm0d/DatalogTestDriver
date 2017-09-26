@@ -66,7 +66,10 @@ if code_directory:
         print("Unable to compile %s, make sure you are using a unix based operating system" % binary)
         pass
     else:
-        check_call("g++ -std=c++11 -o %s -g -Wall %s" % (binary, " ".join(sources)), shell=True)
+        command = "g++ -std=c++11 -o %s -g -Wall %s" % (binary, " ".join(sources))
+        logger.debug(command)
+        check_call(command, shell=True)
+        logger.debug("Creating binary '{}'".format(binary))
 
 tests_total = 0
 tests_passed = 0

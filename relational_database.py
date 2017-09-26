@@ -42,7 +42,7 @@ class RDBMS:
 
     def evaluate_query(self, query: datalog_parser.Query) -> Relation:
         logger.debug("Evaluating query: {}?".format(query))
-        logger.debug("Relation:\n{}".format(self.print_relation(self.relations[query.id])))
+        logger.debug("Relation:\n{}".format(self.print_relation(self.relations[query.id])[1]))
 
         keep_columns = list()
 
@@ -60,16 +60,16 @@ class RDBMS:
             elif p.string_id.type is TokenType.ID and i < max_keep:
                 keep_columns.append(i)
 
-        logger.debug("Selected:\n{}".format(self.print_relation(selected)))
+        logger.debug("Selected:\n{}".format(self.print_relation(selected)[1]))
 
         # PROJECT
         projected = selected.iloc[:, keep_columns]
-        logger.debug("Projected:\n{}".format(self.print_relation(projected)))
+        logger.debug("Projected:\n{}".format(self.print_relation(projected)[1]))
 
         # RENAME
         renamed = projected
         renamed.columns = [x for x in query.parameterList[:max_keep] if x.string_id and x.string_id.type is TokenType.ID]
-        logger.debug("Renamed:\n{}".format(self.print_relation(renamed)))
+        logger.debug("Renamed:\n{}".format(self.print_relation(renamed)[1]))
 
         # COMBINE
         # Make sure columns with the same name have the same values in each row
@@ -79,12 +79,12 @@ class RDBMS:
             dropna(how='all', axis=1). \
             dropna(how='any'). \
             reset_index(drop=True)
-        logger.debug("Joined:\n{}".format(self.print_relation(joined)))
+        logger.debug("Joined:\n{}".format(self.print_relation(joined)[1]))
         return joined
 
     @staticmethod
-    def print_relation(relation: Relation) -> str:
-        rows = list()
+    def print_relation(relation: Relation) -> (int, str):
+        rows = set()
         for _, row in relation.iterrows():
             pairs = list()
             for index, item in row.iteritems():
@@ -93,8 +93,8 @@ class RDBMS:
                 if isinstance(index, datalog_parser.Parameter):
                     index = index.string_id
                 pairs.append("{}={}".format(index.value, item.value))
-            rows.append(pairs)
-        return "  " + "\n  ".join([", ".join(r) for r in rows])
+            rows.add(", ".join(pairs))
+        return len(rows), "  " + "\n  ".join(sorted(rows))
 
     def __str__(self) -> str:
         """
@@ -111,9 +111,9 @@ class RDBMS:
             if self.rdbms[query] is None or self.rdbms[query].empty:
                 result += "No\n"
             else:
-                result += "Yes(" + str(len(self.rdbms[query])) + ")\n"
-                result += self.print_relation(self.rdbms[query]) + "\n"
-        return result.rstrip('\n')
+                length, relation = self.print_relation(self.rdbms[query])
+                result += "Yes({})\n{}\n".format(length, relation)
+        return result
 
 
 if __name__ == "__main__":
