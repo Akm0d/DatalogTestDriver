@@ -48,7 +48,9 @@ class RDBMS:
 
         # SELECT
         # If a parameter is a string, then select the rows that match that string in the right columns
-        selected = self.relations[query.id].drop_duplicates()
+        selected = self.relations[query.id]
+        if not selected.empty:
+            selected = selected.drop_duplicates()
         logger.debug("Shape: {}".format(selected.shape))
         max_keep = selected.shape[1]
 
@@ -57,7 +59,8 @@ class RDBMS:
                 logger.warning("I don't know how to handle expressions yet")
             elif p.string_id.type is TokenType.STRING:
                 # Only keep rows that match
-                selected = selected.loc[selected.ix[:, i] == p.string_id]
+                if not selected.empty:
+                    selected = selected.loc[selected.ix[:, i] == p.string_id]
             elif p.string_id.type is TokenType.ID and i < max_keep:
                 keep_columns.append(i)
 
