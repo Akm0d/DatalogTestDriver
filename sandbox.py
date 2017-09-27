@@ -49,13 +49,14 @@ class Sandbox(QWidget):
         self.setWindowTitle(self.title)
         self.setGeometry(self.left, self.top, self.width, self.height)
 
-        # Create Textbox
+        # Create Textboxes
+        splitter_text = QSplitter(Qt.Horizontal)
         # TODO add line numbers to the left side
         # TODO use vim keybindings
         self.textbox_input = QPlainTextEdit(self)
         self.textbox_input.textChanged.connect(self.analyzeInput)
 
-        # Output box
+        # TODO have a generator or something that combines each text widget with a label
         self.output_lab1 = QTextEdit()
         self.output_lab1.setReadOnly(True)
         self.output_lab1.setFrameStyle(QFrame.Sunken)
@@ -68,7 +69,44 @@ class Sandbox(QWidget):
         self.output_lab3.setReadOnly(True)
         self.output_lab3.setFrameStyle(QFrame.Sunken)
 
+        splitter_text.addWidget(self.textbox_input)
+        splitter_text.addWidget(self.output_lab1)
+        splitter_text.addWidget(self.output_lab2)
+        splitter_text.addWidget(self.output_lab3)
+        splitter_text.setSizes([200, 50, 100, 100])
+
+        # Check boxes
+        check_boxes = QListWidget()
+        lab_boxes = QListWidget()
+        self.check_whitespace = QListWidgetItem("Ignore Whitespace")
+        self.check_comments = QListWidgetItem("Ignore Comments")
+
+        self.check_whitespace.setCheckState(Qt.Unchecked)
+        self.check_comments.setCheckState(Qt.Unchecked)
+
+        check_boxes.addItem(self.check_comments)
+        check_boxes.addItem(self.check_whitespace)
+
+        check_boxes.clicked.connect(self.analyzeInput)
+        check_boxes.setMaximumHeight(60)
+
+        self.check_lab1 = QListWidgetItem("Lexical Analyzer")
+        self.check_lab2 = QListWidgetItem("Datalog Parser")
+        self.check_lab3 = QListWidgetItem("Relational Database")
+
+        self.check_lab1.setCheckState(Qt.Checked)
+        self.check_lab2.setCheckState(Qt.Checked)
+        self.check_lab3.setCheckState(Qt.Checked)
+
+        lab_boxes.addItem(self.check_lab1)
+        lab_boxes.addItem(self.check_lab2)
+        lab_boxes.addItem(self.check_lab3)
+
+        lab_boxes.clicked.connect(self.showHideLabs)
+        lab_boxes.setMaximumHeight(60)
+
         # Create buttons
+        button_row = QSplitter(Qt.Horizontal)
         # TODO have an evaluate rules and optimize rules button, they can be heavy
         self.button_toggle = QPushButton(self.state, self)
         self.button_toggle.clicked.connect(self.toggleParse)
@@ -76,27 +114,36 @@ class Sandbox(QWidget):
         button_save = QPushButton('Save', self)
         button_save.clicked.connect(self.saveDatalog)
 
-        # Configure Layout
-        h_splitter = QSplitter(Qt.Horizontal)
-        v_splitter = QSplitter(Qt.Vertical)
-        button_row = QSplitter(Qt.Horizontal)
-
-        v_splitter.addWidget(h_splitter)
-        h_splitter.addWidget(self.textbox_input)
-        h_splitter.addWidget(self.output_lab1)
-        h_splitter.addWidget(self.output_lab2)
-        h_splitter.addWidget(self.output_lab3)
-        h_splitter.setSizes([200, 50, 100, 100])
-
-        v_splitter.addWidget(button_row)
+        button_row.addWidget(lab_boxes)
+        button_row.addWidget(check_boxes)
         button_row.addWidget(self.button_toggle)
         button_row.addWidget(button_save)
 
+        # Main
+        splitter_main = QSplitter(Qt.Vertical)
+
+        splitter_main.addWidget(splitter_text)
+        splitter_main.addWidget(button_row)
+
         hbox = QHBoxLayout(self)
-        hbox.addWidget(v_splitter)
+        hbox.addWidget(splitter_main)
         self.setLayout(hbox)
 
         self.show()
+
+    def showHideLabs(self):
+        if self.check_lab1.checkState():
+            self.output_lab1.show()
+        else:
+            self.output_lab1.hide()
+        if self.check_lab2.checkState():
+            self.output_lab2.show()
+        else:
+            self.output_lab2.hide()
+        if self.check_lab3.checkState():
+            self.output_lab3.show()
+        else:
+            self.output_lab3.hide()
 
     def analyzeInput(self):
         if self.state == self.RUNNING:
@@ -104,8 +151,11 @@ class Sandbox(QWidget):
             textbox_value = self.textbox_input.toPlainText()
 
             # Run the lexical analyzer and print output
+            # TODO Have checkboxes for ignoring whitespace and comments
             tokens = lexical_analyzer.scan(
-                textbox_value, ignore_whitespace=False, ignore_comments=False
+                textbox_value,
+                ignore_whitespace=self.check_whitespace.checkState(),
+                ignore_comments=self.check_comments.checkState()
             )
             self.output_lab1.clear()
             self.output_lab1.append("\n".join(str(t) for t in tokens))
@@ -117,12 +167,13 @@ class Sandbox(QWidget):
                 datalog = datalog_parser.DatalogProgram(tokens)
                 result_lab2 += str(datalog)
                 # Create a relational database and print output
-                rdbms = relational_database.RDBMS(datalog)
+                if self.check_lab3.checkState():
+                    rdbms = relational_database.RDBMS(datalog)
 
-                for datalog_query in datalog.queries.queries:
-                    rdbms.rdbms[datalog_query] = rdbms.evaluate_query(datalog_query)
+                    for datalog_query in datalog.queries.queries:
+                        rdbms.rdbms[datalog_query] = rdbms.evaluate_query(datalog_query)
 
-                result_lab3 = str(rdbms)
+                    result_lab3 = str(rdbms)
 
             except TokenError as t:
                 result_lab2 = 'Failure!\n  {}'.format(t)
