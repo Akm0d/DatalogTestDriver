@@ -5,7 +5,7 @@ from lizard import analyze_file, FunctionInfo
 from os import path as os_path, name as os_name, listdir
 from re import compile as re_compile, MULTILINE
 from subprocess import TimeoutExpired, check_output, check_call, CalledProcessError
-from sys import argv
+from sys import argv, exit as sys_exit
 from termcolor import cprint
 from time import time
 
@@ -44,7 +44,7 @@ if args.sandbox:
     print("Starting sandbox command line interface")
     from sandbox import Sandbox
     sandbox = Sandbox(input_files=args.test_files)
-    exit(sandbox.run())
+    sys_exit(sandbox.run())
 
 
 logging.basicConfig(level=logging.ERROR)
