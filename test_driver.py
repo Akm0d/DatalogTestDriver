@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 from argparse import ArgumentParser
-from collections import OrderedDict
 from difflib import unified_diff
 from lizard import analyze_file, FunctionInfo
 from os import path as os_path, name as os_name, listdir
@@ -8,6 +7,7 @@ from re import compile as re_compile, MULTILINE
 from subprocess import TimeoutExpired, check_output, check_call, CalledProcessError
 from sys import argv
 from termcolor import cprint
+from time import time
 
 from lexical_analyzer import scan as lexical_scan
 from datalog_parser import DatalogProgram
@@ -21,6 +21,13 @@ import logging
 logger = logging.getLogger(__name__)
 COMPLEXITY_THRESHHOLD = 8
 
+# TODO Add a 'sandbox mode' where you get a shell and can add queries facts, schemes, or whatever on the fly
+# Make a query to immediately get back a response
+# Type a fact to add a fact
+# Save your sandbox to a text file that can be used for tests
+# Load sandbox
+# The sand box can use py-qt so that it is super friendly, or have the gui be an option or something
+
 # If there are no arguments, then print the help text
 if len(argv) == 1:
     argv.append("--help")
@@ -29,10 +36,9 @@ arg = ArgumentParser(description="Test your binary against a python datalog pars
 
 arg.add_argument('-b', '--binary', help="Your binary file", default=None)
 arg.add_argument('-c', '--compile', help="The directory where your main.cpp can be found. "
-                                          "Supplying this argument also allows your code to be analyzed for "
-                                          "cyclomatic complexity",
-                  default=None
-                  )
+                                         "Supplying this argument also allows your code to be analyzed for "
+                                         "cyclomatic complexity", default=None
+                 )
 arg.add_argument('-d', '--debug', help="The logging debug level to use", default=logging.NOTSET, metavar='LEVEL')
 arg.add_argument('-l', '--lab', help="The lab number you are testing. Default is 5", default=5)
 arg.add_argument('-p', '--part', help="The lab part you are testing. Default is 2", default=2)
@@ -73,6 +79,9 @@ if code_directory:
 
 tests_total = 0
 tests_passed = 0
+total_expected_runtime = 0
+total_actual_runtime = 0
+
 for test in test_files:
     tests_total += 1
     print('-' * 80)
@@ -86,6 +95,7 @@ for test in test_files:
     actual = None
     timeout = False
     if binary:
+        actual_runtime = time()
         if not binary[0] == '/':
             binary = "./" + binary
         # Wait at most 60 seconds for the binary to run
@@ -97,9 +107,12 @@ for test in test_files:
             timeout = True
         except CalledProcessError:
             cprint("Failed! Non-zero exit status", 'red')
+        actual_runtime = time() - actual_runtime
+        total_actual_runtime += actual_runtime
 
     if not timeout:
         expected = ''
+        expected_runtime = time()
         # Compute the correct output from the python script
         # TODO save the correct output to a pickle file to lower my runtime?
         if lab == 1:
@@ -140,6 +153,10 @@ for test in test_files:
             expected = datalog_interpreter.main(test, part=part, debug=False)
         elif lab == 5:
             print("Lab %s part %s has not yet been implemented" % (str(lab), str(part)))
+        expected_runtime = time() - expected_runtime
+        total_expected_runtime += expected_runtime
+        logger.info("Student runtime: {}".format(actual_runtime))
+        logger.info("Maximum runtime: {}".format(expected_runtime))
 
         if actual == expected:
             tests_passed += 1
@@ -241,3 +258,13 @@ if binary:
         cprint("Failed: {}".format(tests_failed), 'red' if tests_failed else 'green')
         if code_directory:
             cprint('Complex Functions: {}'.format(len(complex_functions)), 'red' if complex_functions else 'green')
+        logger.debug("Student Total runtime: {} ms".format(total_actual_runtime))
+        logger.debug("Maximum Total runtime: {} ms".format(total_expected_runtime))
+        runtime_score = (total_expected_runtime - total_actual_runtime) / total_actual_runtime
+        logger.debug("Raw runtime score: {}".format(runtime_score))
+        if runtime_score < 0:
+            runtime_score = 0
+        if runtime_score > 1:
+            runtime_score = 1.05
+
+        cprint('Runtime Score: {0:.1f}%'.format(runtime_score * 100), 'red' if runtime_score < 1 else 'green')
