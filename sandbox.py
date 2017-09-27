@@ -159,6 +159,7 @@ class Sandbox(QWidget):
             )
             self.output_lab1.clear()
             self.output_lab1.append("\n".join(str(t) for t in tokens))
+            self.output_lab1.append("Total Tokens = %s\n" % len(tokens))
 
             # Run the datalog parser and print output
             result_lab2 = "Success!\n"
