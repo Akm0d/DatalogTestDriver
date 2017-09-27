@@ -117,15 +117,18 @@ class Token:
         logger.debug("Created token: {}".format(self).replace('\n', '\\n'))
 
     def __str__(self) -> str:
-        return '({},"{}",{})'.format(self.type, self.value, self.line_number)
+        return '({},"{}",{})'.format(
+            self.type,
+            self.value,  # .replace('\'\'', '\''),
+            self.line_number)
 
     def __hash__(self) -> int:
         # This is so that we can have sets of tokens
         return hash(self.value)
-    
+
     def __lt__(self, other) -> bool:
         return self.value < other.value
-    
+
     def __gt__(self, other) -> bool:
         return self.value > other.value
 
