@@ -162,7 +162,7 @@ for test in test_files:
         logger.info("Student runtime: {}".format(actual_runtime))
         logger.info("Maximum runtime: {}".format(expected_runtime))
 
-        if actual == expected:
+        if actual.rstrip() == expected.rstrip():
             tests_passed += 1
             cprint("Passed", "green")
         else:
@@ -260,15 +260,15 @@ if binary:
         cprint("Passed: {}".format(tests_passed), 'green' if tests_passed else 'red')
         tests_failed = tests_total - tests_passed
         cprint("Failed: {}".format(tests_failed), 'red' if tests_failed else 'green')
-        if code_directory:
-            cprint('Complex Functions: {}'.format(len(complex_functions)), 'red' if complex_functions else 'green')
-        logger.debug("Student Total runtime: {} ms".format(total_actual_runtime))
-        logger.debug("Maximum Total runtime: {} ms".format(total_expected_runtime))
-        runtime_score = (total_expected_runtime - total_actual_runtime) / total_actual_runtime
-        logger.debug("Raw runtime score: {}".format(runtime_score))
-        if runtime_score < 0:
-            runtime_score = 0
-        if runtime_score > 1:
-            runtime_score = 1.05
+    if code_directory:
+        cprint('Complex Functions: {}'.format(len(complex_functions)), 'red' if complex_functions else 'green')
+    logger.debug("Student Total runtime: {} ms".format(total_actual_runtime))
+    logger.debug("Maximum Total runtime: {} ms".format(total_expected_runtime))
+    runtime_score = (total_expected_runtime - total_actual_runtime) / total_actual_runtime
+    logger.debug("Raw runtime score: {}".format(runtime_score))
+    if runtime_score < 0:
+        runtime_score = 0
+    if runtime_score > 1:
+        runtime_score = 1.05
 
-        cprint('Runtime Score: {0:.1f}%'.format(runtime_score * 100), 'red' if runtime_score < 1 else 'green')
+    cprint('Runtime Score: {0:.1f}%'.format(runtime_score * 100), 'red' if runtime_score < 1 else 'green')

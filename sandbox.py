@@ -43,7 +43,12 @@ class Sandbox(QWidget):
         self.initUI()
         self.analyzeInput()
 
-        # TODO Initialize Datalog Program
+        # TODO import each file as a datalog program and add it to the master datalog program
+        input_datalog = None
+        for i in input_files:
+            # TODO add a method for concatenating datalog programs
+            pass
+        self.textbox_input.appendPlainText("foo")
 
     def initUI(self):
         self.setWindowTitle(self.title)
