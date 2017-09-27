@@ -297,7 +297,9 @@ if binary:
         runtime_grade = 'D'
     elif runtime_score > 0.49:
         runtime_grade = 'D-'
-    else:
+    elif runtime_score > 0:
         runtime_grade = 'F'
+    else:
+        runtime_grade = 'E'
 
     cprint('Runtime Score: {}'.format(runtime_grade), 'red' if runtime_score < 0.5 else 'green')
