@@ -271,4 +271,33 @@ if binary:
     if runtime_score > 1:
         runtime_score = 1.05
 
-    cprint('Runtime Score: {0:.1f}%'.format(runtime_score * 100), 'red' if runtime_score < 1 else 'green')
+    if runtime_score > 1:
+        runtime_grade = 'S+'
+    elif runtime_score > 0.97:
+        runtime_grade = 'A+'
+    elif runtime_score > 0.93:
+        runtime_grade = 'A'
+    elif runtime_score > 0.89:
+        runtime_grade = 'A-'
+    elif runtime_score > 0.87:
+        runtime_grade = 'B+'
+    elif runtime_score > 0.83:
+        runtime_grade = 'B'
+    elif runtime_score > 0.79:
+        runtime_grade = 'B-'
+    elif runtime_score > 0.77:
+        runtime_grade = 'C+'
+    elif runtime_score > 0.73:
+        runtime_grade = 'C'
+    elif runtime_score > 0.79:
+        runtime_grade = 'C-'
+    elif runtime_score > 0.67:
+        runtime_grade = 'D+'
+    elif runtime_score > 0.53:
+        runtime_grade = 'D'
+    elif runtime_score > 0.49:
+        runtime_grade = 'D-'
+    else:
+        runtime_grade = 'F'
+
+    cprint('Runtime Score: {}'.format(runtime_grade), 'red' if runtime_score < 0.5 else 'green')
