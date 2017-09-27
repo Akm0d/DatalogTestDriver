@@ -44,8 +44,7 @@ if args.sandbox:
     print("Starting sandbox command line interface")
     from sandbox import Sandbox
     sandbox = Sandbox(input_files=args.test_files)
-    sandbox.run()
-    exit(0)
+    exit(sandbox.run())
 
 
 logging.basicConfig(level=logging.ERROR)

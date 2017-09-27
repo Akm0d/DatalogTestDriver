@@ -42,6 +42,9 @@ class RDBMS:
 
     def evaluate_query(self, query: datalog_parser.Query) -> Relation or int:
         logger.debug("Evaluating query: {}?".format(query))
+        if self.relations.get(query.id, None) is None:
+            # Create the Query if it doesn't exist
+            self.relations[query.id] = Relation()
         logger.debug("Relation:\n{}".format(self.print_relation(self.relations[query.id])))
 
         keep_columns = list()

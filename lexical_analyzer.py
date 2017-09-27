@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
 import logging
+
+from os import path
+
 from tokens import Token, TokenType
 from typing import List
 
@@ -15,8 +18,11 @@ def scan(datalog_file: str, ignore_whitespace: bool =True, ignore_comments: bool
     """
     tokens = list()
 
-    with open(datalog_file) as datalog_file_stream:
-        file_string = "".join([line for line in datalog_file_stream])
+    if path.exists(datalog_file):
+        with open(datalog_file) as datalog_file_stream:
+            file_string = "".join([line for line in datalog_file_stream])
+    else:
+        file_string = datalog_file
 
     line_number = 1
     while file_string:

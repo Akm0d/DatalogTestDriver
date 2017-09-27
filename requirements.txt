@@ -1,3 +1,4 @@
+PyQT5
 appdirs==1.4.3
 lizard==1.12.10
 orderedset==2.0
