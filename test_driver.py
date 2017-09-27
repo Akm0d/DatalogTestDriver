@@ -21,13 +21,6 @@ import logging
 logger = logging.getLogger(__name__)
 COMPLEXITY_THRESHHOLD = 8
 
-# TODO Add a 'sandbox mode' where you get a shell and can add queries facts, schemes, or whatever on the fly
-# Make a query to immediately get back a response
-# Type a fact to add a fact
-# Save your sandbox to a text file that can be used for tests
-# Load sandbox
-# The sand box can use py-qt so that it is super friendly, or have the gui be an option or something
-
 # If there are no arguments, then print the help text
 if len(argv) == 1:
     argv.append("--help")
@@ -42,14 +35,26 @@ arg.add_argument('-c', '--compile', help="The directory where your main.cpp can 
 arg.add_argument('-d', '--debug', help="The logging debug level to use", default=logging.NOTSET, metavar='LEVEL')
 arg.add_argument('-l', '--lab', help="The lab number you are testing. Default is 5", default=5)
 arg.add_argument('-p', '--part', help="The lab part you are testing. Default is 2", default=2)
-arg.add_argument("test_files", nargs="+", help="The files that will be used in this test")
+arg.add_argument('--sandbox', action='store_true', default=False,
+                 help="Run the sandbox utility.")
+arg.add_argument("test_files", nargs="*", help="The files that will be used in this test")
 args = arg.parse_args()
+
+if args.sandbox:
+    print("Starting sandbox command line interface")
+    from sandbox import Sandbox
+    sandbox = Sandbox(input_files=args.test_files)
+    sandbox.run()
+    exit(0)
+
 
 logging.basicConfig(level=logging.ERROR)
 logger.setLevel(int(args.debug))
 
 lab = int(args.lab)
 test_files = args.test_files
+if not test_files:
+    raise FileNotFoundError("No test files provided")
 binary = args.binary
 part = int(args.part)
 code_directory = args.compile
