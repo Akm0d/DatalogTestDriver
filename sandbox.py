@@ -16,15 +16,6 @@ logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.ERROR)
 
 
-# TODO Add a 'sandbox mode' where you get a shell and can add queries facts, schemes, or whatever on the fly
-# Make a query to immediately get back a response
-# Type a fact to add a fact
-# Save your sandbox to a text file that can be used for tests
-# Load sandbox
-# The sand box can use py-qt so that it is super friendly, or have the gui be an option or something
-
-
-# noinspection PyAttributeOutsideInit
 class Sandbox(QWidget):
     PAUSED = "Paused"
     RUNNING = "Running"
@@ -55,7 +46,7 @@ class Sandbox(QWidget):
                     input_datalog += new_datalog
             except TokenError as t:
                 logger.debug(t)
-        self.textbox_input.appendPlainText(input_datalog.print_datalog_file())
+        self.textbox_input.appendPlainText(input_datalog.print_datalog_file() if input_datalog else '')
 
     def initUI(self):
         self.setWindowTitle(self.title)

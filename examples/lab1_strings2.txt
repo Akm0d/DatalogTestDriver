@@ -1,0 +1,15 @@
+#This test tests valid strings
+'This is a string'
+''
+''''
+''''''
+'frank'
+'''frank'
+'''frank'''
+'''''frank'
+'{}[]!@#$%^&*'
+'''bob'
+' ''bob'
+''
+'bob'
+
