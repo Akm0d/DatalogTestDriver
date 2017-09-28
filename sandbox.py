@@ -46,9 +46,16 @@ class Sandbox(QWidget):
         # TODO import each file as a datalog program and add it to the master datalog program
         input_datalog = None
         for i in input_files:
-            # TODO add a method for concatenating datalog programs
-            pass
-        self.textbox_input.appendPlainText("foo")
+            tokens = lexical_analyzer.scan(i)
+            try:
+                new_datalog = datalog_parser.DatalogProgram(tokens)
+                if input_datalog is None:
+                    input_datalog = new_datalog
+                else:
+                    input_datalog += new_datalog
+            except TokenError as t:
+                logger.debug(t)
+        self.textbox_input.appendPlainText(input_datalog.print_datalog_file())
 
     def initUI(self):
         self.setWindowTitle(self.title)
@@ -113,6 +120,7 @@ class Sandbox(QWidget):
         # Create buttons
         button_row = QSplitter(Qt.Horizontal)
         # TODO have an evaluate rules and optimize rules button, they can be heavy
+        # TODO Or just time them out if they run too long
         self.button_toggle = QPushButton(self.state, self)
         self.button_toggle.clicked.connect(self.toggleParse)
 
@@ -165,30 +173,32 @@ class Sandbox(QWidget):
             self.output_lab1.clear()
             self.output_lab1.append("\n".join(str(t) for t in tokens))
             self.output_lab1.append("Total Tokens = %s\n" % len(tokens))
+            result_lab3 = ''
 
             # Run the datalog parser and print output
-            result_lab2 = "Success!\n"
-            tokens = lexical_analyzer.scan(textbox_value, ignore_comments=True, ignore_whitespace=True)
-            try:
-                datalog = datalog_parser.DatalogProgram(tokens)
-                result_lab2 += str(datalog)
-                # Create a relational database and print output
-                if self.check_lab3.checkState():
-                    rdbms = relational_database.RDBMS(datalog)
+            if self.check_lab2.checkState() or self.check_lab3.checkState():
+                result_lab2 = "Success!\n"
+                tokens = lexical_analyzer.scan(textbox_value, ignore_comments=True, ignore_whitespace=True)
+                try:
+                    datalog = datalog_parser.DatalogProgram(tokens)
+                    result_lab2 += str(datalog)
+                    # Create a relational database and print output
+                    if self.check_lab3.checkState():
+                        rdbms = relational_database.RDBMS(datalog)
 
-                    for datalog_query in datalog.queries.queries:
-                        rdbms.rdbms[datalog_query] = rdbms.evaluate_query(datalog_query)
+                        for datalog_query in datalog.queries.queries:
+                            rdbms.rdbms[datalog_query] = rdbms.evaluate_query(datalog_query)
 
-                    result_lab3 = str(rdbms)
+                        result_lab3 = str(rdbms)
 
-            except TokenError as t:
-                result_lab2 = 'Failure!\n  {}'.format(t)
-                result_lab3 = 'Failure!\n  {}'.format(t)
-            self.output_lab2.clear()
-            self.output_lab2.append(result_lab2)
+                except TokenError as t:
+                    result_lab2 = 'Failure!\n  {}'.format(t)
+                    result_lab3 = 'Failure!\n  {}'.format(t)
+                self.output_lab2.clear()
+                self.output_lab2.append(result_lab2)
 
-            self.output_lab3.clear()
-            self.output_lab3.append(result_lab3)
+                self.output_lab3.clear()
+                self.output_lab3.append(result_lab3)
 
     def toggleParse(self):
         if self.state == self.PAUSED:

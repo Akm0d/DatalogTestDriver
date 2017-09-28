@@ -428,6 +428,21 @@ class DatalogProgram(Parser):
         for fact in self.facts.facts:
             self.domain |= fact.domain
 
+    def __add__(self, other):
+        self.schemes.schemes += other.schemes.schemes
+        self.facts.facts += other.facts.facts
+        self.rules.rules += other.rules.rules
+        self.queries.queries += other.queries.queries
+        return self
+
+    def print_datalog_file(self)->str:
+        return 'Schemes:\n  {}\nFacts:\n  {}\nRules:\n  {}\nQueries:\n  {}'.format(
+            "\n  ".join(sorted(set(str(s) for s in self.schemes.schemes))),
+            "\n  ".join(sorted(set(str(s) for s in self.facts.facts))),
+            "\n  ".join(sorted(set(str(s) for s in self.rules.rules))),
+            "\n  ".join(sorted(set(str(s) + '?' for s in self.queries.queries))),
+        )
+
     def __str__(self):
         return '{}{}\n{}\n{}\n{}'.format(
             self.schemes,
