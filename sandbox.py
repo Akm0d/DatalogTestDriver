@@ -3,9 +3,11 @@ import logging
 import sys
 
 from argparse import ArgumentParser
+from os import path
 from typing import List
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import *
+from subprocess import check_output
 
 import lexical_analyzer
 import datalog_parser
@@ -15,12 +17,18 @@ from tokens import TokenError
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.ERROR)
 
+temp_file = path.join(path.abspath('.'), '.input.tmp')
+
 
 class Sandbox(QWidget):
     PAUSED = "Paused"
     RUNNING = "Running"
 
-    def __init__(self, input_files: List[str] = None):
+    def __init__(self, input_files: List[str] = None,
+                 lab1_binary: str = None, lab2_binary: str = None, lab3_binary: str = None):
+        self.binary_lab1 = lab1_binary if path.isfile(str(lab1_binary)) else None
+        self.binary_lab2 = lab2_binary if path.isfile(str(lab2_binary)) else None
+        self.binary_lab3 = lab3_binary if path.isfile(str(lab3_binary)) else None
         # Set up QT5
         self.state = self.RUNNING
         self.app = QApplication(sys.argv)
@@ -72,10 +80,25 @@ class Sandbox(QWidget):
         self.output_lab3.setReadOnly(True)
         self.output_lab3.setFrameStyle(QFrame.Sunken)
 
+        self.student_output_lab1 = QTextEdit()
+        self.student_output_lab1.setReadOnly(True)
+        self.student_output_lab1.setFrameStyle(QFrame.Sunken)
+
+        self.student_output_lab2 = QTextEdit()
+        self.output_lab2.setReadOnly(True)
+        self.output_lab2.setFrameStyle(QFrame.Sunken)
+
+        self.student_output_lab3 = QTextEdit()
+        self.output_lab3.setReadOnly(True)
+        self.output_lab3.setFrameStyle(QFrame.Sunken)
+
         splitter_text.addWidget(self.textbox_input)
         splitter_text.addWidget(self.output_lab1)
+        splitter_text.addWidget(self.student_output_lab1)
         splitter_text.addWidget(self.output_lab2)
+        splitter_text.addWidget(self.student_output_lab2)
         splitter_text.addWidget(self.output_lab3)
+        splitter_text.addWidget(self.student_output_lab3)
         splitter_text.setSizes([200, 50, 100, 100])
 
         # Check boxes
@@ -138,21 +161,29 @@ class Sandbox(QWidget):
     def showHideLabs(self):
         if self.check_lab1.checkState():
             self.output_lab1.show()
+            self.student_output_lab1.show()
         else:
             self.output_lab1.hide()
+            self.student_output_lab1.hide()
         if self.check_lab2.checkState():
             self.output_lab2.show()
+            self.student_output_lab2.show()
         else:
             self.output_lab2.hide()
+            self.student_output_lab2.hide()
         if self.check_lab3.checkState():
             self.output_lab3.show()
+            self.student_output_lab3.show()
         else:
             self.output_lab3.hide()
+            self.student_output_lab3.hide()
 
     def analyzeInput(self):
         if self.state == self.RUNNING:
             # Get input textbox
             textbox_value = self.textbox_input.toPlainText()
+            with open(temp_file, 'w+') as temp:
+                temp.write(textbox_value)
 
             # Run the lexical analyzer and print output
             # TODO Have checkboxes for ignoring whitespace and comments
@@ -161,10 +192,16 @@ class Sandbox(QWidget):
                 ignore_whitespace=self.check_whitespace.checkState(),
                 ignore_comments=self.check_comments.checkState()
             )
+
             self.output_lab1.clear()
             self.output_lab1.append("\n".join(str(t) for t in tokens))
             self.output_lab1.append("Total Tokens = %s\n" % len(tokens))
             result_lab3 = ''
+
+            self.student_output_lab1.clear()
+            self.student_output_lab1.append(
+                str(check_output("%s %s" % (self.binary_lab1, temp_file), shell=True, timeout=2), 'utf-8')
+            )
 
             # Run the datalog parser and print output
             if self.check_lab2.checkState() or self.check_lab3.checkState():
@@ -223,6 +260,11 @@ if __name__ == '__main__':
     # Parse command line options
     arg = ArgumentParser(description="Experiment with Datalog")
     arg.add_argument('-d', '--debug', help="The logging debug level to use", default=logging.NOTSET, metavar='LEVEL')
+    arg.add_argument('--lab-1', help="Path to a lexical analyzer binary", default=None)
+    arg.add_argument('--lab-2', help="Path to a datalog parser binary", default=None)
+    arg.add_argument('--lab-3', help="Path to a relational database binary", default=None)
+    arg.add_argument('--lab-4', help="Path to a datalog interpeter binary", default=None)
+    arg.add_argument('--lab-5', help="Path to a rule optimizer binary", default=None)
     arg.add_argument("test_files", nargs="*", help="The files that will be used in this test")
     args = arg.parse_args()
 
@@ -230,5 +272,6 @@ if __name__ == '__main__':
     logger.setLevel(int(args.debug))
 
     # Start application
-    sandbox = Sandbox(input_files=args.test_files)
+    sandbox = Sandbox(input_files=args.test_files, lab1_binary=args.lab_1, lab2_binary=args.lab_2,
+                      lab3_binary=args.lab_3)
     exit(sandbox.run())
