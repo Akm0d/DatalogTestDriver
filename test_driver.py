@@ -135,7 +135,9 @@ for test in test_files:
                 if part == 2:
                     expected += str(datalog)
             except TokenError as t:
-                expected = 'Failure!\n  {}'.format(t)
+                expected = 'Failure!\n'
+                if part == 2:
+                    expected += '  {}'.format(t)
         elif lab == 3:
             # Create class objects
             tokens = lexical_scan(test)

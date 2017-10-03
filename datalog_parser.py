@@ -562,6 +562,7 @@ if __name__ == "__main__":
 
     arg = ArgumentParser(description="Run the datalog parser, this will produce output for lab 2")
     arg.add_argument('-d', '--debug', help="The logging debug level to use", default=logging.NOTSET, metavar='LEVEL')
+    arg.add_argument('-p', '--part', help="The lab part number", default=2, type=int)
     arg.add_argument('file', help='datalog file to parse')
     args = arg.parse_args()
 
@@ -571,17 +572,23 @@ if __name__ == "__main__":
     result = "Success!\n"
 
     logger.debug("Parsing '%s'" % args.file)
+    part = int(args.part)
+
+    logger.info("Running test on lab 2 part {}".format(part))
 
     tokens = lexical_analyzer.scan(args.file)
 
     if args.debug:
         # Print out traces on token errors
         datalog = DatalogProgram(tokens)
-        result += str(datalog)
+        if part == 2:
+            result += str(datalog)
     else:
         # Ignore traces on token errors
         try:
             datalog = DatalogProgram(tokens)
             result += str(datalog)
         except TokenError as t:
-            print('Failure!\n  {}'.format(t))
+            result = 'Failure!\n'
+            if part == 2:
+                result += '  {}'.format(t)
