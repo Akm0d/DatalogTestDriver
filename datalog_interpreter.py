@@ -1,17 +1,18 @@
 #!/usr/bin/env python3
-from ast import literal_eval
-from collections import OrderedDict
-from tokens import TokenError
 
+import logging
+
+import pandas as pd
+
+from tokens import TokenError
 import lexical_analyzer
 import datalog_parser
 import relational_database
 
-# If part is 1 then more steps will be printed
-_part = 2
+logger = logging.getLogger(__name__)
 
 
-class DatalogInterpreter:
+class DatalogInterpreter(relational_database.RDBMS):
     """
     The most direct way to evaluate a rule is to use the mental model of an expression tree.
     Each predicate in the rule is evaluated as a query to return a relation.
@@ -25,15 +26,9 @@ class DatalogInterpreter:
     rules = None
     passes = None
 
-    def __init__(self, rdbms, rules):
-        assert isinstance(rules, datalog_parser.Rules)
-        self.rules = rules.rules
-        assert isinstance(rdbms, relational_database.RDBMS)
-        self.rdbms = rdbms
-        self.relations = rdbms.relations
-        self.database = rdbms.get_database()
-        assert isinstance(self.database, OrderedDict)
-
+    def __init__(self, datalog_program: datalog_parser.DatalogProgram):
+        super().__init__(datalog_program)
+        self.rules = datalog_program.rules.rules
         self.passes = 0
 
     def evaluate_rules(self):
@@ -44,15 +39,14 @@ class DatalogInterpreter:
         The fixed-point algorithm terminates when an iteration of the rule expression set does not union a new tuple to any relation in the database.
         """
         self.passes += 1
-        if _part == 1:
-            print("Pass: " + str(self.passes))
+        logger.debug("Pass: " + str(self.passes))
         # TODO can I evaluate each rule in it's own thread and get the same results?
         for rule in self.rules:
             joined = self.join(rule)
-            if joined.tuples:
+            if not joined.empty:
                 self.union(rule.head, joined)
 
-    def join(self, rule):
+    def join(self, rule: datalog_parser.Rule) -> relational_database.Relation:
         """
         if there is a single predicate on the right hand side of the rule,
         use the single intermediate result from Step 1 as the result for Step 2.
@@ -60,124 +54,74 @@ class DatalogInterpreter:
         join all the intermediate results to form the single result for Step 2.
         Thus, if p1, p2, and p3 are the intermediate results from step one;
         you should construct a relation: p1 |x| p2 |x| p3.
-        :return: A list of relations
+        :return: A single relation
         """
-        assert isinstance(rule, datalog_parser.Rule)
-        tuples = set()
-        # print("Evaluating '%s'" % str(rule))
-        for predicate in rule.predicates:
-            rels = self.rdbms.evaluate_query(predicate)
-            for r in rels:
-                assert isinstance(r, relational_database.Relation)
-                for x in r.tuples:
-                    # print("T: " + str(x))
-                    tuples.add(x)
+        logger.debug("Evaluating '%s'" % str(rule))
+        concat = relational_database.Relation(
+            pd.concat([self.evaluate_query(predicate) for predicate in rule.predicates], join='outer', axis=1)
+        )
 
-        from itertools import combinations
-        s_t_combined = set()
-        for x in combinations(tuples, len(rule.predicates)):
-            t_combined = relational_database.Tuple()
-            for p in x:
-                # print("p: "+ str(p) )
-                t_combined.union(p)
-            if t_combined:
-                s_t_combined.add(t_combined)
+        logger.debug("Concat relation:\n{}".format(concat))
+        joined = self.inner_join(concat)
+        logger.debug("Joined relation:\n{}".format(joined))
 
-        # print("combined")
-        # print("\n".join([str(x) for x in s_t_combined]))
+        return joined.drop_duplicates()
 
-        relation = relational_database.Relation()
-        relation.tuples.clear()
-        relation.name = rule.head.id
-        relation.tuples = self.t_reorder_and_select(rule.head.idList, s_t_combined)
-
-        # If this is part one then print out info from this intermediary step
-        if _part == 1:
-            print("Joining %s" % str(rule))
-            print("\n".join([str(x) for x in tuples]))
-            print("Result:")
-            print(relation)
-
-        return relation
-
-    @staticmethod
-    def t_reorder_and_select(schema, tuples):
-        good_tuples = set()
-        # print(schema)
-        # print("\n".join([str(x) for x in tuples]))
-        for t in tuples:
-            new_tuple = relational_database.Tuple()
-            valid = True
-            for i in schema:
-                new_pair = t.get(i)
-                if new_pair:
-                    new_tuple.add(new_pair)
-                else:
-                    valid = False
-            if valid:
-                good_tuples.add(new_tuple)
-        return good_tuples
-
-
-    @staticmethod
-    def join_relations(r1, r2):
-        print("Adding %s to %s" % ("\n".join([str(x) for x in r1]), "\n".join([str(y) for y in r2])))
-        tuples = set()
-        for t1 in r1:
-            for t2 in r2:
-                print("concatenating %s with %s" % (str(t1), str(t2)))
-                new_tuple = relational_database.Tuple()
-                for p in t2.pairs:
-                    new_tuple.add(p)
-                for p in t1.pairs:
-                    new_tuple.add(p)
-                if new_tuple.pairs:
-                    tuples.add(new_tuple)
-
-        print("TUPLES ARE NOW:")
-        for t in tuples:
-            print(t)
-        return tuples
-
-    def union(self, head, joined):
+    def union(self, head: datalog_parser.headPredicate, joined: relational_database.Relation):
         """
         Union the results of the join with the relation in the database whose name is equal to the name of the head of
         the rule. In "join" we called this relation in the database r.
         Add tuples to relation r from the result of the join.
         :param head: A head predicate
-        :param joined: Relations
+        :param joined: A relation
         :return: True if the database is now larger, False if not
         """
-        if head.id.value not in [x.name.value for x in self.relations]:
-            self.relations.append(joined)
-        else:
-            for r in self.relations:
-                if r.name.value == head.id.value:
-                    assert isinstance(r, relational_database.Relation)
-                    for t in joined.tuples:
-                        r.tuples.add(t)
+        logger.debug("Uniting based on '{}'".format(head))
+        # print("Column values: {}".format(joined.columns.values))
+        # united = joined[head.idList]
+        # print(united)
 
 
-def main(d_file, part=2, debug=False):
-    global _part
-    _part = part
-    result = ""
-    if not (1 <= part <= 2):
-        raise ValueError("Part must be either 1 or 2")
+if __name__ == "__main__":
+    """
+    For part 1, this will perform single select, project, and rename operations for the file provided.  
+    It will select the first query in the list and use it for all 3 operations, in succession
 
-    if debug: result += ("Parsing '%s'" % d_file)
+    For part 2, all queries will be analyzed and a thorough output will be printed
+    """
+    from argparse import ArgumentParser
+
+    arg = ArgumentParser(description="Run the datalog parser, this will produce output for lab 2")
+    arg.add_argument('-d', '--debug', help="The logging debug level to use", default=logging.NOTSET, metavar='LEVEL')
+    arg.add_argument('-p', '--part', help='A 1 or a 2.  Defaults to 2', default=2)
+    arg.add_argument('file', help='datalog file to parse')
+    args = arg.parse_args()
+
+    logging.basicConfig(level=logging.ERROR)
+    logger.setLevel(int(args.debug))
+
+    logger.debug("Parsing '%s'" % args.file)
 
     # Create class objects
-    tokens = lexical_analyzer.scan(d_file)
+    tokens = lexical_analyzer.scan(args.file)
 
-    if debug:
+    datalog = None
+    if args.debug:
         datalog = datalog_parser.DatalogProgram(tokens)
     else:
         try:
             datalog = datalog_parser.DatalogProgram(tokens)
         except TokenError as t:
-            return 'Failure!\n  (%s,"%s",%s)' % tuple(literal_eval(str(t)))
+            print('Failure!\n  {}'.format(t))
+            exit(1)
 
+    assert isinstance(datalog, datalog_parser.DatalogProgram)
+    main_interpreter = DatalogInterpreter(datalog)
+
+    # TODO Call this from __init__?
+    main_interpreter.evaluate_rules()
+
+"""
     # Get an initial database, we will add facts to it
     rdbms = relational_database.RDBMS(datalog)
 
@@ -203,21 +147,4 @@ def main(d_file, part=2, debug=False):
     result += rdbms.evaluate_queries(datalog.queries.queries)
 
     return result
-
-
-if __name__ == "__main__":
     """
-    For part 1, this will perform single select, project, and rename operations for the file provided.  
-    It will select the first query in the list and use it for all 3 operations, in succession
-    
-    For part 2, all queries will be analyzed and a thorough output will be printed
-    """
-    from argparse import ArgumentParser
-
-    args = ArgumentParser(description="Run the datalog parser, this will produce output for lab 2")
-    args.add_argument('-d', '--debug', action='store_true', default=False)
-    args.add_argument('-p', '--part', help='A 1 or a 2.  Defaults to 2', default=2)
-    args.add_argument('file', help='datalog file to parse')
-    arg = args.parse_args()
-
-    print(main(arg.file, part=int(arg.part), debug=arg.debug))

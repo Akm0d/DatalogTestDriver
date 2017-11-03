@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from collections import OrderedDict
-from pandas import DataFrame as Relation
+
+from pandas import DataFrame as Relation, np
 from tokens import TokenType, TokenError, Token
 
 import datalog_parser
@@ -25,10 +26,58 @@ class RDBMS:
             facts = [fact for fact in datalog_program.facts.facts if fact.id == scheme.id]
             self.relations[scheme.id] = (Relation(
                 data=[fact.stringList for fact in facts])
-            )
+            ).drop_duplicates()
 
-    @staticmethod
-    def _join(group: Relation) -> Relation:
+    def evaluate_query(self, query: datalog_parser.Query) -> Relation or int:
+        logger.debug("Evaluating query: {}?".format(query))
+        if self.relations.get(query.id, None) is None:
+            # Create the Query if it doesn't exist
+            self.relations[query.id] = Relation()
+
+        relation = self.relations[query.id]
+        logger.debug("Relation:\n{}".format(self.print_relation(relation)))
+
+        # SELECT
+        selected = self.select(relation, query)
+
+        # PROJECT
+        projected = self.project(selected, query)
+
+        # If projecting is going to remove the only match
+        if projected.empty and not selected.empty:
+            return SINGLE_MATCH
+
+        # RENAME
+        renamed = self.rename(projected, query)
+        return renamed
+
+        return self.inner_join(renamed)
+
+    def select(self, relation: Relation, query: datalog_parser.Query) -> Relation or int:
+        # If a parameter is a string, then select the rows that match that string in the right columns
+        for i, x in enumerate(query.parameterList):
+            if(not x.expression) and (x.string_id.type is TokenType.STRING):
+                mask = relation[[i]] == ([x.string_id])
+                mask = mask.reindex(relation.index, relation.columns, method='nearest')
+                relation = relation[mask].dropna()
+        logger.debug("Selected:\n{}".format(self.print_relation(relation)))
+        return relation
+
+    def project(self, relation: Relation, query: datalog_parser.Query):
+        relation = relation[[query.parameterList.index(x) for x in query.parameterList
+                             if (not x.expression) and (x.string_id.type is TokenType.ID)]]
+        logger.debug("Projected:\n{}".format(self.print_relation(relation)))
+        return relation
+
+    def rename(self, relation: Relation, query: datalog_parser.Query) -> Relation:
+        column_names = [
+            x.string_id for x in query.parameterList if (not x.expression) and (x.string_id.type is TokenType.ID)
+        ]
+        relation.columns = column_names
+        logger.debug("Renamed:\n{}".format(self.print_relation(relation)))
+        return relation
+
+    def _inner_join(self, group: Relation) -> Relation:
         name = list(group)[0]
         result = {name: []}
         for index, row in group.iterrows():
@@ -37,78 +86,24 @@ class RDBMS:
                 result[name].append(list(single)[0])
             else:
                 result[name].append(None)
-
         return Relation(result)
 
-    def evaluate_query(self, query: datalog_parser.Query) -> Relation or int:
-        logger.debug("Evaluating query: {}?".format(query))
-        if self.relations.get(query.id, None) is None:
-            # Create the Query if it doesn't exist
-            self.relations[query.id] = Relation()
-        logger.debug("Relation:\n{}".format(self.print_relation(self.relations[query.id])))
-
-        keep_columns = list()
-
-        # SELECT
-        # If a parameter is a string, then select the rows that match that string in the right columns
-        selected = self.relations[query.id]
-        if not selected.empty:
-            selected = selected.drop_duplicates()
-        logger.debug("Shape: {}".format(selected.shape))
-        max_keep = selected.shape[1]
-
-        for i, p in enumerate(query.parameterList):
-            if p.expression:
-                logger.warning("I don't know how to handle expressions yet")
-            elif p.string_id.type is TokenType.STRING:
-                # Only keep rows that match
-                if not selected.empty:
-                    selected = selected.loc[selected.ix[:, i] == p.string_id]
-            elif p.string_id.type is TokenType.ID and i < max_keep:
-                keep_columns.append(i)
-
-        if not selected.empty:
-            selected = selected.drop_duplicates()
-
-        logger.debug("Selected:\n{}".format(self.print_relation(selected)))
-        if selected.shape[0] == 1 and not keep_columns:
-            logger.debug("Returning Single Match")
-            return SINGLE_MATCH
-
-        # PROJECT
-        logger.debug("Keeping columns {}".format(", ".join([str(i) for i in keep_columns])))
-        projected = selected.iloc[:, keep_columns]
-        logger.debug("Projected:\n{}".format(self.print_relation(projected)))
-
-        # RENAME
-        if projected.empty:
-            renamed = projected
-        else:
-            renamed = projected.drop_duplicates()
-        renamed.columns = [x for x in query.parameterList[:max_keep] if x.string_id and x.string_id.type is TokenType.ID]
-        logger.debug("Renamed:\n{}".format(self.print_relation(renamed)))
-
-        # COMBINE
-        # Make sure columns with the same name have the same values in each row
-        joined = renamed. \
-            groupby(lambda x: x.string_id, axis=1). \
-            apply(self._join). \
+    def inner_join(self, relation: Relation) -> Relation:
+        relation = relation. \
+            groupby(lambda x: x, axis=1). \
+            apply(self._inner_join). \
             dropna(how='all', axis=1). \
             dropna(how='any'). \
             reset_index(drop=True)
-        logger.debug("Joined:\n{}".format(self.print_relation(joined)))
-        return joined
+        logger.debug("Inner Joined:\n{}".format(self.print_relation(relation)))
+        return relation
 
     @staticmethod
     def print_relation(relation: Relation) -> (int, str):
         rows = set()
-        if not relation.empty:
-            relation = relation.drop_duplicates()
         for _, row in relation.iterrows():
             pairs = list()
             for index, item in row.iteritems():
-                if isinstance(index, tuple):
-                    index = index[1].string_id
                 if isinstance(index, datalog_parser.Parameter):
                     index = index.string_id
                 pairs.append("{}={}".format(
@@ -134,7 +129,6 @@ class RDBMS:
             elif self.rdbms[query] is None or self.rdbms[query].empty:
                 result += "No\n"
             else:
-                self.rdbms[query].drop_duplicates(inplace=True)
                 result += "Yes({})\n{}\n".format(len(self.rdbms[query]), self.print_relation(self.rdbms[query]))
         return result
 
