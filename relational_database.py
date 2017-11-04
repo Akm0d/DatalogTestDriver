@@ -37,33 +37,31 @@ class RDBMS:
         relation = self.relations[query.id]
         logger.debug("Relation:\n{}".format(self.print_relation(relation)))
 
-        # SELECT
         selected = self.select(relation, query)
-
-        # PROJECT
         projected = self.project(selected, query)
-
         # If projecting is going to remove the only match
         if projected.empty and not selected.empty:
-            return SINGLE_MATCH
+            logger.debug("Found single match")
+            return SINGLE_MATCH  # return len(selected)
 
-        # RENAME
         renamed = self.rename(projected, query)
-        return renamed
 
-        return self.inner_join(renamed)
+        inner = self.inner_join(renamed)
 
-    def select(self, relation: Relation, query: datalog_parser.Query) -> Relation or int:
+        # TODO remove duplicates from row
+        return inner
+
+    def select(self, relation: Relation, query: datalog_parser.Query) -> Relation:
         # If a parameter is a string, then select the rows that match that string in the right columns
         for i, x in enumerate(query.parameterList):
-            if(not x.expression) and (x.string_id.type is TokenType.STRING):
+            if (not x.expression) and (x.string_id.type is TokenType.STRING):
                 mask = relation[[i]] == ([x.string_id])
                 mask = mask.reindex(relation.index, relation.columns, method='nearest')
                 relation = relation[mask].dropna()
         logger.debug("Selected:\n{}".format(self.print_relation(relation)))
         return relation
 
-    def project(self, relation: Relation, query: datalog_parser.Query):
+    def project(self, relation: Relation, query: datalog_parser.Query) -> Relation:
         relation = relation[[query.parameterList.index(x) for x in query.parameterList
                              if (not x.expression) and (x.string_id.type is TokenType.ID)]]
         logger.debug("Projected:\n{}".format(self.print_relation(relation)))
@@ -77,10 +75,11 @@ class RDBMS:
         logger.debug("Renamed:\n{}".format(self.print_relation(relation)))
         return relation
 
-    def _inner_join(self, group: Relation) -> Relation:
-        name = list(group)[0]
+    @staticmethod
+    def _inner_join(relation: Relation) -> Relation:
+        name = list(relation)[0]
         result = {name: []}
-        for index, row in group.iterrows():
+        for index, row in relation.iterrows():
             single = row.drop_duplicates()
             if len(single) == 1:
                 result[name].append(list(single)[0])
@@ -89,6 +88,11 @@ class RDBMS:
         return Relation(result)
 
     def inner_join(self, relation: Relation) -> Relation:
+        """
+        Remove rows where multiple columns have the same name but not the same value
+        :param relation:
+        :return:
+        """
         relation = relation. \
             groupby(lambda x: x, axis=1). \
             apply(self._inner_join). \
