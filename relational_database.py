@@ -39,19 +39,17 @@ class RDBMS:
         relation = self.relations[query.id]
         logger.debug("Relation:\n{}".format(self.print_relation(relation)))
 
-        selected = self.select(relation, query)
-        projected = self.project(selected, query)
+        relation = self.select(relation, query)
+        relation = self.project(relation, query)
         # If projecting is going to remove the only match
-        if projected.empty and not selected.empty:
+        if relation.empty and not relation.empty:
             logger.debug("Found single match")
             return SINGLE_MATCH  # return len(selected)
 
-        # inner_join removes column names, so call it before rename
-        inner = self.inner_join(projected)
-        renamed = self.rename(inner, query)
-        # The second project removes duplicate columns, so it must happen after rename
-        unique = self.project(renamed)
-        return unique
+        relation = self.rename(relation, query)
+        relation = self.inner_join(relation)
+        relation = self.project(relation)
+        return relation
 
     def select(self, relation: Relation, query: datalog_parser.Query) -> Relation:
         # If a parameter is a string, then select the rows that match that string in the right columns
@@ -106,12 +104,15 @@ class RDBMS:
         :param relation:
         :return:
         """
+        column_names = list(relation)
         relation = relation. \
             groupby(lambda x: x, axis=1). \
             apply(self._inner_join). \
             dropna(how='all', axis=1). \
             dropna(how='any'). \
             reset_index(drop=True)
+        if not relation.empty:
+            relation.columns = column_names
         logger.debug("Inner Joined:\n{}".format(self.print_relation(relation)))
         return relation
 
@@ -146,8 +147,8 @@ class RDBMS:
             elif self.rdbms[query] is None or self.rdbms[query].empty:
                 result += "No\n"
             else:
-                result += "Yes({})\n{}".format(len(self.rdbms[query]), self.print_relation(self.rdbms[query]))
-        return result
+                result += "Yes({})\n{}\n".format(len(self.rdbms[query]), self.print_relation(self.rdbms[query]))
+        return result.rstrip()
 
 
 if __name__ == "__main__":
