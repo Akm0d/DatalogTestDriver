@@ -163,12 +163,14 @@ if __name__ == "__main__":
 
     # Create class objects
     tokens = lexical_analyzer.scan(args.file)
+    datalog = None
     try:
         datalog = datalog_parser.DatalogProgram(tokens)
     except TokenError as t:
         print("Failure!\n  {}".format(t))
-    main_rdbms = RDBMS(datalog)
+        exit(1)
 
+    main_rdbms = RDBMS(datalog)
     for datalog_query in datalog.queries.queries:
         main_rdbms.rdbms[datalog_query] = main_rdbms.evaluate_query(datalog_query)
 
