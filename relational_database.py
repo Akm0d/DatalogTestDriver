@@ -79,7 +79,7 @@ class RDBMS:
         """
         if query is None:
             _, indices = np.unique(relation.columns, return_index=True)
-            relation = relation.iloc[:, indices]
+            relation = relation.iloc[:, np.sort(indices)]
             logger.debug("Projected:\n{}".format(self.print_relation(relation)))
         else:
             relation = relation[[query.parameterList.index(x) for x in query.parameterList
