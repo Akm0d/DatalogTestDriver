@@ -24,9 +24,12 @@ class RDBMS:
         # Populate the relations
         for scheme in datalog_program.schemes.schemes:
             facts = [fact for fact in datalog_program.facts.facts if fact.id == scheme.id]
-            self.relations[scheme.id] = (Relation(
-                data=[fact.stringList for fact in facts])
-            ).drop_duplicates()
+            logger.debug("Scheme: {}".format(scheme))
+            logger.debug("Facts: {}".format(" ".join(str(f) for f in facts)))
+            if facts:
+                self.relations[scheme.id] = (Relation(
+                    data=[fact.stringList for fact in facts])
+                ).drop_duplicates()
         for query in datalog_program.queries.queries:
             self.rdbms[query] = self.evaluate_query(query)
 
@@ -38,11 +41,17 @@ class RDBMS:
 
         relation = self.relations[query.id]
         logger.debug("Relation:\n{}".format(self.print_relation(relation)))
+        if relation.empty:
+            logger.debug("Relation empty")
+            return relation
 
-        relation = self.select(relation, query)
-        relation = self.project(relation, query)
+        selected = self.select(relation, query)
+        if selected.empty:
+            logger.debug("No matches found")
+            return selected
+        relation = self.project(selected, query)
         # If projecting is going to remove the only match
-        if relation.empty and not relation.empty:
+        if relation.empty and not selected.empty:
             logger.debug("Found single match")
             return SINGLE_MATCH  # return len(selected)
 
@@ -148,7 +157,7 @@ class RDBMS:
                 result += "No\n"
             else:
                 result += "Yes({})\n{}\n".format(len(self.rdbms[query]), self.print_relation(self.rdbms[query]))
-        return result.rstrip()
+        return result
 
 
 if __name__ == "__main__":
