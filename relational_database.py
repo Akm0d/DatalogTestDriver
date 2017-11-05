@@ -44,12 +44,12 @@ class RDBMS:
             logger.debug("Found single match")
             return SINGLE_MATCH  # return len(selected)
 
-        renamed = self.rename(projected, query)
-
-        inner = self.inner_join(renamed)
-
-        # TODO remove duplicates from row
-        return inner
+        # inner_join removes column names, so call it before rename
+        inner = self.inner_join(projected)
+        renamed = self.rename(inner, query)
+        # The second project removes duplicate columns, so it must happen after rename
+        unique = self.project(renamed)
+        return unique
 
     def select(self, relation: Relation, query: datalog_parser.Query) -> Relation:
         # If a parameter is a string, then select the rows that match that string in the right columns
@@ -61,10 +61,21 @@ class RDBMS:
         logger.debug("Selected:\n{}".format(self.print_relation(relation)))
         return relation
 
-    def project(self, relation: Relation, query: datalog_parser.Query) -> Relation:
-        relation = relation[[query.parameterList.index(x) for x in query.parameterList
-                             if (not x.expression) and (x.string_id.type is TokenType.ID)]]
-        logger.debug("Projected:\n{}".format(self.print_relation(relation)))
+    def project(self, relation: Relation, query: datalog_parser.Query = None) -> Relation:
+        """
+        Project the columns that have the IDs in the query.
+        If no query, then remove duplicate columns
+        :param relation:
+        :param query:
+        """
+        if query is None:
+            _, indices = np.unique(relation.columns, return_index=True)
+            relation = relation.iloc[:, indices]
+            logger.debug("Projected:\n{}".format(self.print_relation(relation)))
+        else:
+            relation = relation[[query.parameterList.index(x) for x in query.parameterList
+                                 if (not x.expression) and (x.string_id.type is TokenType.ID)]]
+            logger.debug("Projected:\n{}".format(self.print_relation(relation)))
         return relation
 
     def rename(self, relation: Relation, query: datalog_parser.Query) -> Relation:
@@ -133,7 +144,7 @@ class RDBMS:
             elif self.rdbms[query] is None or self.rdbms[query].empty:
                 result += "No\n"
             else:
-                result += "Yes({})\n{}\n".format(len(self.rdbms[query]), self.print_relation(self.rdbms[query]))
+                result += "Yes({})\n{}".format(len(self.rdbms[query]), self.print_relation(self.rdbms[query]))
         return result
 
 
@@ -152,17 +163,10 @@ if __name__ == "__main__":
 
     # Create class objects
     tokens = lexical_analyzer.scan(args.file)
-
-    datalog = None
-    if args.debug:
+    try:
         datalog = datalog_parser.DatalogProgram(tokens)
-    else:
-        try:
-            datalog = datalog_parser.DatalogProgram(tokens)
-        except TokenError as t:
-            print('Failure!\n  {}'.format(t))
-
-    assert isinstance(datalog, datalog_parser.DatalogProgram)
+    except TokenError as t:
+        print("Failure!\n  {}".format(t))
     main_rdbms = RDBMS(datalog)
 
     for datalog_query in datalog.queries.queries:
