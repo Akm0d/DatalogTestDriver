@@ -17,7 +17,7 @@ class Parser:
     unused_tokens = list()
 
     # Share the most recently parsed token amongst all instances of this class
-    def __init__(self, grammar: list = None, tokens: list = None, root: bool = False, lazy: bool = False):
+    def __init__(self, grammar: List[Token] = None, tokens: List[Token] = None, root: bool = False, lazy: bool = False):
         """
         :param grammar: A list of tokens in the order they should be expected.
         If the token is a list, then allow zero or more of the tokens in the list.
@@ -39,7 +39,7 @@ class Parser:
         if root and self.unused_tokens:
             raise TokenError(self.get_token())
 
-    def _parse_unused_tokens(self, grammar: list = None, lazy: bool = False) -> List[Token]:
+    def _parse_unused_tokens(self, grammar: List[Token] = None, lazy: bool = False) -> List[Token]:
         """
         :param grammar: The grammar to use, if none, then it will default to the class grammar
         :param lazy: Don't raise any errors or remove from the list if the match fails
@@ -116,7 +116,7 @@ class Parser:
         if before != after:
             logger.debug("Put back Token: " + ColorDiff(after, before))
 
-    def get_token(self, lazy: bool = False) -> Token:
+    def get_token(self, lazy: bool = False) -> Token or None:
         """
         :return: The top token from the list
         """
@@ -152,10 +152,10 @@ class Scheme(Parser):
 
         logger.debug("Created {}: {}".format(self.__class__.__name__, str(self)))
 
-    def __str__(self):
+    def __str__(self) -> str:
         return "{}({})".format(self.id.value, ",".join(t.value for t in self.idList))
 
-    def __bool__(self):
+    def __bool__(self) -> bool:
         return False if (self.id is None or self.idList is None) else True
 
 
@@ -173,15 +173,15 @@ class Schemes(Parser):
 
         logger.debug("Created {}: {}".format(self.__class__.__name__, str(self)))
 
-    def __str__(self):
+    def __str__(self) -> str:
         return "Schemes({}):\n{}\n".format(len(self.schemes), "\n".join("  " + str(s) for s in self.schemes))
 
-    def __bool__(self):
+    def __bool__(self) -> bool:
         return False if self.schemes is None else True
 
 
 class Domain(set):
-    def __str__(self):
+    def __str__(self) -> str:
         return "Domain({}):{}{}".format(
             len(self),
             "\n" if self else "",
@@ -219,10 +219,10 @@ class Fact(Parser):
                 if t.type == TokenType.STRING:
                     self.domain.add(t)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return "{}({}).".format(self.id.value, ",".join(t.value for t in self.stringList))
 
-    def __bool__(self):
+    def __bool__(self) -> bool:
         return False if (self.id is None or self.stringList is None) else True
 
 
@@ -239,14 +239,14 @@ class Facts(Parser):
 
         logger.debug("Created {}: {}".format(self.__class__.__name__, str(self)))
 
-    def __str__(self):
+    def __str__(self) -> str:
         return "Facts({}):{}{}".format(
             len(self.facts),
             "\n" if self.facts else "",
             "\n".join("  " + str(fact) for fact in self.facts)
         )
 
-    def __bool__(self):
+    def __bool__(self) -> bool:
         return False if (self.facts is None) else True
 
 
@@ -268,10 +268,10 @@ class Expression(Parser):
 
         logger.debug("Created {}: {}".format(self.__class__.__name__, str(self)))
 
-    def __str__(self):
+    def __str__(self) -> str:
         return "({}{}{})".format(str(self.param_1), self.operator.value, str(self.param_2))
 
-    def __bool__(self):
+    def __bool__(self) -> bool:
         return False if (self.param_1 is None or self.operator is None or self.param_2 is None) else True
 
 
@@ -295,16 +295,16 @@ class Parameter(Parser):
 
         logger.debug("Created {}: {}".format(self.__class__.__name__, str(self)))
 
-    def __str__(self):
+    def __str__(self) -> str:
         if self.string_id is not None:
             return self.string_id.value
         else:
             return str(self.expression)
 
-    def __bool__(self):
+    def __bool__(self) -> bool:
         return False if (self.string_id is None and self.expression is None) else True
 
-    def __gt__(self, other):
+    def __gt__(self, other) -> bool:
         return str(self) > str(other)
 
 
@@ -332,17 +332,17 @@ class Predicate(Parser):
 
         logger.debug("Created {}: {}".format(self.__class__.__name__, str(self)))
 
-    def __str__(self):
+    def __str__(self) -> str:
         return "{}({})".format(self.id.value, ",".join(str(p) for p in self.parameterList))
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         """
         This is necessary if we want to use queries as a key in lab 3
         :return: The hashed form of the string representation of this class
         """
         return self.hash
 
-    def __bool__(self):
+    def __bool__(self) -> bool:
         return False if (self.id is None or self.parameterList is None) else True
 
 
@@ -362,10 +362,10 @@ class Rule(Parser):
 
         logger.debug("Created {}: {}".format(self.__class__.__name__, str(self)))
 
-    def __str__(self):
+    def __str__(self) -> str:
         return "{} :- {}.".format(str(self.head), ",".join(str(p) for p in self.predicates))
 
-    def __bool__(self):
+    def __bool__(self) -> bool:
         return False if (self.head is None or self.predicates is None) else True
 
 
@@ -382,12 +382,12 @@ class Rules(Parser):
 
         logger.debug("Created {}: {}".format(self.__class__.__name__, str(self)))
 
-    def __str__(self):
+    def __str__(self) -> str:
         return "Rules({}):{}{}".format(
             len(self.rules), '\n' if self.rules else '', "\n".join("  " + str(r) for r in self.rules)
         )
 
-    def __bool__(self):
+    def __bool__(self) -> bool:
         return True
 
 
@@ -407,10 +407,10 @@ class Queries(Parser):
             return
         logger.debug("Created {}: {}".format(self.__class__.__name__, str(self)))
 
-    def __str__(self):
+    def __str__(self) -> str:
         return "Queries({}):\n{}".format(len(self.queries), "\n".join("  " + str(q) + "?" for q in self.queries))
 
-    def __bool__(self):
+    def __bool__(self) -> bool:
         return False if self.queries is None else True
 
 
@@ -428,7 +428,7 @@ class DatalogProgram(Parser):
         for fact in self.facts.facts:
             self.domain |= fact.domain
 
-    def __add__(self, other):
+    def __add__(self, other) -> Parser:
         self.schemes.schemes += other.schemes.schemes
         self.facts.facts += other.facts.facts
         self.rules.rules += other.rules.rules
@@ -443,7 +443,7 @@ class DatalogProgram(Parser):
             "\n  ".join(sorted(set(str(s) + '?' for s in self.queries.queries))),
         )
 
-    def __str__(self):
+    def __str__(self) -> str:
         return '{}{}\n{}\n{}\n{}'.format(
             self.schemes,
             self.facts,
