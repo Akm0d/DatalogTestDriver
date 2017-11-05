@@ -27,6 +27,8 @@ class RDBMS:
             self.relations[scheme.id] = (Relation(
                 data=[fact.stringList for fact in facts])
             ).drop_duplicates()
+        for query in datalog_program.queries.queries:
+            self.rdbms[query] = self.evaluate_query(query)
 
     def evaluate_query(self, query: datalog_parser.Query) -> Relation or int:
         logger.debug("Evaluating query: {}?".format(query))
@@ -170,8 +172,4 @@ if __name__ == "__main__":
         print("Failure!\n  {}".format(t))
         exit(1)
 
-    main_rdbms = RDBMS(datalog)
-    for datalog_query in datalog.queries.queries:
-        main_rdbms.rdbms[datalog_query] = main_rdbms.evaluate_query(datalog_query)
-
-    print(main_rdbms)
+    print(RDBMS(datalog))
