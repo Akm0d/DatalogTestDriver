@@ -82,8 +82,9 @@ class RDBMS:
             relation = relation.iloc[:, np.sort(indices)]
             logger.debug("Projected:\n{}".format(self.print_relation(relation)))
         else:
-            relation = relation[[query.parameterList.index(x) for x in query.parameterList
-                                 if (not x.expression) and (x.string_id.type is TokenType.ID)]]
+            columns = [query.parameterList.index(x) for x in query.parameterList
+                       if (not x.expression) and (x.string_id.type is TokenType.ID)]
+            relation = relation.reindex(columns=columns)[columns]
             logger.debug("Projected:\n{}".format(self.print_relation(relation)))
         return relation
 

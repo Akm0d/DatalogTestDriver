@@ -5,5 +5,7 @@ Facts:
 Rules:
 Queries:
   dc('ralph', X, Y, Z)?
+  dc('ralph', X, Y, Z, NONEXISTANT)?
+  dc('ralph', X, Y, Z, NONEXISTANT, MORE)?
   dc(X)?
   dc('bob','bob')?
