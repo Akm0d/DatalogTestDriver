@@ -3,8 +3,9 @@
 import logging
 
 import pandas as pd
+from pandas.core.reshape.merge import MergeError
 
-from tokens import TokenError
+from tokens import TokenError, Token
 import lexical_analyzer
 import datalog_parser
 import relational_database
@@ -20,6 +21,7 @@ class DatalogInterpreter(relational_database.RDBMS):
     This process is best understood as a simple traversal of the rule, evaluating each predicate as a query,
     and then gathering the results with a natural join.
     """
+    merge_token = Token(-1)
     database = None
     relations = None
     rdbms = None
@@ -66,7 +68,16 @@ class DatalogInterpreter(relational_database.RDBMS):
 
         relation = relations.pop()
         while relations:
-            relation = pd.merge(relation, relations.pop(), how='outer').dropna()
+            # TODO Make sure columns with same names have equal values
+            new_rel = relations.pop()
+            relation[self.merge_token] = 0
+            new_rel[self.merge_token] = 0
+            logger.debug("merging A:\n{}".format(relation))
+            logger.debug("with B:\n{}".format(new_rel))
+            relation = pd.merge(relation, new_rel, how='outer').dropna()
+            relation = relation.drop(self.merge_token, axis=1)
+            logger.debug("Combined:\n{}".format(relation))
+
         logger.debug("Joined:\n{}".format(relation))
 
         return relation
