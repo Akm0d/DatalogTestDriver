@@ -30,24 +30,26 @@ class DatalogInterpreter(relational_database.RDBMS):
         super().__init__(datalog_program)
         self.rules = datalog_program.rules.rules
         self.passes = 0
-        self.evaluate_rules()
+        while self.evaluate_rules():
+            self.passes += 1
         for query in datalog_program.queries.queries:
             self.rdbms[query] = self.evaluate_query(query)
 
-    def evaluate_rules(self):
+    def evaluate_rules(self) -> bool:
         """
         Each rule potentially adds new facts to a relation.
         The fixed-point algorithm repeatedly performs iterations on the rules adding new facts from each rule as the facts are generated.
         Each iteration may change the database by adding at least one new tuple to at least one relation in the database.
         The fixed-point algorithm terminates when an iteration of the rule expression set does not union a new tuple to any relation in the database.
         """
-        self.passes += 1
+        change = False
         logger.debug("Pass: " + str(self.passes))
         # TODO can I evaluate each rule in it's own thread and get the same results?
         for rule in self.rules:
             joined = self.join(rule)
             if not joined.empty:
-                self.union(rule.head, joined)
+                change = change or self.union(rule.head, joined)
+        return change
 
     def join(self, rule: datalog_parser.Rule) -> relational_database.Relation:
         """

@@ -121,7 +121,7 @@ class RDBMS:
             dropna(how='any'). \
             reset_index(drop=True)
         if not relation.empty:
-            relation.columns = column_names
+            relation.columns = column_names[:len(relation.columns)]
         logger.debug("Inner Joined:\n{}".format(self.print_relation(relation)))
         return relation
 
