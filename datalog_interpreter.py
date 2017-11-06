@@ -68,14 +68,13 @@ class DatalogInterpreter(relational_database.RDBMS):
 
         relation = relations.pop()
         while relations:
-            # TODO Make sure columns with same names have equal values
             new_rel = relations.pop()
             common_columns = set(list(new_rel)) & set(list(relation))
             logger.debug("Merge A:\n{}".format(relation))
             logger.debug("Merge B:\n{}".format(new_rel))
             if common_columns:
                 logger.debug("Relations share a common column: {}".format([str(x) for x in common_columns]))
-                relation = pd.merge(relation, new_rel, how='inner', on=[x for x in common_columns]).dropna()
+                relation = pd.merge(relation, new_rel, how='inner').dropna()
             else:
                 logger.debug("Adding common column")
                 relation[self.merge_token] = 0
