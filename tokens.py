@@ -132,14 +132,17 @@ class Token:
     def __gt__(self, other) -> bool:
         return self.value > other.value
 
-    def __name__(self) -> bool:
+    def __name__(self) -> TokenType:
         return self.type
 
     def __eq__(self, other) -> bool:
-        return (self.type == other.type) and (self.value == other.value)
+        if self.__class__ == other.__class__:
+            return (self.type == other.type) and (self.value == other.value)
+        else:
+            return False
 
     def __bool__(self) -> bool:
-        return True if self.value  else False
+        return True if self.value else False
 
 
 if __name__ == "__main__":
