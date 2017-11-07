@@ -3,8 +3,6 @@
 import logging
 
 import pandas as pd
-from pandas.core.reshape.merge import MergeError
-
 from tokens import TokenError, Token
 import lexical_analyzer
 import datalog_parser

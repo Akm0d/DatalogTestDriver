@@ -9,6 +9,7 @@ import logging
 import lexical_analyzer
 
 logger = logging.getLogger(__name__)
+
 SINGLE_MATCH = 1
 
 
@@ -115,6 +116,9 @@ class RDBMS:
         :return:
         """
         column_names = list(relation)
+        if len(column_names) == len(set(column_names)):
+            logger.debug("No inner join needs to be done")
+            return relation
         relation = relation. \
             groupby(lambda x: x, axis=1). \
             apply(self._inner_join). \

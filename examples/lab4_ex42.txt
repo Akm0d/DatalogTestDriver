@@ -10,6 +10,11 @@ Facts:
    B('b').
    DeaWoo('a','a','a','a','b').
    DeaWoo('a','b','a','a','b').
+   #DeaWoo('a', 'a','a', 'a', 'a').
+   #DeaWoo('a', 'a','a', 'b', 'b').
+   #DeaWoo('a', 'b','a', 'a', 'b').
+   #DeaWoo('a', 'b','a', 'b', 'a').
+
 
 Rules: 
    DeaWoo(A,B,C,D,E):-A(A),A(B),A(C),A(D),A(E).
