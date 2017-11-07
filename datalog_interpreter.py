@@ -99,7 +99,6 @@ class DatalogInterpreter(relational_database.RDBMS):
         """
         logger.debug("Uniting based on '{}'".format(head))
         size = len(self.relations[head.id])
-        logger.debug("Original Size: {}".format(size))
         relation = relation[[x for x in head.idList]]
         logger.debug("Project:\n{}".format(relation))
 
@@ -113,8 +112,8 @@ class DatalogInterpreter(relational_database.RDBMS):
 
         logger.debug("United:\n{}".format(self.relations[head.id]))
         new_size = len(self.relations[head.id])
-        logger.debug("New Size: {}".format(new_size))
-        return size == new_size
+        logger.debug("Added {} new items".format(new_size - size))
+        return bool(new_size - size)
 
     def __str__(self)->str:
         """
