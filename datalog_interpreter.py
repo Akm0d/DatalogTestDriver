@@ -31,9 +31,11 @@ class DatalogInterpreter(relational_database.RDBMS):
     def __init__(self, datalog_program: datalog_parser.DatalogProgram):
         super().__init__(datalog_program)
         self.rules = datalog_program.rules.rules
-        self.passes = 0
+        self.passes = 1
+        logger.info("Evaluating Rules")
         while self.evaluate_rules():
             self.passes += 1
+        logger.info("Evaluating Queries")
         for query in datalog_program.queries.queries:
             self.rdbms[query] = self.evaluate_query(query)
 
@@ -50,7 +52,8 @@ class DatalogInterpreter(relational_database.RDBMS):
         for rule in self.rules:
             joined = self.join(rule)
             if not joined.empty:
-                change = change or self.union(rule.head, joined)
+                change |= self.union(rule.head, joined)
+                logger.debug("Yay change" if change else "Nothing changed")
         return change
 
     def join(self, rule: datalog_parser.Rule) -> relational_database.Relation:
@@ -114,6 +117,23 @@ class DatalogInterpreter(relational_database.RDBMS):
         new_size = len(self.relations[head.id])
         logger.debug("New Size: {}".format(new_size))
         return size == new_size
+
+    def __str__(self)->str:
+        """
+        This is the same as printing a relational database except we will also print the passes
+        :return:
+        """
+        result = "Schemes populated after {} passes through the Rules.\n".format(self.passes)
+        for query in self.rdbms.keys():
+            result += str(query) + "? "
+
+            if self.rdbms[query] is relational_database.SINGLE_MATCH:
+                result += "Yes(1)\n"
+            elif self.rdbms[query] is None or self.rdbms[query].empty:
+                result += "No\n"
+            else:
+                result += "Yes({})\n{}\n".format(len(self.rdbms[query]), self.print_relation(self.rdbms[query]))
+        return result
 
 
 if __name__ == "__main__":
