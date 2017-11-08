@@ -98,24 +98,26 @@ class DatalogInterpreter(relational_database.RDBMS):
         :return: True if the database increased in size, otherwise false
         """
         logger.debug("Uniting based on '{}'".format(head))
-        size = len(self.relations[head.id])
+        size = len(self.relations.get(head.id, ""))
         relation = relation[[x for x in head.idList]]
         logger.debug("Project:\n{}".format(relation))
-
         relation.columns = range(relation.shape[1])
-        if isinstance(self.relations[head.id], relational_database.Relation):
+
+        if isinstance(self.relations.get(head.id, None), relational_database.Relation) and \
+                not self.relations[head.id].empty:
             logger.debug("Adding to existing relation: {}".format(head.id))
-            self.relations[head.id] = self.relations[head.id].append(relation).drop_duplicates()
+            relation = self.relations[head.id].append(relation).drop_duplicates()
         else:
             logger.debug("Creeating new relation: {}".format(head.id))
-            self.relations[head.id] = relation
+
+        self.relations[head.id] = relation
 
         logger.debug("United:\n{}".format(self.relations[head.id]))
         new_size = len(self.relations[head.id])
         logger.debug("Added {} new items".format(new_size - size))
         return bool(new_size - size)
 
-    def __str__(self)->str:
+    def __str__(self) -> str:
         """
         This is the same as printing a relational database except we will also print the passes
         :return:
