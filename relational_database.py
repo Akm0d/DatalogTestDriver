@@ -133,13 +133,14 @@ class RDBMS:
 
     @staticmethod
     def print_relation(relation: Relation) -> (int, str):
+        # TODO this is where most time is spent in the program, optimize it for the speed boosts
         if not relation.empty:
             relation = relation.sort_values(list(relation))
             relation = relation.apply(
                 lambda column: column.apply(
                     lambda c: str(column.name.value if isinstance(column.name, Token) else str(column.name)) + "=" + c.value)
                 )
-        # FIXME This has corner cases where the sep and excapechar can make incorrect values print out
+        # FIXME This has corner cases where the sep and escapechar can make incorrect values print out
         return "  " + relation.to_csv(
             index=False, header=False, sep='#', line_terminator='\n  ', quoting=csv.QUOTE_NONE, escapechar="\\"
         ).rstrip().replace("'#", "', ").replace('\\ ', ' ')

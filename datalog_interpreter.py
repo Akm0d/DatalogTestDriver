@@ -36,6 +36,7 @@ class DatalogInterpreter(relational_database.RDBMS):
         change = False
         logger.debug("Pass: " + str(self.passes))
         # TODO can I evaluate each rule in it's own thread and get the same results?
+        # Maybe this can be done after lab5 and I know which rules are dependent on others
         for rule in self.rules:
             joined = self.join(rule)
             if not joined.empty:
