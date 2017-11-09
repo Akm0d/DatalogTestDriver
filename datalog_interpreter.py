@@ -12,25 +12,14 @@ logger = logging.getLogger(__name__)
 
 
 class DatalogInterpreter(relational_database.RDBMS):
-    """
-    The most direct way to evaluate a rule is to use the mental model of an expression tree.
-    Each predicate in the rule is evaluated as a query to return a relation.
-    That relation returned by the predicate is then natural joined with the relations for other predicates in the rule.
-    This process is best understood as a simple traversal of the rule, evaluating each predicate as a query,
-    and then gathering the results with a natural join.
-    """
     merge_token = Token(-1)
-    database = None
-    relations = None
-    rdbms = None
-    rules = None
-    passes = None
 
     def __init__(self, datalog_program: datalog_parser.DatalogProgram):
         super().__init__(datalog_program)
         self.rules = datalog_program.rules.rules
         self.passes = 1
         logger.info("Evaluating Rules")
+        # Least-fix point algorithm
         while self.evaluate_rules():
             self.passes += 1
         logger.info("Evaluating Queries")
@@ -55,19 +44,12 @@ class DatalogInterpreter(relational_database.RDBMS):
         return change
 
     def join(self, rule: datalog_parser.Rule) -> relational_database.Relation:
-        """
-        if there is a single predicate on the right hand side of the rule,
-        use the single intermediate result from Step 1 as the result for Step 2.
-        If there are two or more predicates on the right-hand side of a rule,
-        join all the intermediate results to form the single result for Step 2.
-        Thus, if p1, p2, and p3 are the intermediate results from step one;
-        you should construct a relation: p1 |x| p2 |x| p3.
-        :return:
-        """
         logger.debug("Evaluating '%s'" % str(rule))
+        # Evaluate the predicates on the right-hand side of the rule
         relations = [self.evaluate_query(predicate) for predicate in rule.predicates]
 
         relation = relations.pop()
+        # Join the relations that result
         while relations:
             new_rel = relations.pop()
             common_columns = set(list(new_rel)) & set(list(relation))
@@ -99,10 +81,13 @@ class DatalogInterpreter(relational_database.RDBMS):
         """
         logger.debug("Uniting based on '{}'".format(head))
         size = len(self.relations.get(head.id, ""))
+        # Project columns that appear in head predicate
+        # Rename relation to match the schema of the relation in the database
         relation = relation[[x for x in head.idList]]
         logger.debug("Project:\n{}".format(relation))
         relation.columns = range(relation.shape[1])
 
+        # Union with the relation in the database
         if isinstance(self.relations.get(head.id, None), relational_database.Relation) and \
                 not self.relations[head.id].empty:
             logger.debug("Adding to existing relation: {}".format(head.id))
