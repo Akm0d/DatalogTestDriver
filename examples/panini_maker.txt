@@ -1,0 +1,27 @@
+# WARNING, do not run this file unless you have a Decent CPU and at least 32GB of RAM
+Schemes:
+A(a,b,c,d,e)
+
+Facts:
+A('a','b','c','d','e').
+A('f','g','h','i','j').
+A('k','l','m','n','o').
+A('p','q','r','s','t').
+A('u','v','w','x','y').
+A('z','1','2','3','4').
+A('5','6','7','8','9').
+
+Rules:
+A(a,b,c,d,e) :- A(a,b,c,e,d).
+A(a,b,c,d,e) :- A(a,b,d,e,c).
+A(a,b,c,d,e) :- A(a,d,c,e,b).
+A(a,b,c,d,e) :- A(d,b,c,e,a).
+A(a,b,c,f,g) :- A(a,b,c,d,e),A(e,d,c,f,g).
+A(a,b,c,f,g) :- A(a,b,c,d,e),A(e,d,c,f,g),A(f,g,x,y,z).
+A(a,b,c,f,g) :- A(a,b,c,d,e),A(e,d,c,f,g),A(f,g,x,y,z).
+A(e,e,e,e,e) :- A(a,b,c,d,e).
+
+
+Queries:
+A(a,b,c,d,e)?
+
