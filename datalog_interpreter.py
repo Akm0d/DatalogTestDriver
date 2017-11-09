@@ -103,22 +103,6 @@ class DatalogInterpreter(relational_database.RDBMS):
         logger.debug("Added {} new items".format(new_size - size))
         return bool(new_size - size)
 
-    def _str_worker(self, proc: int, query: datalog_parser.Query, results: dict):
-        """
-        Since print_relation is the most computationally heavy function, handle each query's print_relation in it's
-        own process and save the results to a multithreading dictionary.
-        :param query:
-        :param results:
-        """
-        result = str(query) + "? "
-        if self.rdbms[query] is relational_database.SINGLE_MATCH:
-            result += "Yes(1)\n"
-        elif self.rdbms[query] is None or self.rdbms[query].empty:
-            result += "No\n"
-        else:
-            result += "Yes({})\n{}\n".format(len(self.rdbms[query]), self.print_relation(self.rdbms[query]))
-        results[proc] = result
-
     def __str__(self) -> str:
         """
         This is the same as printing a relational database except we will also print the passes

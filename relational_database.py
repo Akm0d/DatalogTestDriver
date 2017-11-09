@@ -149,7 +149,7 @@ class RDBMS:
     def _str_worker(self, proc: int, query: datalog_parser.Query, results: dict):
         """
         Since print_relation is the most computationally heavy function, handle each query's print_relation in it's
-        own process and save the results to a multithreading dictionary.
+        own process and save the results to a multi-threading dictionary.
         :param query:
         :param results:
         """
