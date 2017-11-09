@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import csv
+import multiprocessing
 
 from collections import OrderedDict
 from pandas import DataFrame as Relation, np
@@ -145,25 +146,39 @@ class RDBMS:
             index=False, header=False, sep='#', line_terminator='\n  ', quoting=csv.QUOTE_NONE, escapechar="\\"
         ).rstrip().replace("'#", "', ").replace('\\ ', ' ')
 
+    def _str_worker(self, proc: int, query: datalog_parser.Query, results: dict):
+        """
+        Since print_relation is the most computationally heavy function, handle each query's print_relation in it's
+        own process and save the results to a multithreading dictionary.
+        :param query:
+        :param results:
+        """
+        result = str(query) + "? "
+        if self.rdbms[query] is SINGLE_MATCH:
+            result += "Yes(1)\n"
+        elif self.rdbms[query] is None or self.rdbms[query].empty:
+            result += "No\n"
+        else:
+            result += "Yes({})\n{}\n".format(len(self.rdbms[query]), self.print_relation(self.rdbms[query]))
+        results[proc] = result
+
     def __str__(self) -> str:
         """
-        For each query, print the query and a space.
-        Then, if the query's resulting relation is empty, output “No”; and if the resulting relation is not empty,
-        output “Yes(n)” where n is the number of tuples in the resulting relation.
-        If there are free variables in the query, print the tuples of the resulting relation,
-        one per line and indented by two spaces, according to the following directions.
+        This is the same as printing a relational database except we will also print the passes
+        :return:
         """
+        manager = multiprocessing.Manager()
+        results = manager.dict()
         result = ""
-        for query in self.rdbms.keys():
-            self.rdbms[query].to_csv(result)
-            result += str(query) + "? "
-
-            if self.rdbms[query] is SINGLE_MATCH:
-                result += "Yes(1)\n"
-            elif self.rdbms[query] is None or self.rdbms[query].empty:
-                result += "No\n"
-            else:
-                result += "Yes({})\n{}\n".format(len(self.rdbms[query]), self.print_relation(self.rdbms[query]))
+        jobs = []
+        for i, query in enumerate(self.rdbms.keys()):
+            p = multiprocessing.Process(target=self._str_worker, args=(i, query, results))
+            jobs.append(p)
+            p.start()
+        for proc in jobs:
+            proc.join()
+        for i, _ in enumerate(self.rdbms.keys()):
+            result += results[i]
         return result
 
 
