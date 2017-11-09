@@ -9,6 +9,7 @@ from sys import argv, exit as sys_exit
 from termcolor import cprint
 from time import time
 
+from datalog_interpreter import DatalogInterpreter
 from lexical_analyzer import scan as lexical_scan
 from datalog_parser import DatalogProgram
 from relational_database import RDBMS
@@ -85,6 +86,8 @@ tests_total = 0
 tests_passed = 0
 total_expected_runtime = 0
 total_actual_runtime = 0
+actual_runtime = 0
+expected_runtime = 0
 
 for test in test_files:
     tests_total += 1
@@ -117,7 +120,7 @@ for test in test_files:
     if not timeout:
         expected = ''
         expected_runtime = time()
-        # Compute the correct output from the python script
+        # Compute the correct output from the python script, detect change by including hash of file in pickle
         # TODO save the correct output to a pickle file to lower my runtime?
         if lab == 1:
             lex = lexical_scan(test, ignore_comments=False, ignore_whitespace=True)
@@ -139,9 +142,7 @@ for test in test_files:
                 if part == 2:
                     expected += '  {}'.format(t)
         elif lab == 3:
-            # Create class objects
             tokens = lexical_scan(test)
-
             try:
                 datalog = DatalogProgram(tokens)
                 assert isinstance(datalog, DatalogProgram)
@@ -156,7 +157,12 @@ for test in test_files:
                 expected = 'Failure!\n  {}'.format(t)
 
         elif lab == 4:
-            expected = datalog_interpreter.main(test, part=part, debug=False)
+            tokens = lexical_scan(test)
+            try:
+                datalog = DatalogProgram(tokens)
+                expected = str(DatalogInterpreter(datalog))
+            except TokenError as t:
+                expected = "Failure!\n  {}".format(t)
         elif lab == 5:
             print("Lab %s part %s has not yet been implemented" % (str(lab), str(part)))
         expected_runtime = time() - expected_runtime

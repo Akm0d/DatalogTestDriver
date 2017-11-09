@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
+import csv
+
 from collections import OrderedDict
-from pandas import DataFrame as Relation, np, Series
+from pandas import DataFrame as Relation, np
 from tokens import TokenType, TokenError, Token
 
 import datalog_parser
@@ -10,13 +12,6 @@ import lexical_analyzer
 logger = logging.getLogger(__name__)
 
 SINGLE_MATCH = 1
-
-
-def format_cell(cell: Token, column: Token or int):
-    print(cell)
-    print(column)
-    print("-"* 80)
-    return "{}={}".format(cell[0].value, cell[1].value)
 
 
 class RDBMS:
@@ -138,14 +133,16 @@ class RDBMS:
 
     @staticmethod
     def print_relation(relation: Relation) -> (int, str):
-        # TODO Add two spaces to beginning of row and space after comma
         if not relation.empty:
             relation = relation.sort_values(list(relation))
             relation = relation.apply(
                 lambda column: column.apply(
                     lambda c: str(column.name.value if isinstance(column.name, Token) else str(column.name)) + "=" + c.value)
                 )
-        return str("  " + relation.to_csv(index=False, header=False).rstrip('\n').replace("\n", "\n  ")).rstrip("  ")
+        # FIXME This has corner cases where the sep and excapechar can make incorrect values print out
+        return "  " + relation.to_csv(
+            index=False, header=False, sep='#', line_terminator='\n  ', quoting=csv.QUOTE_NONE, escapechar="\\"
+        ).rstrip().replace("'#", "', ").replace('\\ ', ' ')
 
     def __str__(self) -> str:
         """
