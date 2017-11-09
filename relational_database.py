@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 from collections import OrderedDict
-
-from pandas import DataFrame as Relation, np
+from pandas import DataFrame as Relation, np, Series
 from tokens import TokenType, TokenError, Token
 
 import datalog_parser
@@ -11,6 +10,13 @@ import lexical_analyzer
 logger = logging.getLogger(__name__)
 
 SINGLE_MATCH = 1
+
+
+def format_cell(cell: Token, column: Token or int):
+    print(cell)
+    print(column)
+    print("-"* 80)
+    return "{}={}".format(cell[0].value, cell[1].value)
 
 
 class RDBMS:
@@ -132,17 +138,14 @@ class RDBMS:
 
     @staticmethod
     def print_relation(relation: Relation) -> (int, str):
-        rows = set()
-        for _, row in relation.iterrows():
-            pairs = list()
-            for index, item in row.iteritems():
-                if isinstance(index, datalog_parser.Parameter):
-                    index = index.string_id
-                pairs.append("{}={}".format(
-                    index.value if isinstance(index, Token) else None, item.value if isinstance(item, Token) else None)
+        # TODO Add two spaces to beginning of row and space after comma
+        if not relation.empty:
+            relation = relation.sort_values(list(relation))
+            relation = relation.apply(
+                lambda column: column.apply(
+                    lambda c: str(column.name.value if isinstance(column.name, Token) else str(column.name)) + "=" + c.value)
                 )
-            rows.add(", ".join(pairs))
-        return "  " + "\n  ".join(sorted(rows))
+        return str("  " + relation.to_csv(index=False, header=False).rstrip('\n').replace("\n", "\n  ")).rstrip("  ")
 
     def __str__(self) -> str:
         """
@@ -154,6 +157,7 @@ class RDBMS:
         """
         result = ""
         for query in self.rdbms.keys():
+            self.rdbms[query].to_csv(result)
             result += str(query) + "? "
 
             if self.rdbms[query] is SINGLE_MATCH:
