@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-
+import multiprocessing
 import logging
 
 import pandas as pd
@@ -132,6 +132,7 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.ERROR)
     logger.setLevel(int(args.debug))
 
+    logger.info("Detected {} CPUs".format(multiprocessing.cpu_count()))
     logger.debug("Parsing '%s'" % args.file)
 
     # Create class objects
