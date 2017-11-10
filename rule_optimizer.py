@@ -11,21 +11,45 @@ from tokens import TokenError
 logger = logging.getLogger(__name__)
 
 
+class graph:
+    def __init__(self):
+        pass
+
+    def __str__(self):
+        return ""
+
+
 class RuleOptimizaer(DatalogInterpreter):
     def __init__(self, datalog_program: DatalogProgram):
         super().__init__(datalog_program, least_fix_point=False)
 
         # TODO Evaluate the rules in the order described by the rule optimizer
+        self.dependency_graph = graph()
+        self.rule_evaluation = self.evaluate_optimized_rules(order=self.dependency_graph)
 
         logger.info("Evaluating Queries")
         for query in datalog_program.queries.queries:
             self.rdbms[query] = self.evaluate_query(query)
 
-    def graph_dependencies(self) -> str:
-        pass
+    def evaluate_optimized_rules(self, order: graph) -> str:
+        return ""
 
-    def evaluate_rule(self) -> str:
-        pass
+    def __str__(self):
+        result = "Dependency Graph\n{}\n".format(self.dependency_graph)
+        result += "Rule Evaluation\n{}\n".format(self.rule_evaluation)
+
+        manager = multiprocessing.Manager()
+        results = manager.dict()
+        jobs = []
+        for i, query in enumerate(self.rdbms.keys()):
+            p = multiprocessing.Process(target=self._str_worker, args=(i, query, results))
+            jobs.append(p)
+            p.start()
+        for proc in jobs:
+            proc.join()
+        for i, _ in enumerate(self.rdbms.keys()):
+            result += results[i]
+        return result
 
 
 if __name__ == "__main__":
