@@ -10,12 +10,13 @@ from tokens import TokenError
 logger = logging.getLogger(__name__)
 
 
-class OptimizedRule(Rule):
+class Vertex(Rule):
     def __init__(self, rule: Rule, index: int, rules: Rules):
         super().__init__(head=rule.head, predicates=rule.predicates)
 
         self.id = index
         self.edges = self.adjacency(rule, rules)
+        self.reverse = self.reverse_edges(rule, rules)
 
     @staticmethod
     def adjacency(rule: Rule, rules: Rules) -> set:
@@ -29,19 +30,41 @@ class OptimizedRule(Rule):
                 continue
         return adjacent
 
+    @staticmethod
+    def reverse_edges(rule: Rule, rules: Rules) -> set:
+        """
+        Calculate the reverse edges for this vertex
+        """
+        reverse = set()
+        for i, r in enumerate(rules.rules):
+            if rule.head.id in [p.id for p in r.predicates]:
+                reverse.add(i)
+                continue
+        return reverse
+
     def __str__(self):
         return "R{}:{}".format(self.id, ",".join("R{}".format(r) for r in sorted(self.edges)))
-
-    # TODO define ge and le so that these can be sorted based on strongly connected components
 
 
 class DependencyGraph:
     def __init__(self, rules: Rules):
+        # TODO inherit from dict?
         self.rules = dict()
 
         # Each rule is assigned a unique ID
         for i, rule in enumerate(rules.rules):
-            self.rules[i] = OptimizedRule(rule, index=i, rules=rules)
+            self.rules[i] = Vertex(rule, index=i, rules=rules)
+
+        logger.debug("Reverse Forest:\n{}".format(self.reverse()))
+
+    def reverse(self) -> str:
+        """
+        :return: A string representation of the reverse forest
+        """
+        return "\n".join(
+            "R{}:{}".format(self.rules[i].id, ",".join("R{}".format(r) for r in sorted(self.rules[i].reverse)))
+            for i in sorted(self.rules.keys())
+        ) + "\n"
 
     def __str__(self):
         return "\n".join(str(self.rules[i]) for i in sorted(self.rules.keys())) + "\n"
