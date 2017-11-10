@@ -349,18 +349,22 @@ class Predicate(Parser):
 class Rule(Parser):
     grammar = []
 
-    def __init__(self, lazy: bool = False):
-        super().__init__(lazy=lazy)
-        try:
-            self.head = self.objects[0]
-            self.predicates = [self.objects[2]]
-            self.predicates += [o[1] for o in self.objects[3:] if isinstance(o, list)]
-        except IndexError:
-            self.head = None
-            self.predicates = None
-            return
+    def __init__(self, lazy: bool = False, head: headPredicate = None, predicates: List[Predicate] = None):
+        if head is not None and predicates is not None:
+            self.head = head
+            self.predicates = predicates
+        else:
+            super().__init__(lazy=lazy)
+            try:
+                self.head = self.objects[0]
+                self.predicates = [self.objects[2]]
+                self.predicates += [o[1] for o in self.objects[3:] if isinstance(o, list)]
+            except IndexError:
+                self.head = None
+                self.predicates = None
+                return
 
-        logger.debug("Created {}: {}".format(self.__class__.__name__, str(self)))
+            logger.debug("Created {}: {}".format(self.__class__.__name__, str(self)))
 
     def __str__(self) -> str:
         return "{} :- {}.".format(str(self.head), ",".join(str(p) for p in self.predicates))

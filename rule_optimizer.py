@@ -1,37 +1,50 @@
 #!/usr/bin/env python3
 import logging
-
 import multiprocessing
 
 import lexical_analyzer
 from datalog_interpreter import DatalogInterpreter
-from datalog_parser import DatalogProgram
+from datalog_parser import DatalogProgram, Rules, Rule
 from tokens import TokenError
 
 logger = logging.getLogger(__name__)
 
 
-class graph:
-    def __init__(self):
-        pass
+class OptimizedRule(Rule):
+    def __init__(self, rule: Rule, index: int):
+        self.dependencies = list()
+        self.id = index
+        super().__init__(head=rule.head, predicates=rule.predicates)
 
     def __str__(self):
-        return ""
+        return "R{}:{}".format(self.id, ",".join("R{}".format(r) for r in self.dependencies))
 
 
-class RuleOptimizaer(DatalogInterpreter):
+class DependencyGraph:
+    def __init__(self, rules: Rules):
+        self.rules = dict()
+
+        # Each rule is assigned a unique ID
+        for i, rule in enumerate(rules.rules):
+            self.rules[i] = OptimizedRule(rule, index=i)
+
+    def __str__(self):
+        return "\n".join(str(self.rules[i]) for i in sorted(self.rules.keys())) + "\n"
+
+
+class RuleOptimizer(DatalogInterpreter):
     def __init__(self, datalog_program: DatalogProgram):
         super().__init__(datalog_program, least_fix_point=False)
 
         # TODO Evaluate the rules in the order described by the rule optimizer
-        self.dependency_graph = graph()
+        self.dependency_graph = DependencyGraph(datalog_program.rules)
         self.rule_evaluation = self.evaluate_optimized_rules(order=self.dependency_graph)
 
         logger.info("Evaluating Queries")
         for query in datalog_program.queries.queries:
             self.rdbms[query] = self.evaluate_query(query)
 
-    def evaluate_optimized_rules(self, order: graph) -> str:
+    def evaluate_optimized_rules(self, order: DependencyGraph) -> str:
         return ""
 
     def __str__(self):
@@ -75,4 +88,4 @@ if __name__ == "__main__":
         print("Failure!\n  {}".format(t))
         exit(1)
 
-    print(RuleOptimizaer(datalog))
+    print(RuleOptimizer(datalog))
