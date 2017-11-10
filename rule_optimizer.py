@@ -11,13 +11,28 @@ logger = logging.getLogger(__name__)
 
 
 class OptimizedRule(Rule):
-    def __init__(self, rule: Rule, index: int):
-        self.dependencies = list()
-        self.id = index
+    def __init__(self, rule: Rule, index: int, rules: Rules):
         super().__init__(head=rule.head, predicates=rule.predicates)
 
+        self.id = index
+        self.edges = self.adjacency(rule, rules)
+
+    @staticmethod
+    def adjacency(rule: Rule, rules: Rules) -> set:
+        """
+        For the given rule, calculate the rules that it affects
+        """
+        adjacent = set()
+        for i, r in enumerate(rules.rules):
+            if r.head.id in [p.id for p in rule.predicates]:
+                adjacent.add(i)
+                continue
+        return adjacent
+
     def __str__(self):
-        return "R{}:{}".format(self.id, ",".join("R{}".format(r) for r in self.dependencies))
+        return "R{}:{}".format(self.id, ",".join("R{}".format(r) for r in sorted(self.edges)))
+
+    # TODO define ge and le so that these can be sorted based on strongly connected components
 
 
 class DependencyGraph:
@@ -26,7 +41,7 @@ class DependencyGraph:
 
         # Each rule is assigned a unique ID
         for i, rule in enumerate(rules.rules):
-            self.rules[i] = OptimizedRule(rule, index=i)
+            self.rules[i] = OptimizedRule(rule, index=i, rules=rules)
 
     def __str__(self):
         return "\n".join(str(self.rules[i]) for i in sorted(self.rules.keys())) + "\n"
