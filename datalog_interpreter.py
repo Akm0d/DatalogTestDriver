@@ -14,17 +14,19 @@ logger = logging.getLogger(__name__)
 class DatalogInterpreter(relational_database.RDBMS):
     merge_token = Token(-1)
 
-    def __init__(self, datalog_program: datalog_parser.DatalogProgram):
+    def __init__(self, datalog_program: datalog_parser.DatalogProgram, least_fix_point: bool = True):
         super().__init__(datalog_program)
         self.rules = datalog_program.rules.rules
         self.passes = 1
         logger.info("Evaluating Rules")
-        # Least-fix point algorithm
-        while self.evaluate_rules():
-            self.passes += 1
-        logger.info("Evaluating Queries")
-        for query in datalog_program.queries.queries:
-            self.rdbms[query] = self.evaluate_query(query)
+
+        # Don't evaluate rules yet if we are going to use a better algorithm to find their dependencies
+        if least_fix_point:
+            while self.evaluate_rules():
+                self.passes += 1
+            logger.info("Evaluating Queries")
+            for query in datalog_program.queries.queries:
+                self.rdbms[query] = self.evaluate_query(query)
 
     def evaluate_rules(self) -> bool:
         """
