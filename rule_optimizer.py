@@ -31,7 +31,7 @@ class RuleOptimizaer(DatalogInterpreter):
 if __name__ == "__main__":
     from argparse import ArgumentParser
 
-    arg = ArgumentParser(description="Run the datalog parser, this will produce output for lab 2")
+    arg = ArgumentParser(description="Run the Rule Optimizer.  This consumes the previous labs.")
     arg.add_argument('-d', '--debug', help="The logging debug level to use", default=logging.NOTSET, metavar='LEVEL')
     arg.add_argument('file', help='datalog file to parse')
     args = arg.parse_args()
