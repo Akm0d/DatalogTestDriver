@@ -13,31 +13,30 @@ logger = logging.getLogger(__name__)
 class Vertex(Rule):
     def __init__(self, rule: Rule, index: int, rules: Rules):
         super().__init__(head=rule.head, predicates=rule.predicates)
-
+        self.rule = rule
         self.id = index
-        self.edges = self.adjacency(rule, rules)
-        self.reverse = self.reverse_edges(rule, rules)
+        self.rules = rules
+        self.edges = self._adjacency()
+        self.reverse = self._reverse_edges()
 
-    @staticmethod
-    def adjacency(rule: Rule, rules: Rules) -> set:
+    def _adjacency(self) -> set:
         """
         For the given rule, calculate the rules that it affects
         """
         adjacent = set()
-        for i, r in enumerate(rules.rules):
-            if r.head.id in [p.id for p in rule.predicates]:
+        for i, r in enumerate(self.rules.rules):
+            if r.head.id in [p.id for p in self.rule.predicates]:
                 adjacent.add(i)
                 continue
         return adjacent
 
-    @staticmethod
-    def reverse_edges(rule: Rule, rules: Rules) -> set:
+    def _reverse_edges(self) -> set:
         """
         Calculate the reverse edges for this vertex
         """
         reverse = set()
-        for i, r in enumerate(rules.rules):
-            if rule.head.id in [p.id for p in r.predicates]:
+        for i, r in enumerate(self.rules.rules):
+            if self.rule.head.id in [p.id for p in r.predicates]:
                 reverse.add(i)
                 continue
         return reverse
@@ -46,15 +45,16 @@ class Vertex(Rule):
         return "R{}:{}".format(self.id, ",".join("R{}".format(r) for r in sorted(self.edges)))
 
 
-class DependencyGraph:
+class DependencyGraph(dict):
     def __init__(self, rules: Rules):
-        # TODO inherit from dict?
-        self.rules = dict()
+        super().__init__()
+        logger.debug("{}\n".format(rules))
 
         # Each rule is assigned a unique ID
         for i, rule in enumerate(rules.rules):
-            self.rules[i] = Vertex(rule, index=i, rules=rules)
+            self[i] = Vertex(rule, index=i, rules=rules)
 
+        logger.debug("Dependency Graph:\n{}".format(self))
         logger.debug("Reverse Forest:\n{}".format(self.reverse()))
 
     def reverse(self) -> str:
@@ -62,12 +62,12 @@ class DependencyGraph:
         :return: A string representation of the reverse forest
         """
         return "\n".join(
-            "R{}:{}".format(self.rules[i].id, ",".join("R{}".format(r) for r in sorted(self.rules[i].reverse)))
-            for i in sorted(self.rules.keys())
+            "R{}:{}".format(self[i].id, ",".join("R{}".format(r) for r in sorted(self[i].reverse)))
+            for i in sorted(self.keys())
         ) + "\n"
 
     def __str__(self):
-        return "\n".join(str(self.rules[i]) for i in sorted(self.rules.keys())) + "\n"
+        return "\n".join(str(self[i]) for i in sorted(self.keys())) + "\n"
 
 
 class RuleOptimizer(DatalogInterpreter):
