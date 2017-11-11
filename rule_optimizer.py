@@ -37,7 +37,7 @@ class Vertex(Rule, set):
             if self.rule.head.id in [p.id for p in r.predicates]:
                 reverse.add(i)
                 continue
-        return reverse
+        return Vertex(self.rule, 0 - self.id, self.rules)
 
     def __int__(self):
         return len(self) + len(reversed(self))
@@ -101,20 +101,21 @@ class RuleOptimizer(DatalogInterpreter):
         return ""
 
     def __str__(self):
+        logger.debug("to string")
         result = "Dependency Graph\n{}\n".format(self.dependency_graph)
         result += "Rule Evaluation\n{}\n".format(self.rule_evaluation)
 
         manager = multiprocessing.Manager()
         results = manager.dict()
         jobs = []
-        for i, query in enumerate(self.rdbms.keys()):
-            p = multiprocessing.Process(target=self._str_worker, args=(i, query, results))
-            jobs.append(p)
-            p.start()
-        for proc in jobs:
-            proc.join()
-        for i, _ in enumerate(self.rdbms.keys()):
-            result += results[i]
+        #for i, query in enumerate(self.rdbms.keys()):
+        #    p = multiprocessing.Process(target=self._str_worker, args=(i, query, results))
+        #    jobs.append(p)
+        #    p.start()
+        #for proc in jobs:
+        #    proc.join()
+        #for i, _ in enumerate(self.rdbms.keys()):
+        #    result += str(results[i])
         return result
 
 
