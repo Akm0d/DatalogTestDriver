@@ -58,9 +58,9 @@ class DependencyGraph(dict):
             for x in reversed(sorted(self[i])):
                 self.post_order_traversal.add(x)
 
-        logger.debug("Post Order Traversal:\n{}\n".format(",".join("R{}".format(p) for p in self.post_order_traversal)))
         logger.debug("Dependency Graph:\n{}".format(self))
         logger.debug("Reverse Forest:\n{}".format(reversed(self)))
+        logger.debug("Post Order Traversal:\n{}\n".format(",".join("R{}".format(p) for p in self.post_order_traversal)))
 
     def __reversed__(self) -> str:
         """
