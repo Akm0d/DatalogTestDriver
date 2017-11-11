@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 import logging
 import multiprocessing
+
 from typing import List
+from orderedset._orderedset import OrderedSet
 
 import lexical_analyzer
 from datalog_interpreter import DatalogInterpreter
@@ -32,25 +34,13 @@ class Vertex(Rule, set):
         return adjacent
 
     def __reversed__(self):
-        reverse = set()
+        reverse = Vertex(self.rule, 0 - self.id, self.rules)
+        reverse.clear()
         for i, r in enumerate(self.rules.rules):
             if self.rule.head.id in [p.id for p in r.predicates]:
                 reverse.add(i)
                 continue
-        return Vertex(self.rule, 0 - self.id, self.rules)
-
-    def __int__(self):
-        return len(self) + len(reversed(self))
-
-    def __lt__(self, other) -> bool:
-        if int(self) == int(other):
-            return len(reversed(self)) > len(reversed(other))
-        return int(self) > int(other)
-
-    def __gt__(self, other) -> bool:
-        if int(self) == int(other):
-            return len(reversed(self)) > len(reversed(other))
-        return int(self) < int(other)
+        return reverse
 
     def __str__(self):
         return "R{}:{}".format(self.id, ",".join("R{}".format(r) for r in sorted(self)))
@@ -60,16 +50,17 @@ class DependencyGraph(dict):
     def __init__(self, rules: Rules):
         super().__init__()
         logger.debug("{}\n".format(rules))
+        self.post_order_traversal = OrderedSet()
 
         # Each rule is assigned a unique ID
         for i, rule in enumerate(rules.rules):
             self[i] = Vertex(rule, index=i, rules=rules)
+            for x in reversed(sorted(self[i])):
+                self.post_order_traversal.add(x)
 
+        logger.debug("Post Order Traversal:\n{}\n".format(",".join("R{}".format(p) for p in self.post_order_traversal)))
         logger.debug("Dependency Graph:\n{}".format(self))
         logger.debug("Reverse Forest:\n{}".format(reversed(self)))
-
-    def post_order_traversal(self) -> List[Vertex]:
-        return sorted(self.values())
 
     def __reversed__(self) -> str:
         """
@@ -90,14 +81,15 @@ class RuleOptimizer(DatalogInterpreter):
 
         # TODO Evaluate the rules in the order described by the rule optimizer
         self.dependency_graph = DependencyGraph(datalog_program.rules)
-        self.rule_evaluation = self.evaluate_optimized_rules(order=self.dependency_graph.post_order_traversal())
+        self.rule_evaluation = self.evaluate_optimized_rules(order=self.dependency_graph.post_order_traversal)
 
         logger.info("Evaluating Queries")
         for query in datalog_program.queries.queries:
             self.rdbms[query] = self.evaluate_query(query)
 
     def evaluate_optimized_rules(self, order: List[Vertex]) -> str:
-        logger.debug("Evaluation order: {}".format(",".join("R{}".format(o.id) for o in order)))
+        # TODO This will be the SCC not POT
+        # logger.debug("Evaluation order: {}".format(",".join("R{}".format(o.id) for o in order)))
         return ""
 
     def __str__(self):
