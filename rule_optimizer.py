@@ -10,14 +10,14 @@ from tokens import TokenError
 logger = logging.getLogger(__name__)
 
 
-class Vertex(Rule):
+class Vertex(Rule, set):
     def __init__(self, rule: Rule, index: int, rules: Rules):
-        super().__init__(head=rule.head, predicates=rule.predicates)
+        Rule.__init__(self, head=rule.head, predicates=rule.predicates)
+        set.__init__(self)
         self.rule = rule
         self.id = index
         self.rules = rules
-        self.edges = self._adjacency()
-        self.reverse = self._reverse_edges()
+        self.update(self._adjacency())
 
     def _adjacency(self) -> set:
         """
@@ -30,10 +30,7 @@ class Vertex(Rule):
                 continue
         return adjacent
 
-    def _reverse_edges(self) -> set:
-        """
-        Calculate the reverse edges for this vertex
-        """
+    def __reversed__(self):
         reverse = set()
         for i, r in enumerate(self.rules.rules):
             if self.rule.head.id in [p.id for p in r.predicates]:
@@ -42,7 +39,7 @@ class Vertex(Rule):
         return reverse
 
     def __str__(self):
-        return "R{}:{}".format(self.id, ",".join("R{}".format(r) for r in sorted(self.edges)))
+        return "R{}:{}".format(self.id, ",".join("R{}".format(r) for r in sorted(self)))
 
 
 class DependencyGraph(dict):
@@ -55,14 +52,14 @@ class DependencyGraph(dict):
             self[i] = Vertex(rule, index=i, rules=rules)
 
         logger.debug("Dependency Graph:\n{}".format(self))
-        logger.debug("Reverse Forest:\n{}".format(self.reverse()))
+        logger.debug("Reverse Forest:\n{}".format(reversed(self)))
 
-    def reverse(self) -> str:
+    def __reversed__(self) -> str:
         """
         :return: A string representation of the reverse forest
         """
         return "\n".join(
-            "R{}:{}".format(self[i].id, ",".join("R{}".format(r) for r in sorted(self[i].reverse)))
+            "R{}:{}".format(self[i].id, ",".join("R{}".format(r) for r in reversed(self[i])))
             for i in sorted(self.keys())
         ) + "\n"
 
