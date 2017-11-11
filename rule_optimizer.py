@@ -2,7 +2,7 @@
 import logging
 import multiprocessing
 
-from typing import List
+from typing import Iterator
 from orderedset._orderedset import OrderedSet
 
 import lexical_analyzer
@@ -87,7 +87,7 @@ class RuleOptimizer(DatalogInterpreter):
         for query in datalog_program.queries.queries:
             self.rdbms[query] = self.evaluate_query(query)
 
-    def evaluate_optimized_rules(self, order: List[Vertex]) -> str:
+    def evaluate_optimized_rules(self, order: Iterator[Vertex]) -> str:
         # TODO This will be the SCC not POT
         # logger.debug("Evaluation order: {}".format(",".join("R{}".format(o.id) for o in order)))
         return ""
