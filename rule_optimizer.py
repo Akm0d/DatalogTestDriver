@@ -2,6 +2,8 @@
 import logging
 import multiprocessing
 
+from collections import defaultdict
+from tarjan import tarjan as SCC
 from typing import Iterator
 from orderedset._orderedset import OrderedSet
 
@@ -46,23 +48,34 @@ class Vertex(Rule, set):
         return "R{}:{}".format(self.id, ",".join("R{}".format(r) for r in sorted(self)))
 
 
-class DependencyGraph(dict):
+class DependencyGraph(defaultdict):
     def __init__(self, rules: Rules):
-        super().__init__()
-        logger.debug("Rules\n" + str("\n".join(str(x) for x in rules.rules)) + "\n")
-        self.post_order_traversal = OrderedSet()
+        super().__init__(list)
+        logger.debug("Rules:\n" + str("\n".join(str(x) for x in rules.rules)) + "\n")
+        post_order_traversal = OrderedSet()
 
         # Each rule is assigned a unique ID
         for i, rule in enumerate(rules.rules):
             self[i] = Vertex(rule, index=i, rules=rules)
             for x in reversed(sorted(self[i])):
-                self.post_order_traversal.add(x)
+                post_order_traversal.add(x)
 
         logger.debug("Dependency Graph:\n{}".format(self))
         logger.debug("Reverse Forest:\n{}".format(reversed(self)))
         logger.debug("Post Order Traversal:\n{}\n".format(
-            "\n".join("POTN(R{}) = {}".format(p, i) for i, p in enumerate(self.post_order_traversal)))
+            "\n".join("POTN(R{}) = {}".format(p, i) for i, p in enumerate(post_order_traversal)))
         )
+        scc = SCC(self)
+        logger.debug("Strongly Connected Components:\n{}\n".format(
+            "\n".join(",".join("R{}".format(v) for v in x) for x in scc))
+        )
+
+        logger.debug("Evaluation Order:\n")
+        self.evaluation_order = list()
+        # TODO Compute the evaluation order
+
+    def __iter__(self):
+        return (x for x in [])
 
     def __reversed__(self) -> str:
         """
@@ -83,7 +96,7 @@ class RuleOptimizer(DatalogInterpreter):
 
         # TODO Evaluate the rules in the order described by the rule optimizer
         self.dependency_graph = DependencyGraph(datalog_program.rules)
-        self.rule_evaluation = self.evaluate_optimized_rules(order=self.dependency_graph.post_order_traversal)
+        self.rule_evaluation = self.evaluate_optimized_rules(order=list(self.dependency_graph))
 
         logger.info("Evaluating Queries")
         for query in datalog_program.queries.queries:
