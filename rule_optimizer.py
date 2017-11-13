@@ -98,7 +98,7 @@ class RuleOptimizer(DatalogInterpreter):
         logger.debug("to string")
         result = "Dependency Graph\n{}\n".format(self.dependency_graph)
         result += "Rule Evaluation\n{}\n".format(self.rule_evaluation)
-
+        result += "Query Evaluation\n"
         manager = multiprocessing.Manager()
         results = manager.dict()
         jobs = []
