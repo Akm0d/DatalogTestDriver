@@ -74,9 +74,6 @@ class DependencyGraph(defaultdict):
         self.evaluation_order = list()
         # TODO Compute the evaluation order
 
-    def __iter__(self):
-        return (x for x in [])
-
     def __reversed__(self) -> str:
         """
         :return: A string representation of the reverse forest
