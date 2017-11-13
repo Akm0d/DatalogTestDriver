@@ -65,14 +65,27 @@ class DependencyGraph(defaultdict):
         logger.debug("Post Order Traversal:\n{}\n".format(
             "\n".join("POTN(R{}) = {}".format(p, i) for i, p in enumerate(post_order_traversal)))
         )
-        scc = SCC(self)
+        self.scc = SCC(self)
         logger.debug("Strongly Connected Components:\n{}\n".format(
             "\n".join(",".join("R{}".format(v) for v in x) for x in scc))
         )
 
-        logger.debug("Evaluation Order:\n")
-        self.evaluation_order = list()
-        # TODO Compute the evaluation order
+        # Group SCCs that have same number of items
+        scc_len = dict()
+        for s in self.scc:
+            if scc_len.get(len(s), None) is None:
+                scc_len[len(s)] = OrderedSet()
+            for x in s:
+                scc_len[len(s)].add(x)
+
+        # Iterate over largest SCC lists first
+        self.evaluation_order = OrderedSet()
+        for l in reversed(list(scc_len.keys())):
+            # Evaluate based on order of discovery from FIFO
+            for p in scc_len[l]:
+                self.evaluation_order.add(p)
+
+        logger.debug("Evaluation Order:\n{}\n".format(",".join("R{}".format(x) for x in self.evaluation_order)))
 
     def __reversed__(self) -> str:
         """
@@ -92,6 +105,7 @@ class RuleOptimizer(DatalogInterpreter):
         super().__init__(datalog_program, least_fix_point=False)
 
         # TODO Evaluate the rules in the order described by the rule optimizer
+        # Evaluate in groups of SCCs but print them out in the evaluation order
         self.dependency_graph = DependencyGraph(datalog_program.rules)
         self.rule_evaluation = self.evaluate_optimized_rules(order=list(self.dependency_graph))
 
