@@ -60,7 +60,9 @@ class DependencyGraph(dict):
 
         logger.debug("Dependency Graph:\n{}".format(self))
         logger.debug("Reverse Forest:\n{}".format(reversed(self)))
-        logger.debug("Post Order Traversal:\n{}\n".format(",".join("R{}".format(p) for p in self.post_order_traversal)))
+        logger.debug("Post Order Traversal:\n{}\n".format(
+            "\n".join("POTN(R{}) = {}".format(p, i) for i, p in enumerate(self.post_order_traversal)))
+        )
 
     def __reversed__(self) -> str:
         """
@@ -100,14 +102,14 @@ class RuleOptimizer(DatalogInterpreter):
         manager = multiprocessing.Manager()
         results = manager.dict()
         jobs = []
-        #for i, query in enumerate(self.rdbms.keys()):
-        #    p = multiprocessing.Process(target=self._str_worker, args=(i, query, results))
-        #    jobs.append(p)
-        #    p.start()
-        #for proc in jobs:
-        #    proc.join()
-        #for i, _ in enumerate(self.rdbms.keys()):
-        #    result += str(results[i])
+        for i, query in enumerate(self.rdbms.keys()):
+            p = multiprocessing.Process(target=self._str_worker, args=(i, query, results))
+            jobs.append(p)
+            p.start()
+        for proc in jobs:
+            proc.join()
+        for i, _ in enumerate(self.rdbms.keys()):
+            result += str(results[i])
         return result
 
 
