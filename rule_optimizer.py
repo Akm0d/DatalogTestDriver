@@ -49,7 +49,7 @@ class Vertex(Rule, set):
 class DependencyGraph(dict):
     def __init__(self, rules: Rules):
         super().__init__()
-        logger.debug("{}\n".format(rules))
+        logger.debug("Rules\n" + str("\n".join(str(x) for x in rules.rules)) + "\n")
         self.post_order_traversal = OrderedSet()
 
         # Each rule is assigned a unique ID
