@@ -67,7 +67,7 @@ class DependencyGraph(defaultdict):
         )
         self.scc = SCC(self)
         logger.debug("Strongly Connected Components:\n{}\n".format(
-            "\n".join(",".join("R{}".format(v) for v in x) for x in scc))
+            "\n".join(",".join("R{}".format(v) for v in x) for x in self.scc))
         )
 
         # Group SCCs that have same number of items
