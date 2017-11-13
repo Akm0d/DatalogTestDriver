@@ -95,7 +95,7 @@ class RuleOptimizer(DatalogInterpreter):
         return ""
 
     def __str__(self):
-        logger.debug("to string")
+        logger.debug("Generating String from Rule Optimizer")
         result = "Dependency Graph\n{}\n".format(self.dependency_graph)
         result += "Rule Evaluation\n{}\n".format(self.rule_evaluation)
         result += "Query Evaluation\n"
