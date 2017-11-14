@@ -89,9 +89,8 @@ class RuleOptimizer(DatalogInterpreter):
     def __init__(self, datalog_program: DatalogProgram):
         super().__init__(datalog_program, least_fix_point=False)
 
-        # TODO Evaluate the rules in the order described by the rule optimizer
-        # Evaluate in groups of SCCs but print them out in the evaluation order
         self.dependency_graph = DependencyGraph(datalog_program.rules)
+        # Evaluate the rules in the order described by the rule optimizer
         self.rule_evaluation = self.evaluate_optimized_rules(self.dependency_graph.scc)
 
         logger.info("Evaluating Queries")
@@ -100,6 +99,7 @@ class RuleOptimizer(DatalogInterpreter):
 
     def evaluate_optimized_rules(self, scc: List[List[int]]) -> str:
         str_passes = ""
+        # TODO SCCs are processed in the order of their discovery from the algorithm (FIFO order).
         for c in scc:
             first = c[0]
             if len(c) == 1 and first not in self.dependency_graph[first]:
