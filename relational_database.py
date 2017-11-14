@@ -61,7 +61,7 @@ class RDBMS:
         relation = self.rename(relation, query)
         relation = self.inner_join(relation)
         relation = self.project(relation)
-        return relation
+        return relation.dropna()
 
     def select(self, relation: Relation, query: datalog_parser.Query) -> Relation:
         # If a parameter is a string, then select the rows that match that string in the right columns
@@ -96,7 +96,7 @@ class RDBMS:
             x.string_id for x in query.parameterList if (not x.expression) and (x.string_id.type is TokenType.ID)
         ]
         relation.columns = column_names
-        logger.debug("Renamed:\n{}".format(self.print_relation(relation)))
+        logger.debug("Renamed:\n{}".format(relation))
         return relation
 
     @staticmethod
@@ -129,7 +129,7 @@ class RDBMS:
             reset_index(drop=True)
         if not relation.empty:
             relation.columns = column_names[:len(relation.columns)]
-        logger.debug("Inner Joined:\n{}".format(self.print_relation(relation)))
+        logger.debug("Inner Joined:\n{}".format(relation))
         return relation
 
     @staticmethod
@@ -139,8 +139,10 @@ class RDBMS:
             relation = relation.sort_values(list(relation))
             relation = relation.apply(
                 lambda column: column.apply(
-                    lambda c: str(column.name.value if isinstance(column.name, Token) else str(column.name)) + "=" + c.value)
+                    lambda c: str(column.name.value if isinstance(column.name, Token)
+                                  else str(column.name)) + "=" + c.value if isinstance(c, Token) else str(c))
                 )
+            relation = relation.dropna()
         # FIXME This has corner cases where the sep and escapechar can make incorrect values print out
         return "  " + relation.to_csv(
             index=False, header=False, sep='#', line_terminator='\n  ', quoting=csv.QUOTE_NONE, escapechar="\\"
