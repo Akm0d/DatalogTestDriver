@@ -4,7 +4,7 @@ import multiprocessing
 
 from collections import defaultdict
 from tarjan import tarjan as SCC
-from typing import Iterator
+from typing import List
 from orderedset._orderedset import OrderedSet
 
 import lexical_analyzer
@@ -60,32 +60,17 @@ class DependencyGraph(defaultdict):
             for x in reversed(sorted(self[i])):
                 post_order_traversal.add(x)
 
+        # Find strongly connected components
+        self.scc = SCC(self)
+
         logger.debug("Dependency Graph:\n{}".format(self))
         logger.debug("Reverse Forest:\n{}".format(reversed(self)))
         logger.debug("Post Order Traversal:\n{}\n".format(
             "\n".join("POTN(R{}) = {}".format(p, i) for i, p in enumerate(post_order_traversal)))
         )
-        self.scc = SCC(self)
         logger.debug("Strongly Connected Components:\n{}\n".format(
             "\n".join(",".join("R{}".format(v) for v in x) for x in self.scc))
         )
-
-        # Group SCCs that have same number of items
-        scc_len = dict()
-        for s in self.scc:
-            if scc_len.get(len(s), None) is None:
-                scc_len[len(s)] = OrderedSet()
-            for x in s:
-                scc_len[len(s)].add(x)
-
-        # Iterate over largest SCC lists first
-        self.evaluation_order = OrderedSet()
-        for l in reversed(list(scc_len.keys())):
-            # Evaluate based on order of discovery from FIFO
-            for p in scc_len[l]:
-                self.evaluation_order.add(p)
-
-        logger.debug("Evaluation Order:\n{}\n".format(",".join("R{}".format(x) for x in self.evaluation_order)))
 
     def __reversed__(self) -> str:
         """
@@ -107,16 +92,36 @@ class RuleOptimizer(DatalogInterpreter):
         # TODO Evaluate the rules in the order described by the rule optimizer
         # Evaluate in groups of SCCs but print them out in the evaluation order
         self.dependency_graph = DependencyGraph(datalog_program.rules)
-        self.rule_evaluation = self.evaluate_optimized_rules(order=list(self.dependency_graph))
+        self.rule_evaluation = self.evaluate_optimized_rules(self.dependency_graph.scc)
 
         logger.info("Evaluating Queries")
         for query in datalog_program.queries.queries:
             self.rdbms[query] = self.evaluate_query(query)
 
-    def evaluate_optimized_rules(self, order: Iterator[Vertex]) -> str:
-        # TODO This will be the SCC not POT
-        # logger.debug("Evaluation order: {}".format(",".join("R{}".format(o.id) for o in order)))
-        return ""
+    def evaluate_optimized_rules(self, scc: List[List[int]]) -> str:
+        str_passes = ""
+        for c in scc:
+            if len(c) == 1:  # TODO and the rule doesn't affect itself
+                num = c[0]
+                logger.debug("Evaluationg not strongly connected {}".format("R{}".format(num)))
+                rule = self.dependency_graph[num].rule
+                joined = self.join(rule)
+                self.union(rule.head, joined)
+                str_passes += "1 passes: R{}\n".format(num)
+                continue
+            logger.debug("Evaluating Strongly Connected {}".format(",".join("R{}".format(s) for s in c)))
+            passes = 0
+            change = True
+            while change:
+                change = False
+                for rule in [self.dependency_graph[r].rule for r in c]:
+                    joined = self.join(rule)
+                    if not joined.empty:
+                        change |= self.union(rule.head, joined)
+                        logger.debug("Yay change" if change else "Nothing changed")
+                passes += 1
+            str_passes += "{} passes: {}\n".format(passes, ",".join("R{}".format(s) for s in sorted(c)))
+        return str_passes
 
     def __str__(self):
         logger.debug("Generating String from Rule Optimizer")
