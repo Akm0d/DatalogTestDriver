@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import multiprocessing
 import logging
+from typing import List
 
 import pandas as pd
 from tokens import TokenError, Token
@@ -18,33 +19,41 @@ class DatalogInterpreter(relational_database.RDBMS):
         super().__init__(datalog_program)
         self.rules = datalog_program.rules.rules
         self.passes = 1
-        logger.info("Evaluating Rules")
 
         # Don't evaluate rules yet if we are going to use a better algorithm to find their dependencies
         if least_fix_point:
-            while self.evaluate_rules():
-                self.passes += 1
+            logger.info("Evaluating Rules")
+            self.passes = self.evaluate_rules()
+
             logger.info("Evaluating Queries")
             for query in datalog_program.queries.queries:
                 self.rdbms[query] = self.evaluate_query(query)
 
-    def evaluate_rules(self) -> bool:
+    def evaluate_rule(self, rule: datalog_parser.Rule) -> bool:
+        joined = self.join(rule)
+        if not joined.empty:
+            return self.union(rule.head, joined)
+        return False
+
+    def evaluate_rules(self, rules: List[datalog_parser.Rule] = None) -> int:
         """
         Each rule potentially adds new facts to a relation.
         The fixed-point algorithm repeatedly performs iterations on the rules adding new facts from each rule as the facts are generated.
         Each iteration may change the database by adding at least one new tuple to at least one relation in the database.
         The fixed-point algorithm terminates when an iteration of the rule expression set does not union a new tuple to any relation in the database.
         """
-        change = False
-        logger.debug("Pass: " + str(self.passes))
-        # TODO can I evaluate each rule in it's own thread and get the same results?
-        # Maybe this can be done after lab5 and I know which rules are dependent on others
-        for rule in self.rules:
-            joined = self.join(rule)
-            if not joined.empty:
-                change |= self.union(rule.head, joined)
-                logger.debug("Yay change" if change else "Nothing changed")
-        return change
+        if rules is None:
+            rules = self.rules
+        passes = 0
+        change = True
+        while change:
+            change = False
+            for rule in rules:
+                joined = self.join(rule)
+                if not joined.empty:
+                    change |= self.union(rule.head, joined)
+            passes += 1
+        return passes
 
     def join(self, rule: datalog_parser.Rule) -> relational_database.Relation:
         logger.debug("Evaluating '%s'" % str(rule))

@@ -103,7 +103,7 @@ class RuleOptimizer(DatalogInterpreter):
         for c in scc:
             first = c[0]
             if len(c) == 1 and first not in self.dependency_graph[first]:
-                logger.debug("Evaluationg not strongly connected {}".format("R{}".format(first)))
+                logger.debug("Evaluating not strongly connected {}".format("R{}".format(first)))
                 rule = self.dependency_graph[first].rule
                 joined = self.join(rule)
                 if not joined.empty:
