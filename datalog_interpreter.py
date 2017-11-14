@@ -95,7 +95,11 @@ class DatalogInterpreter(relational_database.RDBMS):
         size = len(self.relations.get(head.id, ""))
         # Project columns that appear in head predicate
         # Rename relation to match the schema of the relation in the database
-        relation = relation[[x for x in head.idList]]
+        try:
+            relation = relation[[x for x in head.idList]]
+        except KeyError as e:
+            logger.warning(e)
+            return False
         logger.debug("Project:\n{}".format(relation))
         relation.columns = range(relation.shape[1])
 
