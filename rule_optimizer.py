@@ -106,7 +106,8 @@ class RuleOptimizer(DatalogInterpreter):
                 logger.debug("Evaluationg not strongly connected {}".format("R{}".format(num)))
                 rule = self.dependency_graph[num].rule
                 joined = self.join(rule)
-                self.union(rule.head, joined)
+                if not joined.empty:
+                    self.union(rule.head, joined)
                 str_passes += "1 passes: R{}\n".format(num)
                 continue
             logger.debug("Evaluating Strongly Connected {}".format(",".join("R{}".format(s) for s in c)))
