@@ -116,7 +116,7 @@ class RuleOptimizer(DatalogInterpreter):
 
     def __str__(self):
         logger.debug("Generating String from Rule Optimizer")
-        result = "Dependency Graph\n{}\n".format(self.dependency_graph)
+        result = "Dependency Graph\n{}{}".format(self.dependency_graph, "\n" if self.rules else "")
         result += "Rule Evaluation\n{}\n".format(self.rule_evaluation)
         result += "Query Evaluation\n"
         manager = multiprocessing.Manager()

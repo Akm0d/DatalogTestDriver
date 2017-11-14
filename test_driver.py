@@ -16,6 +16,7 @@ from relational_database import RDBMS
 # import datalog_interpreter
 
 # This is the cyclomatic complexity threshhold allowed for each function
+from rule_optimizer import RuleOptimizer
 from tokens import TokenError
 import logging
 
@@ -164,7 +165,12 @@ for test in test_files:
             except TokenError as t:
                 expected = "Failure!\n  {}".format(t)
         elif lab == 5:
-            print("Lab %s part %s has not yet been implemented" % (str(lab), str(part)))
+            tokens = lexical_scan(test)
+            try:
+                datalog = DatalogProgram(tokens)
+                expected = str(RuleOptimizer(datalog))
+            except TokenError as t:
+                expected = "Failure!\n  {}".format(t)
         expected_runtime = time() - expected_runtime
         total_expected_runtime += expected_runtime
         logger.info("Student runtime: {}".format(actual_runtime))
