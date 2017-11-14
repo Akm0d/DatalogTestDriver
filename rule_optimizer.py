@@ -101,14 +101,14 @@ class RuleOptimizer(DatalogInterpreter):
     def evaluate_optimized_rules(self, scc: List[List[int]]) -> str:
         str_passes = ""
         for c in scc:
-            if len(c) == 1:  # TODO and the rule doesn't affect itself
-                num = c[0]
-                logger.debug("Evaluationg not strongly connected {}".format("R{}".format(num)))
-                rule = self.dependency_graph[num].rule
+            first = c[0]
+            if len(c) == 1 and first not in self.dependency_graph[first]:
+                logger.debug("Evaluationg not strongly connected {}".format("R{}".format(first)))
+                rule = self.dependency_graph[first].rule
                 joined = self.join(rule)
                 if not joined.empty:
                     self.union(rule.head, joined)
-                str_passes += "1 passes: R{}\n".format(num)
+                str_passes += "1 passes: R{}\n".format(first)
                 continue
             logger.debug("Evaluating Strongly Connected {}".format(",".join("R{}".format(s) for s in c)))
             passes = 0
@@ -119,7 +119,6 @@ class RuleOptimizer(DatalogInterpreter):
                     joined = self.join(rule)
                     if not joined.empty:
                         change |= self.union(rule.head, joined)
-                        logger.debug("Yay change" if change else "Nothing changed")
                 passes += 1
             str_passes += "{} passes: {}\n".format(passes, ",".join("R{}".format(s) for s in sorted(c)))
         return str_passes
