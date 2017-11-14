@@ -105,6 +105,7 @@ total_actual_runtime = 0
 actual_runtime = 0
 expected_runtime = 0
 
+# TODO Use unittest multitesting to test all these files
 for test in test_files:
     # TODO compare these and such in multiprocessing threads
     tests_total += 1
