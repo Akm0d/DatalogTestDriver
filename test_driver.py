@@ -6,6 +6,7 @@ from os import path as os_path, name as os_name, listdir
 from re import compile as re_compile, MULTILINE
 from subprocess import TimeoutExpired, check_output, check_call, CalledProcessError
 from sys import argv, exit as sys_exit
+from tempfile import NamedTemporaryFile
 from termcolor import cprint
 from time import time
 
@@ -13,14 +14,13 @@ from datalog_interpreter import DatalogInterpreter
 from lexical_analyzer import scan as lexical_scan
 from datalog_parser import DatalogProgram
 from relational_database import RDBMS
-# import datalog_interpreter
-
-# This is the cyclomatic complexity threshhold allowed for each function
 from rule_optimizer import RuleOptimizer
 from tokens import TokenError
+
 import logging
 
 logger = logging.getLogger(__name__)
+# This is the cyclomatic complexity threshhold allowed for each function
 COMPLEXITY_THRESHHOLD = 8
 
 # If there are no arguments, then print the help text
@@ -28,15 +28,14 @@ if len(argv) == 1:
     argv.append("--help")
 
 arg = ArgumentParser(description="Test your binary against a python datalog parser")
-
+# TODO combine the binary/compile options
 arg.add_argument('-b', '--binary', help="Your binary file", default=None)
 arg.add_argument('-c', '--compile', help="The directory where your main.cpp can be found. "
                                          "Supplying this argument also allows your code to be analyzed for "
                                          "cyclomatic complexity", default=None
                  )
 arg.add_argument('-d', '--debug', help="The logging debug level to use", default=logging.NOTSET, metavar='LEVEL')
-arg.add_argument('-l', '--lab', help="The lab number you are testing. Default is 5", default=5)
-arg.add_argument('-p', '--part', help="The lab part you are testing. Default is 2", default=2)
+arg.add_argument('-l', '--lab', help="The lab number you are testing. Default is 5", default=0, type=int)
 arg.add_argument('--sandbox', action='store_true', default=False,
                  help="Run the sandbox utility.")
 arg.add_argument("test_files", nargs="*", help="The files that will be used in this test")
@@ -52,27 +51,20 @@ if args.sandbox:
 logging.basicConfig(level=logging.ERROR)
 logger.setLevel(int(args.debug))
 
-lab = int(args.lab)
+lab = args.lab
 test_files = args.test_files
 if not test_files:
     raise FileNotFoundError("No test files provided")
 binary = args.binary
-part = int(args.part)
 code_directory = args.compile
 
 sources = [os_path.join(code_directory, x) for x in listdir(args.compile) if x.endswith('.cpp') or x.endswith('.h')]
-
-if not (1 <= lab <= 5):
-    raise ValueError("Lab number must be an integer from 1 to 6")
-
-if not (1 <= part <= 2):
-    raise ValueError("Part must be either 1 or 2")
 
 # If a code directory was given, then try to compile it
 if code_directory:
     # If they gave a code directory but not a binary name, then name the binary now
     if not binary:
-        binary = "lab%sp%s.%s" % (str(lab), str(part), "exe" if os_name == 'nt' else "bin")
+        binary = "lab{}.{}".format(str(lab), "exe" if os_name == 'nt' else "bin")
     if os_name == 'nt':
         # TODO compile using cl
         print("Unable to compile %s, make sure you are using a unix based operating system" % binary)
@@ -83,6 +75,29 @@ if code_directory:
         check_call(command, shell=True)
         logger.debug("Creating binary '{}'".format(binary))
 
+if not lab and binary:
+    logger.debug("No lab number given")
+    temp_file = NamedTemporaryFile()
+    # Create a bare minimum datalog program
+    temp_file.write("Schemes:a(a)Facts:a('a').Rules:Queries:a('a')?".encode())
+    temp_file.flush()
+    output = str(check_output("%s %s" % (binary, temp_file.name), shell=True, timeout=60), 'utf-8')
+    if output.splitlines()[-1].startswith("Total Tokens ="):
+        lab = 1
+    elif output.startswith("Success!"):
+        lab = 2
+    elif output.startswith("Schemes populated after"):
+        lab = 4
+    elif output.startswith("Dependency Graph"):
+        lab = 5
+    else:
+        # Lab 3 doesn't have any unique strings
+        lab = 3
+    logger.debug("Detected lab {}".format(lab))
+
+if not (1 <= lab <= 5):
+    raise ValueError("Lab number must be an integer from 1 to 5")
+
 tests_total = 0
 tests_passed = 0
 total_expected_runtime = 0
@@ -91,13 +106,10 @@ actual_runtime = 0
 expected_runtime = 0
 
 for test in test_files:
+    # TODO compare these and such in multiprocessing threads
     tests_total += 1
     print('-' * 80)
-    if lab == 1:
-        print("Testing %s on Lab %s" % (test, str(lab)))
-    else:
-        print("Testing %s on Lab %s Part %s" % (test, str(lab), str(part)))
-    print('-' * 80)
+    print("Testing %s on Lab %s" % (test, str(lab)))
 
     # Grab the user output from their binary
     actual = None
@@ -119,7 +131,7 @@ for test in test_files:
         total_actual_runtime += actual_runtime
 
     if not timeout:
-        expected = ''
+        expected = ""
         expected_runtime = time()
         # Compute the correct output from the python script, detect change by including hash of file in pickle
         # TODO save the correct output to a pickle file to lower my runtime?
@@ -130,18 +142,14 @@ for test in test_files:
             expected = expected + ("Total Tokens = %s\n" % len(lex))
         elif lab == 2:
             expected = "Success!\n"
-
             tokens = lexical_scan(test, ignore_comments=True, ignore_whitespace=True)
 
             # Ignore traces on token errors
             try:
                 datalog = DatalogProgram(tokens)
-                if part == 2:
-                    expected += str(datalog)
+                expected += str(datalog)
             except TokenError as t:
-                expected = 'Failure!\n'
-                if part == 2:
-                    expected += '  {}'.format(t)
+                expected = 'Failure!\n  {}'.format(t)
         elif lab == 3:
             tokens = lexical_scan(test)
             try:
