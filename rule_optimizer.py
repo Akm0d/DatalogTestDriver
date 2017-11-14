@@ -105,21 +105,12 @@ class RuleOptimizer(DatalogInterpreter):
             if len(c) == 1 and first not in self.dependency_graph[first]:
                 logger.debug("Evaluating not strongly connected {}".format("R{}".format(first)))
                 rule = self.dependency_graph[first].rule
-                joined = self.join(rule)
-                if not joined.empty:
-                    self.union(rule.head, joined)
+                self.evaluate_rule(rule)
                 str_passes += "1 passes: R{}\n".format(first)
                 continue
+
             logger.debug("Evaluating Strongly Connected {}".format(",".join("R{}".format(s) for s in c)))
-            passes = 0
-            change = True
-            while change:
-                change = False
-                for rule in [self.dependency_graph[r].rule for r in c]:
-                    joined = self.join(rule)
-                    if not joined.empty:
-                        change |= self.union(rule.head, joined)
-                passes += 1
+            passes = self.evaluate_rules([self.dependency_graph[r].rule for r in c])
             str_passes += "{} passes: {}\n".format(passes, ",".join("R{}".format(s) for s in sorted(c)))
         return str_passes
 
