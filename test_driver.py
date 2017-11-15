@@ -39,9 +39,9 @@ class TestDriver(unittest.TestCase):
         arg = ArgumentParser(description="Test your binary against a python datalog parser")
         # TODO combine the binary/compile options
         arg.add_argument('student_code', help="Your binary file or the directory where your main.cpp can be found.")
-        arg.add_argument('-d', '--debug', help="The logging debug level to use", default=logging.NOTSET,
+        arg.add_argument('-d', '--debug', help="The logging debug level to use", default=logging.INFO,
                          metavar='LEVEL')
-        arg.add_argument('-l', '--lab', help="The lab number you are testing. Default is 5", default=0, type=int)
+        arg.add_argument('-l', '--lab', help="The lab number you are testing. Default is 30", default=0, type=int)
         arg.add_argument('--sandbox', action='store_true', default=False, help="Run the sandbox utility.")
         arg.add_argument('-s', '--student', type=str, default="Student", help="Student name or ID")
         arg.add_argument("test_files", nargs="*", help="The files that will be used in this test")
@@ -122,6 +122,7 @@ class TestDriver(unittest.TestCase):
                         self.student, int(100 * (driver_runtime/student_runtime))
                     )
                 )
+                logger.info("Test Passed")
 
     def student_output(self, test_file: str, results: dict):
         start_time = time()
@@ -217,7 +218,7 @@ if __name__ == "__main__":
         argv.append("--help")
 
     if '--sandbox' in argv:
-        logger.info("Starting sandbox command line interface")
+        print("Starting sandbox command line interface")
         from sandbox import Sandbox
 
         sandbox = Sandbox()
