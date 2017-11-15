@@ -191,6 +191,7 @@ for test in test_files:
         else:
             # Print the test and the diff
             if binary:
+                # TODO This could be added to the "message" portion of assertions in the new test driver
                 offending_tokens = list()
                 diff = unified_diff(expected.splitlines(1), actual.splitlines(1))
                 for line in diff:

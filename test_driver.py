@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-
+import multiprocessing
 from argparse import ArgumentParser
 from enum import Enum
 
@@ -14,6 +14,7 @@ from lexical_analyzer import scan as lexical_scan
 from datalog_parser import DatalogProgram
 from relational_database import RDBMS
 from rule_optimizer import RuleOptimizer
+from time import time
 from tokens import TokenError
 
 import unittest
@@ -42,6 +43,7 @@ class TestDriver(unittest.TestCase):
                          metavar='LEVEL')
         arg.add_argument('-l', '--lab', help="The lab number you are testing. Default is 5", default=0, type=int)
         arg.add_argument('--sandbox', action='store_true', default=False, help="Run the sandbox utility.")
+        arg.add_argument('-s', '--student', type=str, default="Student", help="Student name or ID")
         arg.add_argument("test_files", nargs="*", help="The files that will be used in this test")
         args = arg.parse_args()
 
@@ -49,16 +51,18 @@ class TestDriver(unittest.TestCase):
         logging.basicConfig(level=logging.ERROR)
         logger.setLevel(int(args.debug))
 
+        cls.maxDiff = None
+        cls.threading = multiprocessing.Manager()
+        cls.student = args.student
+        cls.lab = args.lab
+
         # Make sure test files are provided
         cls.test_files = args.test_files
-
         if not cls.test_files:
             raise FileNotFoundError("No test files provided")
 
-        cls.lab = args.lab
-
         if os_path.isdir(args.student_code):
-            # COMPILE Their code
+            # Compile Their code
             cls.sources = [os_path.join(args.student_code, x)
                            for x in listdir(args.student_code) if x.endswith('.cpp') or x.endswith('.h')]
             cls.binary = cls.compileCode(cls)
@@ -73,8 +77,7 @@ class TestDriver(unittest.TestCase):
             cls.lab = cls.getLabNumber(cls)
         else:
             cls.lab = args.lab
-        if not (1 <= cls.lab <= 5):
-            raise ValueError("Lab number must be an integer from 1 to 5")
+        # TODO Rename the bin file if we learned the name of the lab
 
     def test_cyclomatic_complexity(self):
         logger.debug("Testing cyclomatic complexity")
@@ -91,28 +94,50 @@ class TestDriver(unittest.TestCase):
         Run unittest against all of the test files
         """
         for t in self.test_files:
-            with self.subTest(test_file=t):
-                logger.info("Lab {} on Test {}".format(self.lab, t))
+            with self.subTest(test=t):
+                logger.info("Lab {}: {}".format(self.lab, t))
+                results = self.threading.dict()
+                jobs = []
+
+                # Start cpu thread getting student output
+                p = multiprocessing.Process(target=self.student_output, args=(t, results))
+                jobs.append(p)
+                p.start()
+
+                # Start cpu thread getting test driver output
+                p = multiprocessing.Process(target=self.driver_output, args=(t, results))
+                jobs.append(p)
+                p.start()
+                for proc in jobs:
+                    proc.join()
 
                 # Grab the student output from their binary
-                student_output = self.student_output(t)
-                self.assertNotIsInstance(student_output, Message)
-                expected = self.driver_output(t)
-                self.assertEqual(student_output.strip(),  expected.strip())
-                # TODO assert runtime
+                self.assertNotIsInstance(results[self.student], Message,
+                                         "Runtime exceeded {} Seconds".format(self.timeout))
+                self.assertEqual(results[self.student].strip(),  results[self.__class__].strip())
+                student_runtime = results[self.student + "Runtime"]
+                driver_runtime = results[str(self.__class__) + "Runtime"]
+                self.assertLessEqual(
+                    student_runtime, driver_runtime, "{}'s code runs {}% slower than the test driver".format(
+                        self.student, int(100 * (driver_runtime/student_runtime))
+                    )
+                )
 
-    def student_output(self, test_file: str) -> str or Message:
+    def student_output(self, test_file: str, results: dict):
+        start_time = time()
         command = "./{} {}".format(self.binary, test_file)
         logger.debug("Student run command {}".format(command))
-        logger.debug("Student run command {}".format(command))
         try:
-            return str(check_output(command, shell=True, timeout=self.timeout, stderr=PIPE), 'utf-8')
+            results[self.student] = str(check_output(command, shell=True, timeout=self.timeout, stderr=PIPE), 'utf-8')
         except TimeoutExpired:
-            return Message.TIMEOUT
+            results[self.student] = Message.TIMEOUT
         except CalledProcessError:
-            return Message.CRASHED
+            results[self.student] = Message.CRASHED
+        results[self.student + "Runtime"] = time() - start_time
 
-    def driver_output(self, test_file: str) -> str or Message:
+    def driver_output(self, test_file: str, results: dict):
+        start_time = time()
+        logger.debug("Running test driver on {}".format(test_file))
         result = ""
         # TODO Compute the correct output from the python script, detect change by including hash of file in pickle
         # TODO save the correct output to a pickle file to lower my runtime?
@@ -121,7 +146,8 @@ class TestDriver(unittest.TestCase):
             for line in lex:
                 result += str(line) + "\n"
             result += "Total Tokens = {}\n".format(len(lex))
-            return result
+            results[self.__class__] = result
+            return
 
         # The rest of the labs will need tokens with no comments or whitespace
         tokens = lexical_scan(test_file, ignore_comments=True, ignore_whitespace=True)
@@ -129,25 +155,26 @@ class TestDriver(unittest.TestCase):
         try:
             datalog = DatalogProgram(tokens)
             if self.lab == 2:
-                result = "Success!\n{}".format(datalog)
+                results[self.__class__] = "Success!\n{}".format(datalog)
+                return
         except TokenError as t:
-            return 'Failure!\n  {}'.format(t)
+            results[self.__class__] = 'Failure!\n  {}'.format(t)
+            results[str(self.__class__) + "Runtime"] = time() - start_time
+            return
 
         if self.lab == 3:
             rdbms = RDBMS(datalog)
             for datalog_query in datalog.queries.queries:
                 rdbms.rdbms[datalog_query] = rdbms.evaluate_query(datalog_query)
-            return str(rdbms)
+            results[self.__class__] = str(rdbms)
         elif self.lab == 4:
-            return str(DatalogInterpreter(datalog))
+            results[self.__class__] = str(DatalogInterpreter(datalog))
         elif self.lab == 5:
-            return str(RuleOptimizer(datalog))
+            results[self.__class__] = str(RuleOptimizer(datalog))
         else:
-            return Message.INVALID_LAB
+            results[self.__class__] = Message.INVALID_LAB
 
-    @classmethod
-    def tearDownClass(cls):
-        pass
+        results[str(self.__class__) + "Runtime"] = time() - start_time
 
     def compileCode(self) -> str:
         file_name = "lab{}.{}".format(self.lab, "exe" if os_name == 'nt' else "bin")
