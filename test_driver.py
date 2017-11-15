@@ -51,8 +51,9 @@ class TestDriver(unittest.TestCase):
         logging.basicConfig(level=logging.ERROR)
         logger.setLevel(int(args.debug))
 
-        cls.maxDiff = None
         cls.threading = multiprocessing.Manager()
+
+        cls.maxDiff = None
         cls.student = args.student
         cls.lab = args.lab
 
@@ -113,7 +114,7 @@ class TestDriver(unittest.TestCase):
 
                 # Grab the student output from their binary
                 self.assertNotIsInstance(results[self.student], Message,
-                                         "Runtime exceeded {} Seconds".format(self.timeout))
+                                         "Runtime exceeded {} Seconds, or the program crashed".format(self.timeout))
                 self.assertEqual(results[self.student].strip(),  results[self.__class__].strip())
                 student_runtime = results[self.student + "Runtime"]
                 driver_runtime = results[str(self.__class__) + "Runtime"]
@@ -148,6 +149,7 @@ class TestDriver(unittest.TestCase):
                 result += str(line) + "\n"
             result += "Total Tokens = {}\n".format(len(lex))
             results[self.__class__] = result
+            results[str(self.__class__) + "Runtime"] = time() - start_time
             return
 
         # The rest of the labs will need tokens with no comments or whitespace
@@ -157,6 +159,7 @@ class TestDriver(unittest.TestCase):
             datalog = DatalogProgram(tokens)
             if self.lab == 2:
                 results[self.__class__] = "Success!\n{}".format(datalog)
+                results[str(self.__class__) + "Runtime"] = time() - start_time
                 return
         except TokenError as t:
             results[self.__class__] = 'Failure!\n  {}'.format(t)
