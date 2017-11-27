@@ -11,7 +11,6 @@ import relational_database
 
 logger = logging.getLogger(__name__)
 
-
 class DatalogInterpreter(relational_database.RDBMS):
     merge_token = Token(-1)
 
@@ -64,6 +63,7 @@ class DatalogInterpreter(relational_database.RDBMS):
         # Join the relations that result
         while relations:
             new_rel = relations.pop()
+            # Find
             common_columns = set(list(new_rel)) & set(list(relation))
             logger.debug("Merge A:\n{}".format(relation))
             logger.debug("Merge B:\n{}".format(new_rel))

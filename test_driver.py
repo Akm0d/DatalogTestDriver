@@ -87,7 +87,7 @@ class TestDriver(unittest.TestCase):
             for f in cc.function_list:
                 function_complexity = f.cyclomatic_complexity
                 assert isinstance(f, FunctionInfo)
-                with self.subTest(source=c, hunction=f.name):
+                with self.subTest(source=c, function=f.name):
                     self.assertLessEqual(function_complexity, self.complexity_threshold)
 
     def test_all(self):
@@ -133,7 +133,8 @@ class TestDriver(unittest.TestCase):
             results[self.student] = str(check_output(command, shell=True, timeout=self.timeout, stderr=PIPE), 'utf-8')
         except TimeoutExpired:
             results[self.student] = Message.TIMEOUT
-        except CalledProcessError:
+        except CalledProcessError as e:
+            logger.warning(e)
             results[self.student] = Message.CRASHED
         results[self.student + "Runtime"] = time() - start_time
 
@@ -187,7 +188,7 @@ class TestDriver(unittest.TestCase):
             logger.error(
                 "Unable to compile {}, make sure you are using a unix based operating system".format(file_name))
         else:
-            command = "g++ -std=c++11 -o %s -g -Wall %s" % (file_name, " ".join(self.sources))
+            command = "g++ -std=c++14 -o %s -g -Wall %s" % (file_name, " ".join(self.sources))
             logger.debug(command)
             check_call(command, shell=True)
             logger.debug("Creating binary '{}'".format(file_name))

@@ -1,0 +1,8 @@
+Schemes: 
+  P(p1,p2)
+Facts:
+  P('1', '2').
+Rules:
+  P(X,Y):- P(Y,X).
+Queries:
+  P(X,Y)?
