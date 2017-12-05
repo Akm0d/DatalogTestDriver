@@ -24,25 +24,29 @@ class Sandbox(QWidget):
     PAUSED = "Paused"
     RUNNING = "Running"
 
-    def __init__(self, input_files: List[str] = None,
-                 lab1_binary: str = None, lab2_binary: str = None, lab3_binary: str = None):
-        self.binary_lab1 = lab1_binary if path.isfile(str(lab1_binary)) else None
-        self.binary_lab2 = lab2_binary if path.isfile(str(lab2_binary)) else None
-        self.binary_lab3 = lab3_binary if path.isfile(str(lab3_binary)) else None
-        self.binary_lab4 = None
-        self.binary_lab5 = None
-        if self.binary_lab5:
-            self.highest_lab = 5
-        elif self.binary_lab4:
-            self.highest_lab = 4
-        elif self.binary_lab3:
-            self.highest_lab = 3
-        elif self.binary_lab2:
-            self.highest_lab = 2
-        elif self.binary_lab1:
-            self.highest_lab = 1
-        else:
-            self.highest_lab = 0
+    def __init__(self, input_files: List[str] = None, lab1_binary: str = None, lab2_binary: str = None,
+                 lab3_binary: str = None, lab4_binary: str = None, lab5_binary: str = None):
+        self.data = dict()
+        self.data[1] = dict()
+        self.data[1]['title'] = "Lexical Analyzer"
+        self.data[2] = dict()
+        self.data[2]['title'] = "Datalog Parser"
+        self.data[3] = dict()
+        self.data[3]['title'] = "Relational Database"
+        self.data[4] = dict()
+        self.data[4]['title'] = "Datalog Interpreter"
+        self.data[5] = dict()
+        self.data[5]['title'] = "Rule Optimizer"
+        if path.isfile(str(lab1_binary)):
+            self.data[1]['binary'] = lab1_binary
+        if path.isfile(str(lab2_binary)):
+            self.data[2]['binary'] = lab2_binary
+        if path.isfile(str(lab3_binary)):
+            self.data[3]['binary'] = lab3_binary
+        if path.isfile(str(lab4_binary)):
+            self.data[4]['binary'] = lab4_binary
+        if path.isfile(str(lab5_binary)):
+            self.data[5]['binary'] = lab5_binary
 
         # Set up QT5
         self.state = self.RUNNING
@@ -69,6 +73,7 @@ class Sandbox(QWidget):
                     input_datalog += new_datalog
             except TokenError as t:
                 logger.debug(t)
+        # Combine all the input files into a single datalog program
         self.textbox_input.appendPlainText(input_datalog.print_datalog_file() if input_datalog else '')
 
     def initUI(self):
@@ -82,47 +87,42 @@ class Sandbox(QWidget):
         self.textbox_input = QPlainTextEdit(self)
         self.textbox_input.textChanged.connect(self.analyzeInput)
 
-        # TODO have a generator or something that combines each text widget with a label
-        self.output_lab1 = QTextEdit()
-        self.output_lab1.setReadOnly(True)
-        self.output_lab1.setFrameStyle(QFrame.Sunken)
-
-        self.output_lab2 = QTextEdit()
-        self.output_lab2.setReadOnly(True)
-        self.output_lab2.setFrameStyle(QFrame.Sunken)
-
-        self.output_lab3 = QTextEdit()
-        self.output_lab3.setReadOnly(True)
-        self.output_lab3.setFrameStyle(QFrame.Sunken)
-
-        self.student_output_lab1 = QTextEdit()
-        self.student_output_lab1.setReadOnly(True)
-        self.student_output_lab1.setFrameStyle(QFrame.Sunken)
-
-        self.student_output_lab2 = QTextEdit()
-        self.output_lab2.setReadOnly(True)
-        self.output_lab2.setFrameStyle(QFrame.Sunken)
-
-        self.student_output_lab3 = QTextEdit()
-        self.output_lab3.setReadOnly(True)
-        self.output_lab3.setFrameStyle(QFrame.Sunken)
-
         splitter_text.addWidget(self.textbox_input)
-        splitter_text.addWidget(self.output_lab1)
-        splitter_text.addWidget(self.student_output_lab1)
-        splitter_text.addWidget(self.output_lab2)
-        splitter_text.addWidget(self.student_output_lab2)
-        splitter_text.addWidget(self.output_lab3)
-        splitter_text.addWidget(self.student_output_lab3)
-        splitter_text.setSizes([200, 50, 100, 100])
+        lab_boxes = QListWidget()
+
+        # TODO have a generator or something that combines each text widget with a label
+        for i in self.data.keys():
+            # Set up test driver output
+            self.data[i]['expected output'] = QTextEdit()
+            self.data[i]['expected output'].setReadOnly(True)
+            self.data[i]['expected output'].setFrameStyle(QFrame.Sunken)
+            splitter_text.addWidget(self.data[i]['expected output'])
+
+            # Set up student output
+            self.data[i]['actual output'] = QTextEdit()
+            self.data[i]['actual output'].setReadOnly(True)
+            self.data[i]['actual output'].setFrameStyle(QFrame.Sunken)
+            splitter_text.addWidget(self.data[i]['actual output'])
+
+            # Set up check boxes
+            self.data[i]['checkbox'] = QListWidgetItem(self.data[i]['title'])
+            self.data[i]['checkbox'].setCheckState(Qt.Checked)
+
+            if self.data[i].get('binary', None) is None:
+                self.data[i]['actual output'].hide()
+                self.data[i]['expected output'].hide()
+                self.data[i]['checkbox'].setCheckState(Qt.Unchecked)
+
+            lab_boxes.addItem(self.data[i]['checkbox'])
+
+        splitter_text.setSizes([200, 50, 50, 100, 100, 100, 100, 100, 100, 100, 100])
 
         # Check boxes
         check_boxes = QListWidget()
-        lab_boxes = QListWidget()
         self.check_whitespace = QListWidgetItem("Ignore Whitespace")
         self.check_comments = QListWidgetItem("Ignore Comments")
 
-        self.check_whitespace.setCheckState(Qt.Unchecked)
+        self.check_whitespace.setCheckState(Qt.Checked)
         self.check_comments.setCheckState(Qt.Unchecked)
 
         check_boxes.addItem(self.check_comments)
@@ -130,18 +130,6 @@ class Sandbox(QWidget):
 
         check_boxes.clicked.connect(self.analyzeInput)
         check_boxes.setMaximumHeight(60)
-
-        self.check_lab1 = QListWidgetItem("Lexical Analyzer")
-        self.check_lab2 = QListWidgetItem("Datalog Parser")
-        self.check_lab3 = QListWidgetItem("Relational Database")
-
-        self.check_lab1.setCheckState(Qt.Checked)
-        self.check_lab2.setCheckState(Qt.Checked)
-        self.check_lab3.setCheckState(Qt.Checked)
-
-        lab_boxes.addItem(self.check_lab1)
-        lab_boxes.addItem(self.check_lab2)
-        lab_boxes.addItem(self.check_lab3)
 
         lab_boxes.clicked.connect(self.showHideLabs)
         lab_boxes.setMaximumHeight(60)
@@ -174,27 +162,24 @@ class Sandbox(QWidget):
         self.show()
 
     def showHideLabs(self):
-        if self.check_lab1.checkState():
-            self.output_lab1.show()
-            self.student_output_lab1.show()
-        else:
-            self.output_lab1.hide()
-            self.student_output_lab1.hide()
-        if self.check_lab2.checkState():
-            self.output_lab2.show()
-            self.student_output_lab2.show()
-        else:
-            self.output_lab2.hide()
-            self.student_output_lab2.hide()
-        if self.check_lab3.checkState():
-            self.output_lab3.show()
-            self.student_output_lab3.show()
-        else:
-            self.output_lab3.hide()
-            self.student_output_lab3.hide()
+        for i in self.data.keys():
+            if self.data[i]['checkbox'].checkState():
+                self.data[i]['expected output'].show()
+                if self.data[i].get('binary', None):
+                    self.data[i]['actual output'].show()
+                else:
+                    self.data[i]['actual output'].hide()
+            else:
+                self.data[i]['expected output'].hide()
+                if self.data[i].get('binary', None):
+                    self.data[i]['actual output'].hide()
+        # Refresh the output
+        self.analyzeInput()
 
     def analyzeInput(self):
         if self.state == self.RUNNING:
+            for i in self.data.keys():
+                self.data[i]['expected output'].clear()
             # Get input textbox
             textbox_value = self.textbox_input.toPlainText()
             with open(temp_file, 'w+') as temp:
@@ -203,23 +188,24 @@ class Sandbox(QWidget):
             # Run the lexical analyzer and print output
             # Have checkboxes for ignoring whitespace and comments
             tokens = lexical_analyzer.scan(
-                textbox_value,
+                input_data=textbox_value,
                 ignore_whitespace=self.check_whitespace.checkState(),
                 ignore_comments=self.check_comments.checkState()
             )
 
-            self.output_lab1.clear()
-            self.output_lab1.append("\n".join(str(t) for t in tokens))
-            self.output_lab1.append("Total Tokens = %s\n" % len(tokens))
+            self.data[1]['expected output'].append("\n".join(str(t) for t in tokens))
+            self.data[1]['expected output'].append("Total Tokens = %s\n" % len(tokens))
             result_lab3 = ''
 
-            self.student_output_lab1.clear()
-            self.student_output_lab1.append(
-                str(check_output("%s %s" % (self.binary_lab1, temp_file), shell=True, timeout=2), 'utf-8')
-            )
+            if self.data[1].get('binary', None):
+                self.data[1]['actual output'].clear()
+                command = "./{} {}".format(self.data[1]['binary'], temp_file)
+                self.data[1]['actual output'].append(
+                    str(check_output(command, shell=True, timeout=2), 'utf-8')
+                )
 
             # Run the datalog parser and print output
-            if self.check_lab2.checkState() or self.check_lab3.checkState():
+            if any(self.data[i]['checkbox'].checkState() for i in [2, 3, 4, 5]):
                 result_lab2 = "Success!\n"
                 tokens = lexical_analyzer.scan(textbox_value, ignore_comments=True, ignore_whitespace=True)
                 try:
@@ -237,11 +223,12 @@ class Sandbox(QWidget):
                 except TokenError as t:
                     result_lab2 = 'Failure!\n  {}'.format(t)
                     result_lab3 = 'Failure!\n  {}'.format(t)
-                self.output_lab2.clear()
-                self.output_lab2.append(result_lab2)
 
-                self.output_lab3.clear()
-                self.output_lab3.append(result_lab3)
+                self.data[2]['expected output'].clear()
+                self.data[2]['expected output'].append(result_lab2)
+
+                self.data[3]['expected output'].clear()
+                self.data[3]['expected output'].append(result_lab3)
 
     def toggleParse(self):
         if self.state == self.PAUSED:
@@ -274,7 +261,8 @@ class Sandbox(QWidget):
 if __name__ == '__main__':
     # Parse command line options
     arg = ArgumentParser(description="Experiment with Datalog")
-    arg.add_argument('-d', '--debug', type=int, help="The logging debug level to use", default=logging.NOTSET, metavar='LEVEL')
+    arg.add_argument('-d', '--debug', type=int, help="The logging debug level to use", default=logging.NOTSET,
+                     metavar='LEVEL')
     arg.add_argument('-1', dest="lab_1", help="Path to a lexical analyzer binary", default=None)
     arg.add_argument('-2', dest="lab_2", help="Path to a datalog parser binary", default=None)
     arg.add_argument('-3', dest="lab_3", help="Path to a relational database binary", default=None)

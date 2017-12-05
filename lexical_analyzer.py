@@ -9,7 +9,7 @@ from typing import List
 logger = logging.getLogger("Lexical Analyzer")
 
 
-def scan(datalog_file: str, ignore_whitespace: bool =True, ignore_comments: bool=True) -> List[Token]:
+def scan(datalog_file: str = None, ignore_whitespace: bool =True, ignore_comments: bool=True, input_data: str = None) -> List[Token]:
     """
     :param ignore_comments: 
     :param ignore_whitespace:
@@ -19,9 +19,11 @@ def scan(datalog_file: str, ignore_whitespace: bool =True, ignore_comments: bool
     tokens = list()
 
     file_string = ""
-    if path.exists(datalog_file):
+    if input_data is None and path.exists(str(datalog_file)):
         with open(datalog_file) as datalog_file_stream:
             file_string = "".join([line for line in datalog_file_stream])
+    elif input_data is not None:
+        file_string = input_data
 
     line_number = 1
     while file_string:
