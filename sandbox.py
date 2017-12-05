@@ -2,7 +2,7 @@
 import logging
 import sys
 
-from argparse import ArgumentParser
+from argparse import ArgumentParser, REMAINDER
 from os import path
 from typing import List
 from PyQt5.QtCore import Qt
@@ -268,7 +268,7 @@ if __name__ == '__main__':
     arg.add_argument('-3', dest="lab_3", help="Path to a relational database binary", default=None)
     arg.add_argument('-4', dest="lab_4", help="Path to a datalog interpreter binary", default=None)
     arg.add_argument('-5', dest="lab_5", help="Path to a rule optimizer binary", default=None)
-    arg.add_argument("test_files", nargs="*", help="The files that will be used in this test")
+    arg.add_argument("test_files", nargs=REMAINDER, help="The files that will be used in this test")
     args = arg.parse_args()
 
     # Setup debugger
