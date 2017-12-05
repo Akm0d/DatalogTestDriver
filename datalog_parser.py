@@ -77,7 +77,7 @@ class Parser:
                     objects.append(inner_list)
                     inner_list = self._parse_unused_tokens(lazy=True, grammar=g)
                     after = [str(x) for x in inner_list]
-                    logger.debug("Inner list change: {}".format(diff(after, before)))
+                    #logger.debug("Inner list change: {}".format(diff(after, before)))
                     if not all(inner_list):
                         return []
             elif isinstance(g, set):
@@ -112,8 +112,8 @@ class Parser:
             elif isinstance(o, Parser):
                 self.put_back_tokens(o.objects)
         after = "\n".join([str(i) for i in self.unused_tokens])
-        if before != after:
-            logger.debug("Put back Token: " + ColorDiff(after, before))
+        #if before != after:
+        #    logger.debug("Put back Token: " + ColorDiff(after, before))
 
     def get_token(self, lazy: bool = False) -> Token or None:
         """
