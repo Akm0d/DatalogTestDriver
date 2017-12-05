@@ -29,6 +29,21 @@ class Sandbox(QWidget):
         self.binary_lab1 = lab1_binary if path.isfile(str(lab1_binary)) else None
         self.binary_lab2 = lab2_binary if path.isfile(str(lab2_binary)) else None
         self.binary_lab3 = lab3_binary if path.isfile(str(lab3_binary)) else None
+        self.binary_lab4 = None
+        self.binary_lab5 = None
+        if self.binary_lab5:
+            self.highest_lab = 5
+        elif self.binary_lab4:
+            self.highest_lab = 4
+        elif self.binary_lab3:
+            self.highest_lab = 3
+        elif self.binary_lab2:
+            self.highest_lab = 2
+        elif self.binary_lab1:
+            self.highest_lab = 1
+        else:
+            self.highest_lab = 0
+
         # Set up QT5
         self.state = self.RUNNING
         self.app = QApplication(sys.argv)
@@ -186,7 +201,7 @@ class Sandbox(QWidget):
                 temp.write(textbox_value)
 
             # Run the lexical analyzer and print output
-            # TODO Have checkboxes for ignoring whitespace and comments
+            # Have checkboxes for ignoring whitespace and comments
             tokens = lexical_analyzer.scan(
                 textbox_value,
                 ignore_whitespace=self.check_whitespace.checkState(),
@@ -259,12 +274,12 @@ class Sandbox(QWidget):
 if __name__ == '__main__':
     # Parse command line options
     arg = ArgumentParser(description="Experiment with Datalog")
-    arg.add_argument('-d', '--debug', help="The logging debug level to use", default=logging.NOTSET, metavar='LEVEL')
-    arg.add_argument('--lab-1', help="Path to a lexical analyzer binary", default=None)
-    arg.add_argument('--lab-2', help="Path to a datalog parser binary", default=None)
-    arg.add_argument('--lab-3', help="Path to a relational database binary", default=None)
-    arg.add_argument('--lab-4', help="Path to a datalog interpeter binary", default=None)
-    arg.add_argument('--lab-5', help="Path to a rule optimizer binary", default=None)
+    arg.add_argument('-d', '--debug', type=int, help="The logging debug level to use", default=logging.NOTSET, metavar='LEVEL')
+    arg.add_argument('-1', dest="lab_1", help="Path to a lexical analyzer binary", default=None)
+    arg.add_argument('-2', dest="lab_2", help="Path to a datalog parser binary", default=None)
+    arg.add_argument('-3', dest="lab_3", help="Path to a relational database binary", default=None)
+    arg.add_argument('-4', dest="lab_4", help="Path to a datalog interpreter binary", default=None)
+    arg.add_argument('-5', dest="lab_5", help="Path to a rule optimizer binary", default=None)
     arg.add_argument("test_files", nargs="*", help="The files that will be used in this test")
     args = arg.parse_args()
 

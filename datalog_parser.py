@@ -4,7 +4,6 @@ from typing import List
 import lexical_analyzer
 import logging
 
-from helpers import ColorDiff
 from tokens import TokenError, TokenType, Token
 
 logger = logging.getLogger(__name__)
@@ -78,7 +77,7 @@ class Parser:
                     objects.append(inner_list)
                     inner_list = self._parse_unused_tokens(lazy=True, grammar=g)
                     after = [str(x) for x in inner_list]
-                    logger.debug("Inner list change: {}".format(ColorDiff(after, before)))
+                    logger.debug("Inner list change: {}".format(diff(after, before)))
                     if not all(inner_list):
                         return []
             elif isinstance(g, set):
