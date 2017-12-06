@@ -224,10 +224,7 @@ class Sandbox(QWidget):
                     result_lab2 = 'Failure!\n  {}'.format(t)
                     result_lab3 = 'Failure!\n  {}'.format(t)
 
-                self.data[2]['expected output'].clear()
                 self.data[2]['expected output'].append(result_lab2)
-
-                self.data[3]['expected output'].clear()
                 self.data[3]['expected output'].append(result_lab3)
 
     def toggleParse(self):
