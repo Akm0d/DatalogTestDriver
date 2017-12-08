@@ -67,8 +67,8 @@ class RDBMS:
         # If a parameter is a string, then select the rows that match that string in the right columns
         for i, x in enumerate(query.parameterList):
             if (not x.expression) and (x.string_id.type is TokenType.STRING):
-                match = relation[[i]].as_matrix() == ([x.string_id])
-                mask = Relation(match).reindex(index=relation.index, columns=relation.columns, method='nearest')
+                mask = relation[[i]].as_matrix() == ([x.string_id])
+                relation = relation[mask]
         logger.debug("Selected:\n{}".format(self.print_relation(relation)))
         return relation
 
