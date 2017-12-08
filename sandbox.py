@@ -185,39 +185,38 @@ class Sandbox(QWidget):
             with open(temp_file, 'w+') as temp:
                 temp.write(textbox_value)
 
-            # Run the lexical analyzer and print output
-            # Have checkboxes for ignoring whitespace and comments
-            tokens = lexical_analyzer.scan(
-                input_data=textbox_value,
-                ignore_whitespace=self.check_whitespace.checkState(),
-                ignore_comments=self.check_comments.checkState()
-            )
-
-            self.data[1]['expected output'].append("\n".join(str(t) for t in tokens))
-            self.data[1]['expected output'].append("Total Tokens = %s\n" % len(tokens))
             result_lab3 = ''
 
-            if self.data[1].get('binary', None):
-                self.data[1]['actual output'].clear()
-                command = "./{} {}".format(self.data[1]['binary'], temp_file)
-                self.data[1]['actual output'].append(
-                    str(check_output(command, shell=True, timeout=2), 'utf-8')
+            # Run the lexical analyzer and print output
+            if self.data[1]['checkbox'].checkState():
+                tokens = lexical_analyzer.scan(
+                    input_data=textbox_value,
+                    ignore_whitespace=self.check_whitespace.checkState(),
+                    ignore_comments=self.check_comments.checkState()
                 )
+                self.data[1]['expected output'].append("\n".join(str(t) for t in tokens))
+                self.data[1]['expected output'].append("Total Tokens = %s\n" % len(tokens))
+                if self.data[1].get('binary', None):
+                    self.data[1]['actual output'].clear()
+                    command = "./{} {}".format(self.data[1]['binary'], temp_file)
+                    self.data[1]['actual output'].append(
+                        str(check_output(command, shell=True, timeout=2), 'utf-8')
+                    )
 
             # Run the datalog parser and print output
             if any(self.data[i]['checkbox'].checkState() for i in [2, 3, 4, 5]):
                 result_lab2 = "Success!\n"
-                tokens = lexical_analyzer.scan(textbox_value, ignore_comments=True, ignore_whitespace=True)
+                d_tokens = lexical_analyzer.scan(input_data=textbox_value, ignore_comments=True, ignore_whitespace=True)
                 try:
-                    datalog = datalog_parser.DatalogProgram(tokens)
+                    datalog = datalog_parser.DatalogProgram(d_tokens)
                     result_lab2 += str(datalog)
+
                     # Create a relational database and print output
-                    if self.check_lab3.checkState():
+                    if self.data[3]['checkbox'].checkState():
                         rdbms = relational_database.RDBMS(datalog)
 
                         for datalog_query in datalog.queries.queries:
                             rdbms.rdbms[datalog_query] = rdbms.evaluate_query(datalog_query)
-
                         result_lab3 = str(rdbms)
 
                 except TokenError as t:
