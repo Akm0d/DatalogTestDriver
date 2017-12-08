@@ -61,6 +61,11 @@ class Sandbox(QWidget):
         self.width = 640
         self.height = 480
         self.margin = 20
+        self.check_whitespace = None
+        self.check_comments = None
+        self.textbox_input = None
+        self.text_input = None
+        self.button_toggle = None
         self.initUI()
         self.analyzeInput()
 
@@ -183,6 +188,7 @@ class Sandbox(QWidget):
         if self.state == self.RUNNING:
             for i in self.data.keys():
                 self.data[i]['expected output'].clear()
+                self.data[i]['actual output'].clear()
             # Get input textbox
             textbox_value = self.textbox_input.toPlainText()
             with open(temp_file, 'w+') as temp:
@@ -198,7 +204,6 @@ class Sandbox(QWidget):
                 self.data[1]['expected output'].append("\n".join(str(t) for t in tokens))
                 self.data[1]['expected output'].append("Total Tokens = %s\n" % len(tokens))
                 if self.data[1].get('binary', None):
-                    self.data[1]['actual output'].clear()
                     command = "./{} {}".format(self.data[1]['binary'], temp_file)
                     self.data[1]['actual output'].append(
                         str(check_output(command, shell=True, timeout=2), 'utf-8')
@@ -207,18 +212,38 @@ class Sandbox(QWidget):
             # Run the datalog parser and print output
             if any(self.data[i]['checkbox'].checkState() for i in [2, 3, 4, 5]):
                 d_tokens = lexical_analyzer.scan(input_data=textbox_value, ignore_comments=True, ignore_whitespace=True)
+                if self.data[2].get('binary', None):
+                    command = "./{} {}".format(self.data[2]['binary'], temp_file)
+                    self.data[2]['actual output'].append(
+                        str(check_output(command, shell=True, timeout=2), 'utf-8')
+                    )
                 try:
                     datalog = datalog_parser.DatalogProgram(d_tokens)
-
                     self.data[2]['expected output'].append("Success!\n{}".format(datalog))
+
                     if self.data[3]['checkbox'].checkState():
+                        if self.data[3].get('binary', None):
+                            command = "./{} {}".format(self.data[3]['binary'], temp_file)
+                            self.data[3]['actual output'].append(
+                                str(check_output(command, shell=True, timeout=2), 'utf-8')
+                            )
                         rdbms = relational_database.RDBMS(datalog)
                         for datalog_query in datalog.queries.queries:
                             rdbms.rdbms[datalog_query] = rdbms.evaluate_query(datalog_query)
                         self.data[3]['expected output'].append(str(rdbms))
                     if self.data[4]['checkbox'].checkState():
+                        if self.data[4].get('binary', None):
+                            command = "./{} {}".format(self.data[4]['binary'], temp_file)
+                            self.data[4]['actual output'].append(
+                                str(check_output(command, shell=True, timeout=2), 'utf-8')
+                            )
                         self.data[4]['expected output'].append(str(datalog_interpreter.DatalogInterpreter(datalog)))
                     if self.data[5]['checkbox'].checkState():
+                        if self.data[5].get('binary', None):
+                            command = "./{} {}".format(self.data[1]['binary'], temp_file)
+                            self.data[5]['actual output'].append(
+                                str(check_output(command, shell=True, timeout=2), 'utf-8')
+                            )
                         self.data[5]['expected output'].append(str(rule_optimizer.RuleOptimizer(datalog)))
                 except TokenError as t:
                     for i in range(2, 5 + 1):
