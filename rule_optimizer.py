@@ -72,6 +72,7 @@ class DependencyGraph(defaultdict):
         )
 
     def get_scc(self, order: OrderedSet)-> List[List[int]]:
+        # SCCs are processed in the order of their discovery from the algorithm (FIFO order).
         visited = set()
         result = list()
         for p in reversed(order):
@@ -113,7 +114,6 @@ class RuleOptimizer(DatalogInterpreter):
 
     def evaluate_optimized_rules(self, scc: List[List[int]]) -> str:
         str_passes = ""
-        # TODO SCCs are processed in the order of their discovery from the algorithm (FIFO order).
         for c in scc:
             first = c[0]
             if len(c) == 1 and first not in self.dependency_graph[first]:
