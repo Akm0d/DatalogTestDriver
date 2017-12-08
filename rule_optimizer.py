@@ -3,7 +3,6 @@ import logging
 import multiprocessing
 
 from collections import defaultdict
-from tarjan import tarjan as SCC
 from typing import List
 from orderedset._orderedset import OrderedSet
 
@@ -61,7 +60,7 @@ class DependencyGraph(defaultdict):
                 post_order_traversal.add(x)
 
         # Find strongly connected components
-        self.scc = SCC(self)
+        self.scc = self.get_scc(post_order_traversal)
 
         logger.debug("Dependency Graph:\n{}".format(self))
         logger.debug("Reverse Forest:\n{}".format(reversed(self)))
@@ -69,8 +68,23 @@ class DependencyGraph(defaultdict):
             "\n".join("POTN(R{}) = {}".format(p, i) for i, p in enumerate(post_order_traversal)))
         )
         logger.debug("Strongly Connected Components:\n{}\n".format(
-            "\n".join(",".join("R{}".format(v) for v in x) for x in self.scc))
+            "\n".join("{" + str(",".join("R{}".format(v) for v in x)) + "}" for x in self.scc))
         )
+
+    def get_scc(self, order: OrderedSet)-> List[List[int]]:
+        visited = set()
+        result = list()
+        for p in reversed(order):
+            if p not in visited:
+                connected = list()
+                connected.append(p)
+                visited.add(p)
+                for i in self[p]:
+                    if i not in visited:
+                        connected.append(i)
+                        visited.add(i)
+                result.append(connected)
+        return result
 
     def __reversed__(self) -> str:
         """

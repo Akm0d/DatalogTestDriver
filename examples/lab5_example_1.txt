@@ -1,7 +1,11 @@
 Schemes:
     A(X,Y)
-    B(x,Y)
+    B(X,Y)
+    C(X,Y)
+    D(X,Y)
     E(X,Y)
+    F(X,Y)
+    G(X,Y)
 
 Facts:
     A('b', 'c').
@@ -13,10 +17,10 @@ Rules:
     B(X,Y) :- A(X,Y), D(X,Y). # R1
     B(X,Y) :- B(Y,X).         # R2
     E(X,Y) :- F(X,Y), G(X,Y). # R3
-    E(X,Y) :- E(X,Y), F(X,Y).  # R4
+    E(X,Y) :- E(X,Y), F(X,Y). # R4
 
 Queries:
-    A(H,I)?
-    B(J,K)?
-    E(L,M)?
+    A(X,Y)?
+    B(X,Y)?
+    E(X,Y)?
 
