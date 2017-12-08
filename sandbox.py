@@ -12,6 +12,9 @@ from subprocess import check_output
 import lexical_analyzer
 import datalog_parser
 import relational_database
+import datalog_interpreter
+import rule_optimizer
+
 from tokens import TokenError
 
 logger = logging.getLogger(__name__)
@@ -185,8 +188,6 @@ class Sandbox(QWidget):
             with open(temp_file, 'w+') as temp:
                 temp.write(textbox_value)
 
-            result_lab3 = ''
-
             # Run the lexical analyzer and print output
             if self.data[1]['checkbox'].checkState():
                 tokens = lexical_analyzer.scan(
@@ -205,26 +206,23 @@ class Sandbox(QWidget):
 
             # Run the datalog parser and print output
             if any(self.data[i]['checkbox'].checkState() for i in [2, 3, 4, 5]):
-                result_lab2 = "Success!\n"
                 d_tokens = lexical_analyzer.scan(input_data=textbox_value, ignore_comments=True, ignore_whitespace=True)
                 try:
                     datalog = datalog_parser.DatalogProgram(d_tokens)
-                    result_lab2 += str(datalog)
 
-                    # Create a relational database and print output
+                    self.data[2]['expected output'].append("Success!\n{}".format(datalog))
                     if self.data[3]['checkbox'].checkState():
                         rdbms = relational_database.RDBMS(datalog)
-
                         for datalog_query in datalog.queries.queries:
                             rdbms.rdbms[datalog_query] = rdbms.evaluate_query(datalog_query)
-                        result_lab3 = str(rdbms)
-
+                        self.data[3]['expected output'].append(str(rdbms))
+                    if self.data[4]['checkbox'].checkState():
+                        self.data[4]['expected output'].append(str(datalog_interpreter.DatalogInterpreter(datalog)))
+                    if self.data[5]['checkbox'].checkState():
+                        self.data[5]['expected output'].append(str(rule_optimizer.RuleOptimizer(datalog)))
                 except TokenError as t:
-                    result_lab2 = 'Failure!\n  {}'.format(t)
-                    result_lab3 = 'Failure!\n  {}'.format(t)
-
-                self.data[2]['expected output'].append(result_lab2)
-                self.data[3]['expected output'].append(result_lab3)
+                    for i in range(2, 5 + 1):
+                        self.data[i]['expected output'].append('Failure\n {}'.format(t))
 
     def toggleParse(self):
         if self.state == self.PAUSED:
